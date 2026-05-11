@@ -240,6 +240,7 @@ export async function seedDatabase() {
   const categoryMap: Record<string, string> = {};
 
   try {
+    console.log('Starting seed process...');
     // 1. Seed Categories
     for (const cat of CATEGORIES) {
       const q = query(collection(db, 'categories'), where('name', '==', cat.name));
@@ -258,7 +259,10 @@ export async function seedDatabase() {
     // 2. Seed Questions
     for (const quest of QUESTIONS) {
       const catId = categoryMap[quest.categoryName];
-      if (!catId) continue;
+      if (!catId) {
+        console.warn(`No category found for question: ${quest.stem.substring(0, 20)}`);
+        continue;
+      }
 
       const q = query(collection(db, 'questions'), where('stem', '==', quest.stem));
       const snap = await getDocs(q);
@@ -285,10 +289,13 @@ export async function seedDatabase() {
       });
     }
 
-    console.log('Database seed completed!');
+    console.log('Database seed completed successfully!');
     return true;
-  } catch (error) {
-    console.error('Database seed error:', error);
+  } catch (error: any) {
+    console.error('Database seed error details:', error);
+    if (error.message && error.message.includes('permission-denied')) {
+        throw new Error('Permission Denied: You must be an admin in the database to perform this action. Your account may still be upgrading.');
+    }
     throw error;
   }
 }

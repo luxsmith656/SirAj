@@ -54,6 +54,19 @@ export default function CategoryManagement() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!selectedCategory) return;
+    if (confirm(`Are you sure you want to delete "${selectedCategory.name}"? This will not delete the questions assigned to it but will make them unreachable through this category link.`)) {
+      try {
+        await deleteDoc(doc(db, 'categories', selectedCategory.id));
+        setSelectedCategory(null);
+        setIsEditing(false);
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `categories/${selectedCategory.id}`);
+      }
+    }
+  };
+
   const selectCategory = (cat: Category) => {
     setSelectedCategory(cat);
     setEditName(cat.name);
@@ -101,14 +114,23 @@ export default function CategoryManagement() {
                   <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 sticky top-24">
                      {selectedCategory ? (
                         <div className="space-y-6">
-                           <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                                 <span className="material-symbols-outlined text-3xl">edit_note</span>
+                           <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                 <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                                    <span className="material-symbols-outlined text-3xl">edit_note</span>
+                                 </div>
+                                 <div>
+                                    <h4 className="font-headline font-bold text-lg text-slate-800">Edit Domain</h4>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">ID: {selectedCategory.id.substring(0, 8)}</p>
+                                 </div>
                               </div>
-                              <div>
-                                 <h4 className="font-headline font-bold text-lg text-slate-800">Edit Domain</h4>
-                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">ID: {selectedCategory.id.substring(0, 8)}</p>
-                              </div>
+                              <button 
+                                onClick={handleDelete}
+                                className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
+                                title="Delete Domain"
+                              >
+                                 <span className="material-symbols-outlined">delete</span>
+                              </button>
                            </div>
                            
                            <div className="space-y-4">

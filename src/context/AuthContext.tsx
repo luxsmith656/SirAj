@@ -32,17 +32,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (userDoc.exists()) {
           const userData = userDoc.data() as UserProfile;
-          // Force upgrade to admin if email matches
+          const currentRole = isAdminEmail ? 'admin' : userData.role;
+          
+          // Set user immediately with corrected role for admin email
+          setUser({ ...userData, uid: firebaseUser.uid, role: currentRole });
+
+          // Sync with database if needed
           if (isAdminEmail && userData.role !== 'admin') {
-            try {
-              await updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' });
-              setUser({ ...userData, uid: firebaseUser.uid, role: 'admin' });
-            } catch (err) {
-              console.error('Failed to upgrade user role:', err);
-              setUser({ ...userData, uid: firebaseUser.uid });
-            }
-          } else {
-            setUser({ ...userData, uid: firebaseUser.uid });
+            updateDoc(doc(db, 'users', firebaseUser.uid), { role: 'admin' })
+              .catch(err => console.error('Silent role upgrade failed:', err));
           }
         } else {
           // Default role for new users

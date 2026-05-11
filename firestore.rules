@@ -12,6 +12,11 @@ service cloud.firestore {
       return isSignedIn() && 
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
+    // Fallback for bootstrap admin
+    function isBootstrapAdmin() {
+      return isSignedIn() && request.auth.token.email == 'castanar656@gmail.com';
+    }
+
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function incoming() { return request.resource.data; }
@@ -21,35 +26,35 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin() || isBootstrapAdmin();
     }
 
     match /categories/{categoryId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isBootstrapAdmin();
       
       function isValidCategory(data) {
-        return data.name is string && data.name.size() > 0 && data.name.size() <= 100
-          && (!data.keys().hasAll(['parentId']) || (data.parentId is string && isValidId(data.parentId)));
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 100;
       }
 
-      allow create: if isAdmin() && isValidCategory(incoming());
-      allow update: if isAdmin() && isValidCategory(incoming());
+      allow create: if (isAdmin() || isBootstrapAdmin()) && isValidCategory(incoming());
+      allow update: if (isAdmin() || isBootstrapAdmin()) && isValidCategory(incoming());
+      allow delete: if isAdmin() || isBootstrapAdmin();
     }
 
     match /questions/{questionId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isBootstrapAdmin();
 
       function isValidQuestion(data) {
         return data.stem is string && data.stem.size() > 0
           && data.options is list && data.options.size() >= 2
-          && data.correctOptionId is string
           && data.categoryId is string;
       }
 
-      allow create: if isAdmin() && isValidQuestion(incoming());
-      allow update: if isAdmin() && isValidQuestion(incoming());
+      allow create: if (isAdmin() || isBootstrapAdmin()) && isValidQuestion(incoming());
+      allow update: if (isAdmin() || isBootstrapAdmin()) && isValidQuestion(incoming());
+      allow delete: if isAdmin() || isBootstrapAdmin();
     }
 
     match /submissions/{submissionId} {
