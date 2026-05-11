@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { signInWithGoogle } from '../lib/firebase';
+import { signInWithGoogle, loginWithEmail, registerWithEmail } from '../lib/firebase';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -25,9 +25,31 @@ export default function SignIn() {
     }
   };
 
-  const handleSignIn = (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('Please use Google Sign-In for this demo.');
+    setError('');
+    try {
+      await loginWithEmail(email, password);
+    } catch (err: any) {
+      console.error('Login error:', err.code, err.message);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        // If it's the admin email, try to auto-create for first-time use
+        if (email === 'castanar656@gmail.com') {
+          try {
+            await registerWithEmail(email, password);
+            return;
+          } catch (regErr: any) {
+            setError('Account creation failed. Please check if Email/Password provider is enabled in Firebase Console.');
+          }
+        } else {
+          setError('Invalid email or password.');
+        }
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Unauthorized Domain: Add this URL to your Firebase Console > Authentication > Settings > Authorized domains.');
+      } else {
+        setError(err.message);
+      }
+    }
   };
 
   return (

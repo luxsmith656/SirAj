@@ -16,7 +16,7 @@ export default function ExamSimulation() {
   const [searchParams] = useSearchParams();
   const categoryId = searchParams.get('category');
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -127,6 +127,16 @@ export default function ExamSimulation() {
           <div className="font-bold text-[11px] tracking-widest text-[#1b366a] uppercase">
              Question <span className="text-lg tabular-nums">{currentIndex + 1}</span> / {questions.length}
           </div>
+          <button 
+            onClick={() => {
+              signOut();
+              navigate('/sign-in');
+            }}
+            className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors"
+            title="Sign Out"
+          >
+             <span className="material-symbols-outlined">logout</span>
+          </button>
        </header>
 
        <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-5 py-8">

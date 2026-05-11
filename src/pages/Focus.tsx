@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
 
 interface Category {
   id: string;
@@ -12,6 +13,12 @@ export default function Focus() {
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleSignOut = () => {
+    signOut();
+    navigate('/sign-in');
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
@@ -29,12 +36,20 @@ export default function Focus() {
           <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 transition-colors text-slate-500">
              <span className="material-symbols-outlined text-[20px]">arrow_back</span>
           </button>
-          <div className="flex gap-1.5">
-             <div className="h-1.5 w-4 bg-slate-100 rounded-full"></div>
-             <div className="h-1.5 w-8 bg-[#1b366a] rounded-full"></div>
-             <div className="h-1.5 w-4 bg-slate-100 rounded-full"></div>
+          <div className="flex items-center gap-2">
+             <div className="flex gap-1.5 mr-2">
+                <div className="h-1.5 w-4 bg-slate-100 rounded-full"></div>
+                <div className="h-1.5 w-8 bg-[#1b366a] rounded-full"></div>
+                <div className="h-1.5 w-4 bg-slate-100 rounded-full"></div>
+             </div>
+             <button 
+               onClick={handleSignOut}
+               className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors"
+               title="Sign Out"
+             >
+                <span className="material-symbols-outlined">logout</span>
+             </button>
           </div>
-          <div className="w-10"></div>
        </header>
 
        <div className="flex-1 px-6 py-6 max-w-md mx-auto w-full flex flex-col">
