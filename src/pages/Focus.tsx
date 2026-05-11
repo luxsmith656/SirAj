@@ -1,78 +1,86 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 export default function Focus() {
-  const [selectedMajor, setSelectedMajor] = useState<string | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const navigate = useNavigate();
 
-  const majors = [
-    { id: 'english', label: 'English', icon: 'menu_book' },
-    { id: 'math', label: 'Mathematics', icon: 'calculate' },
-    { id: 'science', label: 'Science', icon: 'science' },
-    { id: 'filipino', label: 'Filipino', icon: 'translate' },
-    { id: 'socsci', label: 'Social Sciences', icon: 'public' },
-    { id: 'values', label: 'Values Education', icon: 'favorite' },
-  ];
+  useEffect(() => {
+    const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCategories(snapshot.docs.map(d => ({ id: d.id, name: d.data().name })));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categories');
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-[100dvh] flex flex-col antialiased relative bg-surface-container-lowest">
-       {/* Background accent */}
-       <div className="absolute top-0 right-0 w-full h-[600px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-
-       <header className="px-8 py-8 flex items-center justify-between sticky top-0 z-20">
-          <Link to="/dashboard" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container-low hover:bg-white hover:ambient-shadow transition-all text-on-surface-variant group">
-             <span className="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">arrow_back</span>
-          </Link>
-          <div className="flex gap-2">
-             <div className="h-1.5 w-6 bg-surface-container rounded-full"></div>
-             <div className="h-1.5 w-12 primary-gradient rounded-full ambient-shadow"></div>
-             <div className="h-1.5 w-6 bg-surface-container rounded-full"></div>
+    <div className="bg-white text-slate-800 font-body min-h-[100dvh] flex flex-col antialiased">
+       <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-md z-10 border-b border-slate-100">
+          <button onClick={() => navigate(-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 transition-colors text-slate-500">
+             <span className="material-symbols-outlined text-[20px]">arrow_back</span>
+          </button>
+          <div className="flex gap-1.5">
+             <div className="h-1.5 w-4 bg-slate-100 rounded-full"></div>
+             <div className="h-1.5 w-8 bg-[#1b366a] rounded-full"></div>
+             <div className="h-1.5 w-4 bg-slate-100 rounded-full"></div>
           </div>
-          <div className="w-12"></div>
+          <div className="w-10"></div>
        </header>
 
-       <div className="flex-1 px-8 py-8 max-w-xl mx-auto w-full flex flex-col z-10">
-          <div className="mb-12">
-             <h1 className="text-4xl md:text-5xl font-extrabold font-headline mb-4 tracking-tighter text-primary">Specialized Domain</h1>
-             <p className="text-on-surface-variant text-lg font-medium tracking-tight">Select your academic concentration to influence the simulation depth.</p>
+       <div className="flex-1 px-6 py-6 max-w-md mx-auto w-full flex flex-col">
+          <div className="mb-8">
+             <div className="w-10 h-10 bg-blue-50 text-[#1b366a] rounded-xl flex items-center justify-center mb-4">
+                <span className="material-symbols-outlined">psychology</span>
+             </div>
+             <h1 className="text-2xl font-extrabold font-headline mb-2 tracking-tight text-slate-800">Select Focus</h1>
+             <p className="text-slate-500 text-sm font-medium">Choose a domain to start your review simulation.</p>
           </div>
 
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 pb-12 no-scrollbar">
-             {majors.map((major) => (
+          <div className="flex-1 space-y-3 overflow-y-auto pb-4 no-scrollbar">
+             {categories.length === 0 && <p className="text-center text-slate-400 py-10 italic">Your curriculum will appear here...</p>}
+             {categories.map((cat) => (
                <button
-                 key={major.id}
-                 onClick={() => setSelectedMajor(major.id)}
-                 className={`group p-6 rounded-2xl flex flex-col items-center gap-4 transition-all text-center relative overflow-hidden ${
-                   selectedMajor === major.id 
-                     ? 'bg-primary text-white ambient-shadow scale-[1.05] z-10' 
-                     : 'bg-surface-container-low hover:bg-white hover:ambient-shadow ghost-border'
+                 key={cat.id}
+                 onClick={() => setSelectedDomain(cat.id)}
+                 className={`w-full p-4 rounded-2xl border-2 flex items-center gap-4 transition-all text-left ${
+                   selectedDomain === cat.id 
+                     ? 'border-[#1b366a] bg-blue-50/50' 
+                     : 'border-slate-100 bg-slate-50/50 hover:border-blue-200'
                  }`}
                >
-                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 ${
-                   selectedMajor === major.id ? 'bg-white text-primary rotate-6' : 'bg-surface-container-high text-on-surface-variant group-hover:bg-primary/5 group-hover:text-primary'
+                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                   selectedDomain === cat.id ? 'bg-[#1b366a] text-white' : 'bg-slate-200 text-slate-500'
                  }`}>
-                    <span className="material-symbols-outlined text-3xl" style={{fontVariationSettings: selectedMajor === major.id ? "'FILL' 1" : ""}}>{major.icon}</span>
+                    <span className="material-symbols-outlined">menu_book</span>
                  </div>
-                 <div className="space-y-1">
-                    <span className={`font-black text-sm uppercase tracking-widest ${selectedMajor === major.id ? 'text-white' : 'text-primary'}`}>
-                      {major.label}
-                    </span>
-                 </div>
-                 {selectedMajor === major.id && (
-                   <span className="material-symbols-outlined text-white absolute top-4 right-4 text-[18px]">verified</span>
+                 <span className={`font-bold text-[15px] ${selectedDomain === cat.id ? 'text-[#1b366a]' : 'text-slate-700'}`}>
+                   {cat.name}
+                 </span>
+                 {selectedDomain === cat.id && (
+                   <span className="material-symbols-outlined text-[#1b366a] ml-auto" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
                  )}
                </button>
              ))}
           </div>
 
-          <div className="bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/80 to-transparent pt-12 pb-12 sticky bottom-0">
-             <Link to="/exam" className="block w-full">
-               <button 
-                 disabled={!selectedMajor}
-                 className="w-full primary-gradient text-white font-black py-6 rounded-full shadow-2xl hover:shadow-primary/40 transition-all disabled:opacity-50 disabled:shadow-none active:scale-95 text-xs uppercase tracking-widest"
-               >
-                  Verify Specialization & Launch
-               </button>
-             </Link>
+          <div className="pt-6 pb-4 bg-white">
+             <button 
+               onClick={() => navigate(`/exam?category=${selectedDomain}`)}
+               disabled={!selectedDomain}
+               className="w-full bg-[#1b366a] text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-900/10 hover:bg-[#112349] transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed uppercase tracking-widest text-[11px]"
+             >
+                Start Simulation
+             </button>
           </div>
        </div>
     </div>

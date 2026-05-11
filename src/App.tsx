@@ -1,6 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import CategoryManagement from './pages/CategoryManagement';
+import QuestionBank from './pages/QuestionBank';
 import EditQuestion from './pages/EditQuestion';
 import QuestionDetail from './pages/QuestionDetail';
 import CurriculumSettings from './pages/CurriculumSettings';
@@ -15,7 +17,28 @@ import Onboarding from './pages/Onboarding';
 import Focus from './pages/Focus';
 import QuizResults from './pages/QuizResults';
 import ExamSimulation from './pages/ExamSimulation';
+import ClientDashboard from './pages/ClientDashboard';
 import { SidebarProvider } from './context/SidebarContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+
+function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 'admin' | 'client' }) {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return null; // Or a simple loader
+  }
+
+  if (!user) {
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
+  }
+
+  if (role && user.role !== role) {
+    return <Navigate to={user.role === 'admin' ? '/dashboard' : '/client-home'} replace />;
+  }
+
+  return <>{children}</>;
+}
 
 function DevIndex() {
   return (
@@ -40,12 +63,13 @@ function DevIndex() {
         
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
           <h2 className="font-bold text-secondary mb-2">Client Experience</h2>
-          <Link to="/loading" className="text-teal-600 hover:underline">11. Loading Screen</Link>
-          <Link to="/onboarding" className="text-teal-600 hover:underline">12. Onboarding</Link>
-          <Link to="/sign-in" className="text-teal-600 hover:underline">13. Sign In</Link>
-          <Link to="/focus" className="text-teal-600 hover:underline">14. Choose Focus</Link>
-          <Link to="/exam" className="text-teal-600 hover:underline">15. Exam Simulation</Link>
-          <Link to="/quiz-results" className="text-teal-600 hover:underline">16. Quiz Results</Link>
+          <Link to="/client-home" className="text-teal-600 hover:underline">11. Dashboard</Link>
+          <Link to="/loading" className="text-teal-600 hover:underline">12. Loading Screen</Link>
+          <Link to="/onboarding" className="text-teal-600 hover:underline">13. Onboarding</Link>
+          <Link to="/sign-in" className="text-teal-600 hover:underline">14. Sign In</Link>
+          <Link to="/focus" className="text-teal-600 hover:underline">15. Choose Focus</Link>
+          <Link to="/exam" className="text-teal-600 hover:underline">16. Exam Simulation</Link>
+          <Link to="/quiz-results" className="text-teal-600 hover:underline">17. Quiz Results</Link>
         </div>
       </div>
     </div>
@@ -54,33 +78,42 @@ function DevIndex() {
 
 export default function App() {
   return (
-    <SidebarProvider>
-      <Router>
-          <Routes>
-              <Route path="/" element={<SignIn />} />
-              <Route path="/debug" element={<DevIndex />} />
-              {/* Admin Routes */}
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/categories" element={<CategoryManagement />} />
-              <Route path="/question/edit" element={<EditQuestion />} />
-              <Route path="/question/detail" element={<QuestionDetail />} />
-              <Route path="/curriculum-settings" element={<CurriculumSettings />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/bulk-upload" element={<BulkUpload />} />
-              <Route path="/sync" element={<SyncCenter />} />
-              <Route path="/settings" element={<Settings />} />
+    <AuthProvider>
+      <SidebarProvider>
+        <Router>
+            <Routes>
+                <Route path="/" element={<Navigate to="/sign-in" replace />} />
+                <Route path="/sign-in" element={<SignIn />} />
+                <Route path="/debug" element={<DevIndex />} />
+                
+                {/* Admin Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute role="admin"><Dashboard /></ProtectedRoute>} />
+                <Route path="/categories" element={<ProtectedRoute role="admin"><CategoryManagement /></ProtectedRoute>} />
+                <Route path="/question/bank" element={<ProtectedRoute role="admin"><QuestionBank /></ProtectedRoute>} />
+                <Route path="/question/new" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
+                <Route path="/question/edit/:id" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
+                <Route path="/question/detail" element={<ProtectedRoute role="admin"><QuestionDetail /></ProtectedRoute>} />
+                <Route path="/curriculum-settings" element={<ProtectedRoute role="admin"><CurriculumSettings /></ProtectedRoute>} />
+                <Route path="/analytics" element={<ProtectedRoute role="admin"><Analytics /></ProtectedRoute>} />
+                <Route path="/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
+                <Route path="/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
+                <Route path="/sync" element={<ProtectedRoute role="admin"><SyncCenter /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
 
-              {/* Mobile / App Routes */}
-              <Route path="/sign-in" element={<SignIn />} />
-              <Route path="/loading" element={<Loading />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/focus" element={<Focus />} />
-              <Route path="/quiz-results" element={<QuizResults />} />
-              <Route path="/exam" element={<ExamSimulation />} />
-          </Routes>
-      </Router>
-    </SidebarProvider>
+                {/* Mobile / App Routes */}
+                <Route path="/loading" element={<Loading />} />
+                <Route path="/client-home" element={<ProtectedRoute role="client"><ClientDashboard /></ProtectedRoute>} />
+                <Route path="/onboarding" element={<ProtectedRoute role="client"><Onboarding /></ProtectedRoute>} />
+                <Route path="/focus" element={<ProtectedRoute role="client"><Focus /></ProtectedRoute>} />
+                <Route path="/quiz-results" element={<ProtectedRoute role="client"><QuizResults /></ProtectedRoute>} />
+                <Route path="/exam" element={<ProtectedRoute role="client"><ExamSimulation /></ProtectedRoute>} />
+                
+                <Route path="*" element={<Navigate to="/sign-in" replace />} />
+            </Routes>
+        </Router>
+      </SidebarProvider>
+    </AuthProvider>
   );
 }
+
 

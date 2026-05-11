@@ -1,114 +1,119 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { signInWithGoogle } from '../lib/firebase';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const handleSignIn = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') navigate('/dashboard');
+      else navigate('/loading');
+    }
+  }, [user, navigate]);
 
-    // Dummy Credentials
-    if (email === 'admin@example.com' && password === 'admin123') {
-      navigate('/dashboard');
-    } else if (email === 'client@example.com' && password === 'client123') {
-      navigate('/loading');
-    } else {
-      setError('Invalid email or password. Try admin@example.com / admin123 or client@example.com / client123');
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
-  return (
-    <div className="bg-surface text-on-surface font-body min-h-[100dvh] flex flex-col antialiased relative overflow-hidden bg-surface-container-lowest">
-       {/* Background accent */}
-       <div className="absolute top-0 right-0 w-full h-[600px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
-       <div className="absolute bottom-0 left-0 w-full h-[400px] bg-secondary/5 rounded-full blur-[100px] translate-y-1/2 -translate-x-1/4 pointer-events-none"></div>
+  const handleSignIn = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('Please use Google Sign-In for this demo.');
+  };
 
-       <div className="flex-1 flex flex-col justify-center max-w-lg mx-auto w-full px-8 py-12 z-10 relative">
-          <div className="text-center mb-12">
-             <div className="w-20 h-20 primary-gradient text-white rounded-[2rem] mx-auto mb-8 flex items-center justify-center text-3xl font-black font-headline ambient-shadow rotate-3 hover:rotate-0 transition-transform duration-500">
-               <span className="material-symbols-outlined text-4xl">menu_book</span>
-             </div>
-             <h1 className="text-5xl font-extrabold font-headline text-primary mb-3 tracking-tighter">Scholarly</h1>
-             <p className="text-on-surface-variant text-lg font-medium tracking-tight">The next evolution in academic mastery.</p>
+  return (
+    <div className="bg-[#f0f2f5] text-slate-800 font-body min-h-screen flex items-center justify-center antialiased relative overflow-hidden">
+       <div className="absolute top-0 right-0 w-full h-1/2 bg-gradient-to-b from-blue-100/50 to-transparent pointer-events-none"></div>
+
+       <div className="max-w-md w-full px-6 z-10">
+          <div className="text-center mb-6">
+             <div className="w-12 h-12 bg-[#1b366a] text-white rounded-2xl mx-auto mb-4 flex items-center justify-center text-xl font-extrabold font-headline shadow-lg">L</div>
+             <h1 className="text-2xl font-extrabold font-headline text-slate-800 tracking-tight">LET Mastery</h1>
+             <p className="text-slate-400 text-xs font-bold leading-tight mt-1 uppercase tracking-widest">Sign in to continue your journey</p>
           </div>
 
-          <div className="bg-surface-container-lowest rounded-[2rem] p-10 ambient-shadow ghost-border relative overflow-hidden">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1 primary-gradient"></div>
-            <form className="space-y-8" onSubmit={handleSignIn}>
+          <div className="bg-white rounded-3xl p-8 shadow-2xl shadow-blue-900/10 border border-slate-100">
+            <form className="space-y-4" onSubmit={handleSignIn}>
                {error && (
-                 <div className="bg-error/5 border border-error/10 text-error text-[11px] p-4 rounded-2xl font-bold uppercase tracking-wider animate-in fade-in zoom-in duration-300">
+                 <div className="bg-red-50 text-red-600 text-[11px] p-3 rounded-xl font-bold uppercase tracking-wider text-center border border-red-100">
                    {error}
                  </div>
                )}
-               <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest ml-1">Academic Identifier</label>
+               <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
                   <input 
                     type="email" 
-                    placeholder="name@institution.edu"
+                    placeholder="admin@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-surface-container-low/50 border-none rounded-2xl px-6 py-5 text-base font-bold text-primary ambient-shadow-sm transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 outline-none placeholder:text-on-surface-variant/40"
+                    className="w-full bg-slate-50 border border-transparent rounded-2xl px-5 py-3 text-sm font-medium focus:bg-white focus:border-blue-200 outline-none transition-all"
                     required
                   />
                </div>
-               <div className="space-y-2">
-                  <div className="flex justify-between items-end ml-1">
-                     <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Secret Keyword</label>
-                     <a href="#" className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Reset</a>
+               <div className="space-y-1.5">
+                  <div className="flex justify-between items-center ml-1">
+                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Password</label>
+                     <button type="button" className="text-[10px] font-bold text-blue-600 uppercase tracking-widest hover:underline">Forgot?</button>
                   </div>
                   <input 
                     type="password" 
-                    placeholder="••••••••"
+                    placeholder="admin123"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-surface-container-low/50 border-none rounded-2xl px-6 py-5 text-base font-bold text-primary ambient-shadow-sm transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 outline-none placeholder:text-on-surface-variant/40"
+                    className="w-full bg-slate-50 border border-transparent rounded-2xl px-5 py-3 text-sm font-medium focus:bg-white focus:border-blue-200 outline-none transition-all"
                     required
                   />
                </div>
                
-               <button type="submit" className="w-full primary-gradient text-white font-bold py-5 rounded-full shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-300 active:scale-95 text-sm uppercase tracking-widest mt-4">
-                  Initialize Session
+               <button type="submit" className="w-full bg-[#1b366a] text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-900/20 hover:bg-[#112349] transition-all outline-none mt-2 text-xs uppercase tracking-[0.2em]">
+                  Sign In
                </button>
             </form>
-            
-            <div className="mt-10 relative flex items-center justify-center">
-               <div className="absolute w-full border-t border-surface-container-low"></div>
-               <span className="relative bg-surface-container-lowest px-6 text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">Federated Access</span>
+
+            <div className="relative my-8">
+               <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-slate-100"></div>
+               </div>
+               <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest">
+                  <span className="bg-white px-4 text-slate-300">Or continue with</span>
+               </div>
             </div>
+
+            <button 
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-3 bg-white border border-slate-200 py-4 rounded-2xl shadow-sm hover:bg-slate-50 transition-all font-bold text-sm text-slate-700"
+            >
+              <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+              Sign in with Google
+            </button>
             
-            <div className="mt-8">
-               <button className="w-full bg-surface-container-low/30 border border-white text-on-surface font-bold py-4 rounded-full flex items-center justify-center gap-4 hover:bg-white hover:ambient-shadow transition-all duration-300 active:scale-95 text-xs uppercase tracking-widest">
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 shadow-sm rounded-full" />
-                  Sign in with Google
-               </button>
-            </div>
+             <div className="mt-8">
+                <div className="p-4 bg-[#1b366a]/5 rounded-2xl border border-[#1b366a]/10">
+                   <p className="text-[10px] font-black text-[#1b366a] uppercase tracking-widest mb-1 leading-none flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm">verified_user</span>
+                      Admin Access
+                   </p>
+                   <p className="text-[11px] text-slate-500 font-bold leading-tight">Authorize with: <span className="text-slate-800">castanar656@gmail.com</span></p>
+                </div>
+             </div>
           </div>
           
-          <div className="mt-8 bg-surface-container-low/40 p-6 rounded-[2rem] ghost-border flex flex-col gap-4">
-            <h5 className="text-[9px] uppercase tracking-widest font-black text-primary opacity-60 ml-1">Standard Probing Credentials</h5>
-            <div className="grid grid-cols-2 gap-6 px-1">
-              <div className="group cursor-pointer" onClick={() => { setEmail('admin@example.com'); setPassword('admin123'); }}>
-                <p className="text-[10px] font-black text-primary uppercase tracking-tighter mb-1 group-hover:underline">Authority</p>
-                <p className="text-[11px] font-bold text-on-surface tracking-tight">admin@example.com</p>
-                <p className="text-[10px] font-medium text-on-surface-variant">admin123</p>
-              </div>
-              <div className="group cursor-pointer" onClick={() => { setEmail('client@example.com'); setPassword('client123'); }}>
-                <p className="text-[10px] font-black text-secondary uppercase tracking-tighter mb-1 group-hover:underline">Candidate</p>
-                <p className="text-[11px] font-bold text-on-surface tracking-tight">client@example.com</p>
-                <p className="text-[10px] font-medium text-on-surface-variant">client123</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-center text-xs text-on-surface-variant mt-10 font-bold uppercase tracking-widest">
-             Unauthorized access is <span className="text-error">prohibited</span>.
+          <p className="text-center text-[11px] text-slate-400 mt-8 font-bold uppercase tracking-widest">
+             Need help? <a href="#" className="text-blue-600 hover:underline">Contact Support</a>
           </p>
        </div>
     </div>
   );
 }
+
+
 

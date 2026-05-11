@@ -8,11 +8,10 @@ export default function Sidebar() {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
-    { name: 'Question Bank', path: '/categories', icon: 'quiz' },
-    { name: 'Curriculum', path: '/curriculum-settings', icon: 'menu_book' },
+    { name: 'Curriculum', path: '/categories', icon: 'menu_book' },
+    { name: 'Question Bank', path: '/question/bank', icon: 'quiz' },
     { name: 'Analytics', path: '/analytics', icon: 'bar_chart' },
     { name: 'Users', path: '/users', icon: 'group' },
-    { name: 'Sync', path: '/sync', icon: 'sync' },
     { name: 'Settings', path: '/settings', icon: 'settings' },
   ];
 
@@ -28,33 +27,33 @@ export default function Sidebar() {
 
       {/* Sidebar Container */}
       <nav className={`
-        fixed left-0 top-0 h-screen bg-surface-container-low text-on-surface font-body text-sm z-[70] transition-all duration-300 ease-in-out
+        fixed left-0 top-0 h-screen bg-[#f4f6f8] text-slate-800 font-body text-sm border-r border-slate-200 z-[70] transition-all duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         ${isCollapsed ? 'w-[80px]' : 'w-[280px]'}
       `}>
         {/* Header / Brand */}
-        <div className={`px-6 mt-8 mb-12 flex items-center transition-all duration-300 ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}>
-          <div className="w-12 h-12 rounded-full primary-gradient text-white flex items-center justify-center ambient-shadow shrink-0">
+        <div className={`px-6 mt-8 mb-10 flex items-center transition-all duration-300 ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}>
+          <div className="w-12 h-12 rounded-full bg-[#1b366a] text-white flex items-center justify-center shadow-sm shrink-0">
             <span className="material-symbols-outlined text-[24px]">menu_book</span>
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <div className="font-extrabold text-primary text-[20px] tracking-tighter leading-tight truncate font-headline">Scholarly</div>
-              <div className="text-[10px] text-on-surface-variant font-bold mt-0.5 truncate uppercase tracking-widest">Reviewer Pro</div>
+              <div className="font-extrabold text-[#1b366a] text-[20px] tracking-tight leading-tight truncate">LET Mastery</div>
+              <div className="text-[11px] text-slate-500 font-medium font-body mt-0.5 truncate uppercase tracking-wider">Admin Control Panel</div>
             </div>
           )}
           
           {/* Mobile Close Button */}
           <button 
             onClick={toggle}
-            className="md:hidden ml-auto p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-colors"
+            className="md:hidden ml-auto p-2 text-slate-500 hover:bg-slate-200 rounded-full"
           >
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
 
         {/* Navigation Items */}
-        <div className={`flex-1 overflow-y-auto space-y-1 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+        <div className={`flex-1 overflow-y-auto space-y-2 ${isCollapsed ? 'px-2' : 'px-4'}`}>
           {navItems.map((item) => {
             const isActive = location.pathname.startsWith(item.path);
             return (
@@ -62,12 +61,12 @@ export default function Sidebar() {
                 key={item.name}
                 to={item.path}
                 onClick={() => { if (isOpen) toggle(); }}
-                className={`py-3 flex items-center transition-all duration-300 rounded-xl ${
+                className={`py-3.5 flex items-center transition-all duration-200 rounded-2xl ${
                   isCollapsed ? 'justify-center px-0' : 'px-4 gap-4'
                 } ${
                   isActive 
-                    ? 'bg-surface-container-lowest text-primary font-bold ambient-shadow' 
-                    : 'text-on-surface-variant font-medium hover:bg-surface-container-lowest/60 hover:text-on-surface'
+                    ? 'bg-white text-[#1b366a] font-bold shadow-sm' 
+                    : 'text-slate-600 font-medium hover:bg-slate-200/50 hover:text-slate-900'
                 }`}
                 title={isCollapsed ? item.name : ''}
               >
@@ -84,20 +83,20 @@ export default function Sidebar() {
         </div>
 
         {/* Bottom Actions & Collapse Toggle */}
-        <div className={`mt-auto pb-10 ${isCollapsed ? 'px-2' : 'px-4'} space-y-4`}>
-          <button className={`w-full flex items-center primary-gradient text-white rounded-full font-bold transition-all hover:opacity-90 active:scale-95 shadow-sm ${
-            isCollapsed ? 'justify-center p-3' : 'justify-center gap-2 px-4 py-3.5'
+        <div className={`mt-auto pb-8 ${isCollapsed ? 'px-2' : 'px-4'} space-y-4`}>
+          <button className={`w-full flex items-center bg-[#1b366a] text-white rounded-full font-bold transition-all hover:bg-[#112349] hover:shadow-lg focus:outline-none ${
+            isCollapsed ? 'justify-center p-3' : 'justify-center gap-2 px-4 py-3'
           }`}>
             <span className="material-symbols-outlined text-sm">download</span>
-            {!isCollapsed && <span className="tracking-tight text-sm">Export Data</span>}
+            {!isCollapsed && <span>Export Reports</span>}
           </button>
 
           {/* Desktop Collapse Toggle */}
           <button 
             onClick={toggleCollapse}
-            className="hidden md:flex w-full items-center justify-center p-3 text-on-surface-variant hover:text-primary hover:bg-surface-container-lowest/60 rounded-2xl transition-all"
+            className="hidden md:flex w-full items-center justify-center p-3 text-slate-400 hover:text-[#1b366a] hover:bg-slate-200/50 rounded-2xl transition-all"
           >
-            <span className={`material-symbols-outlined transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`}>
+            <span className={`material-symbols-outlined transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}>
               keyboard_double_arrow_left
             </span>
           </button>

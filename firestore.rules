@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { 
+      return isSignedIn() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // --- Collections ---
+
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+      
+      function isValidCategory(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+          && (!data.keys().hasAll(['parentId']) || (data.parentId is string && isValidId(data.parentId)));
+      }
+
+      allow create: if isAdmin() && isValidCategory(incoming());
+      allow update: if isAdmin() && isValidCategory(incoming());
+    }
+
+    match /questions/{questionId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+
+      function isValidQuestion(data) {
+        return data.stem is string && data.stem.size() > 0
+          && data.options is list && data.options.size() >= 2
+          && data.correctOptionId is string
+          && data.categoryId is string;
+      }
+
+      allow create: if isAdmin() && isValidQuestion(incoming());
+      allow update: if isAdmin() && isValidQuestion(incoming());
+    }
+
+    match /submissions/{submissionId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      
+      function isValidSubmission(data) {
+        return data.userId == request.auth.uid
+          && data.questionId is string
+          && data.selectedOptionId is string
+          && data.timestamp is string;
+      }
+
+      allow create: if isSignedIn() && isValidSubmission(incoming());
+      // Submissions are immutable except for metadata if any
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}

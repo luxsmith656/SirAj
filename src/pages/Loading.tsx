@@ -1,57 +1,51 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Loading() {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          setTimeout(() => navigate('/onboarding'), 500); // Redirect after loading
+          setTimeout(() => {
+            if (user?.role === 'admin') navigate('/dashboard');
+            else navigate('/focus'); // Goes to focus choice first after login
+          }, 500);
           return 100;
         }
         return prev + Math.floor(Math.random() * 15) + 5;
       });
     }, 200);
     return () => clearInterval(interval);
-  }, [navigate]);
+  }, [navigate, user]);
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden antialiased bg-surface-container-lowest">
+    <div className="bg-primary text-on-primary font-body min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden antialiased">
        {/* Background decorative elements */}
-       <div className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] opacity-60"></div>
-       <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-secondary/5 rounded-full blur-[100px] opacity-60"></div>
+       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-primary-container rounded-full blur-[100px] opacity-60"></div>
+       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-secondary-container/30 rounded-full blur-[100px] opacity-60"></div>
        
        <div className="z-10 flex flex-col items-center max-w-sm w-full px-8 text-center">
-          <div className="w-24 h-24 primary-gradient rounded-[2rem] mb-12 flex items-center justify-center border border-white shadow-2xl ambient-shadow rotate-6 animate-pulse">
-             <span className="text-4xl font-black font-headline tracking-tighter text-white">S</span>
+          <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-3xl mb-8 flex items-center justify-center border border-white/20 shadow-2xl">
+             <span className="text-4xl font-black font-headline tracking-tighter">L</span>
           </div>
-          <h1 className="text-4xl font-black font-headline mb-4 tracking-tighter text-primary">Scholarly Reviewer</h1>
-          <p className="text-on-surface-variant text-base font-bold uppercase tracking-[0.2em] mb-12 opacity-60">Synchronizing Repository</p>
+          <h1 className="text-3xl font-extrabold font-headline mb-2 tracking-tight">LET Mastery</h1>
+          <p className="text-primary-fixed-dim text-sm font-medium mb-12">Preparing your study environment...</p>
           
-          <div className="w-full max-w-[240px] space-y-4">
-            <div className="w-full bg-surface-container-low h-2 rounded-full overflow-hidden ghost-border ambient-shadow-sm p-[2px]">
+          <div className="w-full max-w-[200px] space-y-3">
+            <div className="w-full bg-primary-container/50 h-1.5 rounded-full overflow-hidden backdrop-blur-sm">
                <div 
-                 className="h-full primary-gradient transition-all duration-300 ease-out rounded-full shadow-[0_0_10px_rgba(30,136,229,0.5)]"
+                 className="h-full bg-secondary-fixed transition-all duration-300 ease-out rounded-full"
                  style={{ width: `${progress}%` }}
                ></div>
             </div>
-            <div className="flex justify-between items-center px-1">
-               <div className="flex gap-1">
-                  <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${progress > 20 ? 'bg-primary' : 'bg-surface-container'}`}></div>
-                  <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${progress > 50 ? 'bg-primary' : 'bg-surface-container'}`}></div>
-                  <div className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${progress > 80 ? 'bg-primary' : 'bg-surface-container'}`}></div>
-               </div>
-               <div className="text-[10px] font-black text-primary tracking-widest">{progress}%</div>
-            </div>
+            <div className="text-xs font-bold text-secondary-fixed-dim text-right tracking-widest">{progress}%</div>
           </div>
-       </div>
-
-       <div className="absolute bottom-12 text-[10px] font-black text-on-surface-variant uppercase tracking-[0.3em] opacity-40">
-          Advanced Pedagogical Engine v4.0
        </div>
     </div>
   );

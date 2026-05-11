@@ -12,7 +12,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const { isCollapsed } = useSidebar();
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-screen flex antialiased">
+    <div className="bg-slate-50 text-slate-800 font-body min-h-screen flex antialiased">
       <Sidebar />
       <main className={`flex-1 flex flex-col relative min-h-screen transition-all duration-300 ${isCollapsed ? 'md:ml-[80px]' : 'md:ml-[280px]'}`}>
         <Topbar title={title} />

@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "Category": {
+      "title": "Category",
+      "description": "A curriculum category or subject domain.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "parentId": { "type": "string", "description": "ID of parent category for hierarchical structure" },
+        "questionCount": { "type": "number", "default": 0 }
+      },
+      "required": ["name"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "A multiple choice question in the question bank.",
+      "type": "object",
+      "properties": {
+        "stem": { "type": "string", "description": "The question text" },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "text": { "type": "string" }
+            }
+          }
+        },
+        "correctOptionId": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "rationales": { "type": "object", "description": "Optional rationales for each option" }
+      },
+      "required": ["stem", "options", "correctOptionId", "categoryId"]
+    },
+    "Submission": {
+      "title": "Submission",
+      "description": "A user's answer to a question.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "questionId": { "type": "string" },
+        "selectedOptionId": { "type": "string" },
+        "isCorrect": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "questionId", "selectedOptionId", "isCorrect", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Collection of curriculum categories."
+    },
+    "/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Collection of board exam questions."
+    },
+    "/submissions/{submissionId}": {
+      "schema": "Submission",
+      "description": "User answer history."
+    }
+  }
+}

@@ -1,229 +1,155 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
+import { collection, onSnapshot, query, addDoc, updateDoc, doc, deleteDoc, orderBy } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  parentId?: string;
+  questionCount: number;
+}
 
 export default function CategoryManagement() {
-  const [selectedTopic, setSelectedTopic] = useState('02');
-  const [threshold, setThreshold] = useState(75);
-  const [lifecycle, setLifecycle] = useState('active');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+
+  useEffect(() => {
+    const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
+      setCategories(cats);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'categories');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handleAddCategory = async () => {
+    try {
+      await addDoc(collection(db, 'categories'), {
+        name: 'New Category',
+        description: '',
+        questionCount: 0
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'categories');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!selectedCategory) return;
+    try {
+      await updateDoc(doc(db, 'categories', selectedCategory.id), {
+        name: editName,
+        description: editDesc
+      });
+      setIsEditing(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `categories/${selectedCategory.id}`);
+    }
+  };
+
+  const selectCategory = (cat: Category) => {
+    setSelectedCategory(cat);
+    setEditName(cat.name);
+    setEditDesc(cat.description || '');
+    setIsEditing(true);
+  };
+
+  const rootCategories = categories.filter(c => !c.parentId);
 
   return (
-    <AdminLayout title="Scholarly Reviewer">
-      <div className="flex-1 px-8 py-12 lg:px-12 max-w-7xl mx-auto w-full space-y-12">
-        {/* Breadcrumbs & Header */}
-        <div className="space-y-6">
-          <nav aria-label="Breadcrumb" className="flex text-[10px] items-center gap-3 font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
-            <span className="hover:text-primary cursor-pointer transition-colors">Curriculum</span>
-            <span className="material-symbols-outlined text-[12px] opacity-40">chevron_right</span>
-            <span className="hover:text-primary cursor-pointer transition-colors">Categories</span>
-            <span className="material-symbols-outlined text-[12px] opacity-40">chevron_right</span>
-            <span className="text-primary">General Education</span>
-          </nav>
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
-            <div className="max-w-3xl">
-              <h1 className="text-4xl lg:text-7xl font-headline font-black text-primary tracking-tighter leading-[0.85] mb-4">General Education</h1>
-              <p className="text-on-surface-variant text-xl font-medium leading-[1.6] max-w-2xl">Authoritative control over curriculum architecture, taxonomic hierarchies, and objective validation parameters.</p>
+    <AdminLayout title="Admin Panel">
+      <div className="pt-8 px-8 pb-12 max-w-6xl mx-auto w-full text-on-surface">
+            <div className="flex items-end justify-between mb-10">
+              <div>
+                <h2 className="text-4xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Curriculum</h2>
+                <p className="text-slate-500 font-medium">Organize Subjects & Domains.</p>
+              </div>
+              <div className="flex gap-3">
+                 <button onClick={handleAddCategory} className="px-6 py-2.5 rounded-xl bg-[#1b366a] text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-900/20">
+                    <span className="material-symbols-outlined text-[18px]">add</span> Add Domain
+                 </button>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <button 
-                onClick={() => alert('Simulating view...')}
-                className="px-8 py-4 rounded-full bg-white text-primary font-black text-[10px] uppercase tracking-widest hover:bg-surface-container-low transition-all ambient-shadow ghost-border flex items-center gap-2 active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[18px]">visibility</span>
-                Simulate View
-              </button>
-              <button 
-                onClick={() => alert('Committing schema to blockchain...')}
-                className="px-10 py-5 rounded-full primary-gradient text-white font-black text-[10px] uppercase tracking-widest shadow-2xl hover:shadow-primary/40 transition-all flex items-center gap-2 active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[18px]">verified</span>
-                Commit Schema
-              </button>
-            </div>
-          </div>
-        </div>
 
-        {/* Bento Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-          {/* Left Column: Category Details & Settings (4 cols) */}
-          <div className="lg:col-span-5 flex flex-col gap-10">
-            {/* Category Details Card */}
-            <section className="bg-white rounded-[2.5rem] p-10 relative overflow-hidden group ghost-border ambient-shadow">
-              <div className="absolute top-0 left-0 w-2 h-full primary-gradient opacity-20 group-hover:opacity-100 transition-opacity"></div>
-              <h2 className="text-xl font-headline font-black text-primary mb-10 flex items-center gap-4 tracking-tight">
-                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>edit_document</span>
-                Taxonomic Metadata
-              </h2>
-              <div className="space-y-8 font-body">
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="category_name">Nomenclature</label>
-                   <input className="w-full bg-surface-container-low/30 border-none rounded-2xl px-6 py-4 text-primary font-bold ambient-shadow-sm focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all outline-none" id="category_name" type="text" defaultValue="General Education" />
-                </div>
-                <div className="space-y-2">
-                   <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="category_desc">Scholarly Abstract</label>
-                   <textarea className="w-full bg-surface-container-low/30 border-none rounded-2xl px-6 py-4 text-on-surface-variant font-medium leading-relaxed ambient-shadow-sm focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none" id="category_desc" rows={4} defaultValue="Core knowledge areas foundational to all degree programs, covering mathematics, sciences, and humanities." />
-                </div>
-                <div className="space-y-4">
-                   <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest ml-1">Lifecycle State</label>
-                   <div className="grid grid-cols-3 gap-3">
-                     {[
-                       { id: 'active', label: 'Active' },
-                       { id: 'draft', label: 'Draft' },
-                       { id: 'archived', label: 'Archived' }
-                     ].map(state => (
-                        <button 
-                          key={state.id} 
-                          onClick={() => setLifecycle(state.id)}
-                          className={`py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${lifecycle === state.id ? 'bg-primary text-white shadow-xl' : 'bg-surface-container-low text-on-surface-variant/40 hover:bg-surface-container-highest'}`}
-                        >
-                           {state.label}
-                        </button>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+               <div className="lg:col-span-12 xl:col-span-7 bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                  <h3 className="font-headline font-bold text-xl text-slate-800 mb-6">Subject Structure</h3>
+                  
+                  <div className="space-y-3">
+                     {rootCategories.length === 0 && <p className="text-slate-400 italic py-4">No domains created yet...</p>}
+                     {rootCategories.map(cat => (
+                        <div key={cat.id} className="bg-slate-50 rounded-xl p-4 group border border-slate-100 hover:border-blue-200 transition-all cursor-pointer" onClick={() => selectCategory(cat)}>
+                           <div className="flex items-center gap-3">
+                              <span className="material-symbols-outlined text-blue-600">book</span>
+                              <span className="font-bold text-slate-800">{cat.name}</span>
+                              <span className="px-2 py-0.5 bg-blue-100 text-[#1b366a] text-[10px] font-bold rounded-full ml-auto uppercase tracking-widest">{cat.questionCount} Questions</span>
+                           </div>
+                           {cat.description && <p className="text-xs text-slate-500 mt-2 ml-9 line-clamp-1">{cat.description}</p>}
+                        </div>
                      ))}
-                   </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Assessment Settings Card */}
-            <section className="bg-white rounded-[2.5rem] p-10 ghost-border ambient-shadow relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-              <h2 className="text-xl font-headline font-black text-primary mb-10 flex items-center gap-4 tracking-tight">
-                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>tune</span>
-                Heuristic Constraints
-              </h2>
-              <div className="space-y-10">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center px-1">
-                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] flex items-center gap-2">
-                       Passing Threshold
-                    </label>
-                    <span className="text-2xl font-black font-headline text-secondary tracking-tighter">{threshold}%</span>
                   </div>
-                  <div className="relative h-2 bg-surface-container-low rounded-full overflow-hidden ambient-shadow-sm p-[2px]">
-                    <div className="h-full primary-gradient rounded-full shadow-[0_0_10px_rgba(30,136,229,0.3)]" style={{ width: `${threshold}%` }}></div>
-                    <input 
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                      max="100" min="0" type="range" 
-                      value={threshold}
-                      onChange={(e) => setThreshold(parseInt(e.target.value))}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4 bg-surface-container-low/50 rounded-3xl p-6 ghost-border">
-                  <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
-                     Temporal Limit
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <input className="w-24 bg-white border-none rounded-2xl px-6 py-4 text-center font-black text-primary ambient-shadow outline-none focus:ring-4 focus:ring-primary/5" type="number" defaultValue={45} />
-                    <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest opacity-60">minutes per session</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between p-6 bg-surface-container-low/50 rounded-3xl ghost-border">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm ghost-border">
-                       <span className="material-symbols-outlined text-[20px]">shuffle</span>
-                    </div>
-                    <div>
-                      <p className="text-xs font-black text-primary uppercase tracking-widest">Entropy Protocol</p>
-                      <p className="text-[10px] font-bold text-on-surface-variant opacity-60">Randomize question sequencing</p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input className="sr-only peer" type="checkbox" defaultChecked />
-                    <div className="w-12 h-6 bg-surface-container-highest rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary shadow-inner"></div>
-                  </label>
-                </div>
-              </div>
-            </section>
-          </div>
-
-          {/* Right Column: Sub-Topics (7 cols) */}
-          <div className="lg:col-span-7 h-full">
-            <section className="bg-white rounded-[3rem] p-10 lg:p-12 h-full flex flex-col ghost-border ambient-shadow relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
+               </div>
                
-               <div className="flex justify-between items-start mb-12">
-                <div className="max-w-md">
-                  <h2 className="text-2xl font-headline font-black text-primary flex items-center gap-4 tracking-tight">
-                    <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>account_tree</span>
-                    Structural Hierarchy
-                  </h2>
-                  <p className="text-sm text-on-surface-variant mt-2 font-medium leading-relaxed">Dynamic reconfiguration of sub-domains. Positional data dictates student navigation logic.</p>
-                </div>
-                <button className="primary-gradient text-white rounded-full w-14 h-14 flex items-center justify-center shadow-2xl hover:scale-110 hover:shadow-primary/40 transition-all active:scale-95 group">
-                  <span className="material-symbols-outlined text-[24px] group-hover:rotate-90 transition-transform duration-500">add</span>
-                </button>
-              </div>
-
-              {/* Topic List */}
-              <div className="flex-1 space-y-4">
-                {[
-                  { id: '01', title: 'College Algebra', lessons: 12, quizzes: 4 },
-                  { id: '02', title: 'Introduction to Psychology', lessons: 8, timer: '60m' },
-                  { id: '03', title: 'World History I', lessons: 15, quizzes: 5 }
-                ].map((topic) => (
-                  <div 
-                    key={topic.id} 
-                    onClick={() => setSelectedTopic(topic.id)}
-                    className={`rounded-[2rem] p-8 flex items-center gap-8 transition-all group relative overflow-hidden cursor-pointer ${selectedTopic === topic.id ? 'bg-primary text-white shadow-2xl scale-[1.02] z-10' : 'bg-surface-container-low/30 hover:bg-white hover:ambient-shadow ghost-border'}`}
-                  >
-                    {selectedTopic === topic.id && <div className="absolute inset-0 primary-gradient opacity-10"></div>}
-                    <span className={`material-symbols-outlined opacity-20 group-hover:opacity-60 transition-opacity ${selectedTopic === topic.id ? 'text-white' : 'text-on-surface-variant'}`}>drag_indicator</span>
-                    
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-headline font-black text-xl transition-all duration-500 ${selectedTopic === topic.id ? 'bg-white text-primary rotate-12 shadow-xl' : 'bg-white text-primary ghost-border'}`}>
-                      {topic.id}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <h3 className={`text-2xl font-black font-headline tracking-tight truncate ${selectedTopic === topic.id ? 'text-white' : 'text-primary'}`}>{topic.title}</h3>
-                      <div className="flex items-center gap-6 mt-3">
-                        <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${selectedTopic === topic.id ? 'text-white/60' : 'text-on-surface-variant/60'}`}>
-                           <span className="material-symbols-outlined text-[16px]">description</span> 
-                           {topic.lessons} Lessons
-                        </span>
-                        {topic.timer ? (
-                          <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${selectedTopic === topic.id ? 'text-secondary-fixed' : 'text-on-secondary-container bg-secondary/10 px-3 py-1 rounded-full'}`}>
-                             <span className="material-symbols-outlined text-[16px]">timer</span> 
-                             Target: {topic.timer}
-                          </span>
-                        ) : (
-                          <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${selectedTopic === topic.id ? 'text-white/60' : 'text-on-surface-variant/60'}`}>
-                             <span className="material-symbols-outlined text-[16px]">quiz</span> 
-                             {topic.quizzes} Assessments
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); alert('Editing topic...'); }}
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${selectedTopic === topic.id ? 'bg-white/10 hover:bg-white/20 text-white' : 'hover:bg-primary/5 text-on-surface-variant hover:text-primary ambient-shadow-sm bg-white'}`}
-                      >
-                        <span className="material-symbols-outlined text-[20px]">edit</span>
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); alert('Archiving topic...'); }}
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${selectedTopic === topic.id ? 'bg-white/10 hover:bg-white/20 text-white' : 'hover:bg-error/5 text-on-surface-variant hover:text-error ambient-shadow-sm bg-white'}`}
-                      >
-                        <span className="material-symbols-outlined text-[20px]">delete</span>
-                      </button>
-                    </div>
+               <div className="lg:col-span-12 xl:col-span-5">
+                  <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 sticky top-24">
+                     {selectedCategory ? (
+                        <div className="space-y-6">
+                           <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
+                                 <span className="material-symbols-outlined text-3xl">edit_note</span>
+                              </div>
+                              <div>
+                                 <h4 className="font-headline font-bold text-lg text-slate-800">Edit Domain</h4>
+                                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">ID: {selectedCategory.id.substring(0, 8)}</p>
+                              </div>
+                           </div>
+                           
+                           <div className="space-y-4">
+                              <div className="space-y-1.5">
+                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Domain Name</label>
+                                 <input 
+                                   type="text" 
+                                   className="w-full bg-slate-50 border border-transparent rounded-xl px-4 py-3 font-medium text-sm focus:bg-white focus:border-blue-200 outline-none transition-all" 
+                                   value={editName}
+                                   onChange={(e) => setEditName(e.target.value)}
+                                 />
+                              </div>
+                              <div className="space-y-1.5">
+                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Description</label>
+                                 <textarea 
+                                   className="w-full bg-slate-50 border border-transparent rounded-xl px-4 py-3 font-medium text-sm resize-none focus:bg-white focus:border-blue-200 outline-none transition-all" 
+                                   rows={4} 
+                                   value={editDesc}
+                                   onChange={(e) => setEditDesc(e.target.value)}
+                                 />
+                              </div>
+                              
+                              <div className="flex gap-3 pt-4">
+                                 <button onClick={handleSave} className="flex-1 px-6 py-3 rounded-xl bg-[#1b366a] text-white font-bold text-sm shadow-lg shadow-blue-900/10">Save Changes</button>
+                                 <button onClick={() => setSelectedCategory(null)} className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition-colors">Close</button>
+                              </div>
+                           </div>
+                        </div>
+                     ) : (
+                        <div className="py-12 flex flex-col items-center text-center">
+                           <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
+                              <span className="material-symbols-outlined text-4xl">touch_app</span>
+                           </div>
+                           <h4 className="font-headline font-bold text-slate-800 text-lg">Selection Required</h4>
+                           <p className="text-sm text-slate-400 max-w-[200px] mt-2">Select a domain from the list to start editing its curriculum details.</p>
+                        </div>
+                     )}
                   </div>
-                ))}
-
-                {/* Drop Zone Placeholder */}
-                <div className="border-4 border-dashed border-primary/5 rounded-[2.5rem] p-10 flex flex-col items-center justify-center bg-surface-container-low/20 text-on-surface-variant transition-colors hover:bg-primary/5 hover:border-primary/20">
-                   <span className="material-symbols-outlined text-4xl mb-2 opacity-20">south</span>
-                   <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Sequential Append Zone</span>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-      </div>
+               </div>
+            </div>
+         </div>
     </AdminLayout>
   );
 }

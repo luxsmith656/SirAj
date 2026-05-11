@@ -1,171 +1,96 @@
 import React from 'react';
 import AdminLayout from '../components/AdminLayout';
+import { useAuth } from '../context/AuthContext';
 
 export default function Settings() {
+  const { user } = useAuth();
+
   return (
-    <AdminLayout title="System Settings">
-      {/* Content */}
-      <div className="pt-8 px-6 md:px-12 w-full max-w-7xl mx-auto space-y-12 pb-24">
-          {/* Page Header */}
-          <div className="max-w-2xl">
-            <h2 className="font-headline text-4xl md:text-5xl font-extrabold text-primary tracking-tight mb-3">System Settings</h2>
-            <p className="font-body text-lg text-on-surface-variant leading-relaxed max-w-xl">
-              Configure core application parameters, security protocols, and global preferences for the LET Mastery environment.
+    <AdminLayout title="System Preferences">
+      <div className="p-8 max-w-[1400px] mx-auto space-y-8 text-on-surface">
+          <div>
+            <h1 className="text-3xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Settings</h1>
+            <p className="text-slate-500 font-medium font-body leading-relaxed max-w-xl">
+              Configure your administrative profile and platform-wide parameters.
             </p>
           </div>
 
-          {/* Bento Grid Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* General Settings (Spans 8 cols) */}
-            <section className="lg:col-span-8 bg-surface-container-low rounded-[2rem] p-8 md:p-10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/5 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-              
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
+            <section className="lg:col-span-12 xl:col-span-8 bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center shadow-[0_8px_32px_rgba(25,28,30,0.04)]">
-                  <span className="material-symbols-outlined text-primary">tune</span>
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#1b366a]">
+                  <span className="material-symbols-outlined">person</span>
                 </div>
-                <h3 className="font-headline text-2xl font-bold text-on-surface">General Configuration</h3>
+                <h3 className="font-headline text-xl font-bold text-slate-800">Admin Account</h3>
               </div>
               
-              <div className="space-y-8 relative z-10">
-                <div className="space-y-2">
-                  <label className="font-label text-sm font-semibold text-on-surface-variant uppercase tracking-wide">Application Name</label>
-                  <input className="w-full bg-surface-container-high border-none rounded-xl px-5 py-4 text-on-surface font-body font-medium placeholder:text-outline transition-all duration-300 focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none" type="text" defaultValue="LET Mastery Platform" />
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="font-label text-sm font-semibold text-on-surface-variant uppercase tracking-wide">Brand Identity</label>
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6 p-6 bg-surface-container-lowest rounded-xl">
-                    <div className="w-20 h-20 rounded-2xl bg-surface-container-high flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-3xl text-primary">image</span>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Display Email</label>
+                    <div className="w-full bg-slate-50 rounded-xl px-5 py-4 text-slate-700 font-medium text-sm border border-transparent">
+                       {user?.email}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-on-surface font-medium mb-1">Platform Logo</p>
-                      <p className="text-xs text-outline mb-4">Recommended: 512x512px transparent PNG.</p>
-                      <button className="bg-secondary-container text-on-secondary-container px-5 py-2.5 rounded-full font-label font-semibold text-sm hover:opacity-90 transition-opacity">
-                        Upload New Asset
-                      </button>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Access Level</label>
+                    <div className="w-full bg-blue-50 rounded-xl px-5 py-4 text-[#1b366a] font-bold text-sm border border-blue-100 flex items-center gap-2">
+                       <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                       Platform Administrator
                     </div>
                   </div>
                 </div>
                 
-                <div className="pt-4 flex justify-end">
-                  <button className="bg-primary text-on-primary px-8 py-3.5 rounded-full font-label font-bold tracking-wide hover:shadow-[0_8px_32px_rgba(0,35,111,0.15)] transition-all duration-300 active:scale-95">
-                    Save General Settings
+                <div className="pt-6 border-t border-slate-100">
+                  <h4 className="font-bold text-sm text-slate-800 mb-4">Account Security</h4>
+                  <p className="text-xs text-slate-400 mb-4 leading-relaxed">Your account is secured via Google Authentication. To change passwords or security settings, please visit your Google Account dashboard.</p>
+                  <button className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all">
+                    Manage Security
                   </button>
                 </div>
               </div>
             </section>
 
-            {/* System Preferences (Spans 4 cols) */}
-            <section className="lg:col-span-4 flex flex-col gap-8">
-              <div className="bg-surface-container-low rounded-[2rem] p-8 flex-1">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center shadow-[0_8px_32px_rgba(25,28,30,0.04)]">
-                    <span className="material-symbols-outlined text-secondary">wifi_tethering</span>
+            <section className="lg:col-span-12 xl:col-span-4 space-y-6">
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
+                    <span className="material-symbols-outlined">settings_suggest</span>
                   </div>
-                  <h3 className="font-headline text-xl font-bold text-on-surface">Preferences</h3>
+                  <h3 className="font-headline font-bold text-lg text-slate-800">Preferences</h3>
                 </div>
                 
-                <div className="space-y-6">
-                  {/* Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                     <div>
-                      <p className="font-body font-semibold text-on-surface text-sm">Offline Mode Default</p>
-                      <p className="font-label text-xs text-outline mt-0.5">Pre-download core modules</p>
+                      <p className="font-bold text-slate-700 text-sm">Offline Cache</p>
+                      <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Sync core assets</p>
                     </div>
-                    <div className="relative w-12 h-6 bg-secondary rounded-full cursor-pointer shrink-0 transition-colors">
-                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform"></div>
+                    <div className="w-10 h-5 bg-[#1b366a] rounded-full relative cursor-pointer">
+                       <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"></div>
                     </div>
                   </div>
                   
-                  {/* Select */}
-                  <div className="space-y-2">
-                    <label className="font-label text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Sync Frequency</label>
-                    <div className="relative">
-                      <select defaultValue="Every 15 Minutes" className="w-full appearance-none bg-surface-container-lowest border-none rounded-xl px-5 py-3.5 text-on-surface font-body text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none cursor-pointer">
-                        <option>Real-time (High Battery)</option>
-                        <option>Every 15 Minutes</option>
-                        <option>Hourly</option>
-                        <option>Manual Only</option>
-                      </select>
-                      <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none">expand_more</span>
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
+                    <div>
+                      <p className="font-bold text-slate-700 text-sm">Dark Theme</p>
+                      <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">Dynamic override</p>
+                    </div>
+                    <div className="w-10 h-5 bg-slate-200 rounded-full relative cursor-default">
+                       <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"></div>
                     </div>
                   </div>
                 </div>
               </div>
-            </section>
 
-            {/* Security Protocol (Spans 6 cols) */}
-            <section className="lg:col-span-6 bg-surface-container-low rounded-[2rem] p-8 md:p-10 relative overflow-hidden">
-              <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-secondary/5 rounded-full blur-3xl"></div>
-              
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center shadow-[0_8px_32px_rgba(25,28,30,0.04)]">
-                  <span className="material-symbols-outlined text-primary">security</span>
-                </div>
-                <h3 className="font-headline text-2xl font-bold text-on-surface">Security Protocol</h3>
-              </div>
-              
-              <div className="space-y-6 relative z-10">
-                <div className="p-5 bg-surface-container-lowest rounded-xl flex items-start gap-4">
-                  <div className="mt-0.5 text-secondary">
-                    <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-body font-semibold text-sm text-on-surface mb-1">Strict Password Policy</h4>
-                    <p className="font-label text-xs text-outline leading-relaxed">Requires minimum 12 characters, including uppercase, numbers, and special symbols for all admin accounts.</p>
-                  </div>
-                  <div className="relative w-10 h-5 bg-secondary rounded-full cursor-pointer shrink-0 transition-colors mt-1">
-                    <div className="absolute right-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform"></div>
-                  </div>
-                </div>
-                
-                <div className="p-5 bg-surface-container-lowest rounded-xl flex items-start gap-4">
-                  <div className="mt-0.5 text-outline">
-                    <span className="material-symbols-outlined text-[20px]">phonelink_lock</span>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-body font-semibold text-sm text-on-surface mb-1">Two-Factor Authentication (2FA)</h4>
-                    <p className="font-label text-xs text-outline leading-relaxed mb-3">Enforce mandatory TOTP verification for all user roles above 'Student'.</p>
-                    <button className="text-primary font-label font-bold text-xs uppercase tracking-wider hover:text-primary-container transition-colors">Configure Roles</button>
-                  </div>
-                  <div className="relative w-10 h-5 bg-surface-container-high rounded-full cursor-pointer shrink-0 transition-colors mt-1">
-                    <div className="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform"></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Data Management (Spans 6 cols) */}
-            <section className="lg:col-span-6 bg-surface-container-low rounded-[2rem] p-8 md:p-10 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center shadow-[0_8px_32px_rgba(25,28,30,0.04)]">
-                    <span className="material-symbols-outlined text-[20px] text-primary">storage</span>
-                  </div>
-                  <h3 className="font-headline text-2xl font-bold text-on-surface">Data & Architecture</h3>
-                </div>
-                <p className="font-body text-sm text-on-surface-variant mb-8 max-w-md">
-                  Manage critical system data, execute manual backups, and maintain optimal performance through cache regulation.
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <button className="flex flex-col items-start p-5 bg-surface-container-lowest rounded-xl hover:bg-white hover:shadow-[0_8px_32px_rgba(25,28,30,0.06)] transition-all duration-300 text-left group">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 mb-3 group-hover:-translate-y-1 transition-transform">
-                    <span className="material-symbols-outlined text-primary">cloud_download</span>
-                  </div>
-                  <span className="font-body font-semibold text-sm text-on-surface block mb-1">Download Database</span>
-                  <span className="font-label text-xs text-outline block">Generate full JSON snapshot</span>
-                </button>
-                <button className="flex flex-col items-start p-5 bg-surface-container-lowest rounded-xl hover:bg-error/5 hover:shadow-[0_8px_32px_rgba(186,26,26,0.06)] transition-all duration-300 text-left group border border-transparent hover:border-error/10">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-error/10 mb-3 group-hover:-translate-y-1 transition-transform group-hover:rotate-180 duration-500">
-                    <span className="material-symbols-outlined text-error">cached</span>
-                  </div>
-                  <span className="font-body font-semibold text-sm text-error block mb-1">Reset System Cache</span>
-                  <span className="font-label text-xs text-outline block">Clear all temporary visual assets</span>
-                </button>
+              <div className="bg-[#1b366a] rounded-2xl p-6 shadow-lg shadow-blue-900/20 text-white group overflow-hidden relative">
+                 <div className="absolute -top-6 -right-6 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                 <h4 className="font-headline font-bold text-lg mb-2 relative z-10">Sync Status</h4>
+                 <p className="text-xs text-blue-200 font-medium mb-4 relative z-10 leading-relaxed">Central server is online and reachable. All local data is successfully indexed in the cloud.</p>
+                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest relative z-10">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Operational
+                 </div>
               </div>
             </section>
           </div>
