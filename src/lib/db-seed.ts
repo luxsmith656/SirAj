@@ -231,6 +231,48 @@ const QUESTIONS = [
     options: [{ id: 'A', text: 'Po and Opo' }, { id: 'B', text: 'Pagmamano' }, { id: 'C', text: 'Hospitality' }, { id: 'D', text: 'Bayanihan' }],
     correctOptionId: 'A',
     difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "What is the area of a circle with a radius of 7 units? (Use pi = 22/7)",
+    options: [{ id: 'A', text: '44 sq units' }, { id: 'B', text: '154 sq units' }, { id: 'C', text: '144 sq units' }, { id: 'D', text: '49 sq units' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "Which of the following is a prime number between 40 and 50?",
+    options: [{ id: 'A', text: '42' }, { id: 'B', text: '45' }, { id: 'C', text: '47' }, { id: 'D', text: '49' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "What is the study of word origins called?",
+    options: [{ id: 'A', text: 'Etymology' }, { id: 'B', text: 'Entomology' }, { id: 'C', text: 'Epidemiology' }, { id: 'D', text: 'Eschatology' }],
+    correctOptionId: 'A',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Who is known as the 'Bard of Avon'?",
+    options: [{ id: 'A', text: 'John Milton' }, { id: 'B', text: 'William Shakespeare' }, { id: 'C', text: 'Christopher Marlowe' }, { id: 'D', text: 'Edmund Spenser' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which Philippine President moved the celebration of Independence Day from July 4 to June 12?",
+    options: [{ id: 'A', text: 'Manuel Quezon' }, { id: 'B', text: 'Diosdado Macapagal' }, { id: 'C', text: 'Ferdinand Marcos' }, { id: 'D', text: 'Corazon Aquino' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following refers to a teacher's professional accountability?",
+    options: [{ id: 'A', text: 'Licensure Exam' }, { id: 'B', text: 'Code of Ethics' }, { id: 'C', text: 'Daily Lesson Log' }, { id: 'D', text: 'Performance Appraisal' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
   }
 ];
 

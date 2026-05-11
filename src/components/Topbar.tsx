@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
 import { useAuth } from '../context/AuthContext';
+import { seedDatabase } from '../lib/db-seed';
 
 interface TopbarProps {
   title?: string;
@@ -10,6 +11,7 @@ interface TopbarProps {
 export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const { toggle } = useSidebar();
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
@@ -17,6 +19,18 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const handleSignOut = () => {
     signOut();
     navigate('/sign-in');
+  };
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      await seedDatabase();
+      alert('Cloud Sync Successful: Preset curriculum and questions have been updated.');
+    } catch (err: any) {
+      alert('Sync Failed: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSyncing(false);
+    }
   };
 
   return (
@@ -65,6 +79,17 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
               </div>
             </div>
           </div>
+        )}
+
+        {user?.role === 'admin' && (
+          <button 
+            disabled={syncing}
+            onClick={handleSync}
+            className={`p-2 rounded-full transition-colors duration-200 w-10 h-10 flex items-center justify-center ${syncing ? 'text-blue-600 animate-spin' : 'text-slate-400 hover:bg-slate-100'}`}
+            title="Manual Cloud Sync (Seed Presets)"
+          >
+            <span className="material-symbols-outlined">{syncing ? 'sync' : 'cloud_sync'}</span>
+          </button>
         )}
 
         <button className="p-2 rounded-full text-slate-400 hover:bg-slate-100 transition-colors hidden sm:flex w-10 h-10 items-center justify-center">

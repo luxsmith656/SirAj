@@ -11,21 +11,6 @@ export default function Dashboard() {
     questions: 0,
     categories: 0
   });
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  const handleSeed = async () => {
-    if (!confirm('This will populate the database with preset curriculums and questions. Proceed?')) return;
-    setIsSeeding(true);
-    try {
-      await seedDatabase();
-      alert('Success! Primary domains and questions have been initialized.');
-    } catch (error) {
-      console.error('Seed error:', error);
-      alert('Initialization encountered an error. Check console for details.');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   useEffect(() => {
     const unsubUsers = onSnapshot(collection(db, 'users'), (s) => {
@@ -35,13 +20,7 @@ export default function Dashboard() {
       setCounts(prev => ({ ...prev, questions: s.size }));
     });
     const unsubCats = onSnapshot(collection(db, 'categories'), (s) => {
-      const size = s.size;
-      setCounts(prev => ({ ...prev, categories: size }));
-      
-      // Auto-seed if empty and not already seeding (Silent initial setup)
-      if (size === 0 && !isSeeding) {
-          seedDatabase().catch(e => console.error('Silent auto-seed failed:', e));
-      }
+      setCounts(prev => ({ ...prev, categories: s.size }));
     });
     return () => { unsubUsers(); unsubQs(); unsubCats(); };
   }, []);
@@ -52,7 +31,9 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
             <div>
               <h1 className="font-headline text-2xl font-extrabold text-slate-800 tracking-tight">System Overview</h1>
-              <p className="font-body text-[11px] font-bold text-slate-400 uppercase tracking-widest">Real-time Platform Monitoring</p>
+              <div className="flex items-center gap-2">
+                <p className="font-body text-[11px] font-bold text-slate-400 uppercase tracking-widest">Real-time Platform Monitoring</p>
+              </div>
             </div>
           </div>
 
@@ -146,20 +127,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Maintenance Tools */}
-          <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200 shadow-inner flex flex-col sm:flex-row justify-between items-center gap-4">
-             <div>
-                <h3 className="font-headline font-bold text-slate-800">Quick Start</h3>
-                <p className="text-xs text-slate-500">Populate your platform with preset LET categories and sample questions.</p>
-             </div>
-             <button 
-               onClick={handleSeed}
-               disabled={isSeeding}
-               className="bg-[#1b366a] text-white px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest shadow-lg shadow-blue-900/10 hover:bg-[#112349] transition-all disabled:opacity-50"
-             >
-                {isSeeding ? 'Seeding...' : 'Seed Preset Data'}
-             </button>
-          </div>
         </div>
     </AdminLayout>
   );
