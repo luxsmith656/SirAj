@@ -1,129 +1,229 @@
-import React from 'react';
+import React, { useState } from 'react';
+import AdminLayout from '../components/AdminLayout';
 
 export default function CategoryManagement() {
+  const [selectedTopic, setSelectedTopic] = useState('02');
+  const [threshold, setThreshold] = useState(75);
+  const [lifecycle, setLifecycle] = useState('active');
+
   return (
-    <div className="bg-surface text-on-surface font-body min-h-screen flex antialiased">
-      {/* SideNavBar mock */}
-      <nav className="hidden lg:flex flex-col h-full bg-surface-container-low w-64 p-6 space-y-4 fixed left-0 top-0 border-r border-transparent">
-        <div className="mb-8">
-           <h1 className="text-2xl font-extrabold text-primary-container font-headline">LET Mastery</h1>
-           <p className="text-sm font-medium text-on-surface-variant">Admin Console</p>
-        </div>
-        <button className="gradient-primary text-on-primary rounded-full py-3 font-semibold mb-6 flex justify-center items-center gap-2">
-           <span className="material-symbols-outlined">add</span> New Entry
-        </button>
-        <ul className="flex-1 space-y-2">
-            <li><a href="#" className="flex items-center gap-3 px-4 py-3 rounded-full text-on-surface-variant hover:bg-surface-container-high transition-colors"><span className="material-symbols-outlined">dashboard</span> Dashboard</a></li>
-            <li><a href="#" className="flex items-center gap-3 px-4 py-3 rounded-full bg-surface-container-lowest text-secondary font-bold shadow-sm"><span className="material-symbols-outlined">menu_book</span> Curriculum</a></li>
-        </ul>
-      </nav>
-
-      <main className="lg:ml-64 flex-1 flex flex-col min-h-screen w-full relative">
-         <header className="fixed top-0 right-0 lg:left-64 h-16 flex items-center justify-between px-8 bg-surface/70 backdrop-blur-xl z-40">
-           <div className="flex items-center gap-4">
-             <span className="text-lg font-bold text-primary-container font-headline">Admin Panel</span>
-             <span className="text-outline font-label text-sm">/ Curriculum</span>
-           </div>
-         </header>
-
-         <div className="pt-24 px-8 pb-12 max-w-6xl mx-auto w-full">
-            <div className="flex items-end justify-between mb-10">
-              <div>
-                <h2 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-container font-headline tracking-tight mb-2">Category Management</h2>
-                <p className="text-on-surface-variant font-body">Organize curriculum hierarchy.</p>
-              </div>
-              <div className="flex gap-3">
-                 <button className="px-6 py-2.5 rounded-full bg-secondary-container text-on-secondary-container font-semibold text-sm flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">download</span> Export Tree
-                 </button>
-                 <button className="px-6 py-2.5 rounded-full gradient-primary text-on-primary font-semibold text-sm flex items-center gap-2 shadow-lg">
-                    <span className="material-symbols-outlined text-[18px]">create_new_folder</span> Add Root Category
-                 </button>
-              </div>
+    <AdminLayout title="Scholarly Reviewer">
+      <div className="flex-1 px-8 py-12 lg:px-12 max-w-7xl mx-auto w-full space-y-12">
+        {/* Breadcrumbs & Header */}
+        <div className="space-y-6">
+          <nav aria-label="Breadcrumb" className="flex text-[10px] items-center gap-3 font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
+            <span className="hover:text-primary cursor-pointer transition-colors">Curriculum</span>
+            <span className="material-symbols-outlined text-[12px] opacity-40">chevron_right</span>
+            <span className="hover:text-primary cursor-pointer transition-colors">Categories</span>
+            <span className="material-symbols-outlined text-[12px] opacity-40">chevron_right</span>
+            <span className="text-primary">General Education</span>
+          </nav>
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div className="max-w-3xl">
+              <h1 className="text-4xl lg:text-7xl font-headline font-black text-primary tracking-tighter leading-[0.85] mb-4">General Education</h1>
+              <p className="text-on-surface-variant text-xl font-medium leading-[1.6] max-w-2xl">Authoritative control over curriculum architecture, taxonomic hierarchies, and objective validation parameters.</p>
             </div>
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => alert('Simulating view...')}
+                className="px-8 py-4 rounded-full bg-white text-primary font-black text-[10px] uppercase tracking-widest hover:bg-surface-container-low transition-all ambient-shadow ghost-border flex items-center gap-2 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[18px]">visibility</span>
+                Simulate View
+              </button>
+              <button 
+                onClick={() => alert('Committing schema to blockchain...')}
+                className="px-10 py-5 rounded-full primary-gradient text-white font-black text-[10px] uppercase tracking-widest shadow-2xl hover:shadow-primary/40 transition-all flex items-center gap-2 active:scale-95"
+              >
+                <span className="material-symbols-outlined text-[18px]">verified</span>
+                Commit Schema
+              </button>
+            </div>
+          </div>
+        </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-               <div className="lg:col-span-8 bg-surface-container-low rounded-xl p-6 relative overflow-hidden">
-                  <div className="flex items-center justify-between z-10 relative mb-4">
-                    <h3 className="font-headline font-bold text-xl text-primary-container">Curriculum Structure</h3>
-                    <div className="flex gap-2">
-                      <button className="p-2 text-on-surface-variant bg-surface-container-highest rounded-full"><span className="material-symbols-outlined">unfold_more</span></button>
+        {/* Bento Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Left Column: Category Details & Settings (4 cols) */}
+          <div className="lg:col-span-5 flex flex-col gap-10">
+            {/* Category Details Card */}
+            <section className="bg-white rounded-[2.5rem] p-10 relative overflow-hidden group ghost-border ambient-shadow">
+              <div className="absolute top-0 left-0 w-2 h-full primary-gradient opacity-20 group-hover:opacity-100 transition-opacity"></div>
+              <h2 className="text-xl font-headline font-black text-primary mb-10 flex items-center gap-4 tracking-tight">
+                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>edit_document</span>
+                Taxonomic Metadata
+              </h2>
+              <div className="space-y-8 font-body">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="category_name">Nomenclature</label>
+                   <input className="w-full bg-surface-container-low/30 border-none rounded-2xl px-6 py-4 text-primary font-bold ambient-shadow-sm focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all outline-none" id="category_name" type="text" defaultValue="General Education" />
+                </div>
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest ml-1" htmlFor="category_desc">Scholarly Abstract</label>
+                   <textarea className="w-full bg-surface-container-low/30 border-none rounded-2xl px-6 py-4 text-on-surface-variant font-medium leading-relaxed ambient-shadow-sm focus:bg-white focus:ring-4 focus:ring-primary/5 transition-all outline-none resize-none" id="category_desc" rows={4} defaultValue="Core knowledge areas foundational to all degree programs, covering mathematics, sciences, and humanities." />
+                </div>
+                <div className="space-y-4">
+                   <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest ml-1">Lifecycle State</label>
+                   <div className="grid grid-cols-3 gap-3">
+                     {[
+                       { id: 'active', label: 'Active' },
+                       { id: 'draft', label: 'Draft' },
+                       { id: 'archived', label: 'Archived' }
+                     ].map(state => (
+                        <button 
+                          key={state.id} 
+                          onClick={() => setLifecycle(state.id)}
+                          className={`py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${lifecycle === state.id ? 'bg-primary text-white shadow-xl' : 'bg-surface-container-low text-on-surface-variant/40 hover:bg-surface-container-highest'}`}
+                        >
+                           {state.label}
+                        </button>
+                     ))}
+                   </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Assessment Settings Card */}
+            <section className="bg-white rounded-[2.5rem] p-10 ghost-border ambient-shadow relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+              <h2 className="text-xl font-headline font-black text-primary mb-10 flex items-center gap-4 tracking-tight">
+                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>tune</span>
+                Heuristic Constraints
+              </h2>
+              <div className="space-y-10">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] flex items-center gap-2">
+                       Passing Threshold
+                    </label>
+                    <span className="text-2xl font-black font-headline text-secondary tracking-tighter">{threshold}%</span>
+                  </div>
+                  <div className="relative h-2 bg-surface-container-low rounded-full overflow-hidden ambient-shadow-sm p-[2px]">
+                    <div className="h-full primary-gradient rounded-full shadow-[0_0_10px_rgba(30,136,229,0.3)]" style={{ width: `${threshold}%` }}></div>
+                    <input 
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                      max="100" min="0" type="range" 
+                      value={threshold}
+                      onChange={(e) => setThreshold(parseInt(e.target.value))}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4 bg-surface-container-low/50 rounded-3xl p-6 ghost-border">
+                  <label className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em] flex items-center gap-2 ml-1">
+                     Temporal Limit
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <input className="w-24 bg-white border-none rounded-2xl px-6 py-4 text-center font-black text-primary ambient-shadow outline-none focus:ring-4 focus:ring-primary/5" type="number" defaultValue={45} />
+                    <span className="text-xs font-bold text-on-surface-variant uppercase tracking-widest opacity-60">minutes per session</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-6 bg-surface-container-low/50 rounded-3xl ghost-border">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center text-primary shadow-sm ghost-border">
+                       <span className="material-symbols-outlined text-[20px]">shuffle</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-primary uppercase tracking-widest">Entropy Protocol</p>
+                      <p className="text-[10px] font-bold text-on-surface-variant opacity-60">Randomize question sequencing</p>
                     </div>
                   </div>
-                  
-                  <div className="space-y-3 z-10 relative">
-                     <div className="bg-surface-container-lowest rounded-lg p-3 group">
-                        <div className="flex items-center gap-3 cursor-pointer">
-                           <span className="material-symbols-outlined text-secondary" style={{fontVariationSettings: "'FILL' 1"}}>folder_open</span>
-                           <span className="font-semibold text-on-surface">General Education (GenEd)</span>
-                           <span className="px-2 py-0.5 bg-surface-container text-xs rounded-full ml-2">4 Subjects</span>
-                        </div>
-                        <div className="ml-8 mt-2 pl-4 border-l-2 border-surface-container-high space-y-2">
-                           <div className="flex items-center justify-between py-2 px-3 rounded-md bg-surface-container-highest/30">
-                              <div className="flex items-center gap-3">
-                                 <span className="material-symbols-outlined text-primary-fixed-dim text-[18px]">folder</span>
-                                 <span className="font-medium text-sm text-on-surface">English Communication</span>
-                                 <span className="text-xs text-on-surface-variant ml-2">120 Questions</span>
-                              </div>
-                           </div>
-                           <div className="flex items-center justify-between py-2 px-3 rounded-md">
-                              <div className="flex items-center gap-3">
-                                 <span className="material-symbols-outlined text-primary-fixed-dim text-[18px]">folder</span>
-                                 <span className="font-medium text-sm text-on-surface">Mathematics</span>
-                                 <span className="text-xs text-on-surface-variant ml-2">85 Questions</span>
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-               </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input className="sr-only peer" type="checkbox" defaultChecked />
+                    <div className="w-12 h-6 bg-surface-container-highest rounded-full peer peer-focus:outline-none peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary shadow-inner"></div>
+                  </label>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          {/* Right Column: Sub-Topics (7 cols) */}
+          <div className="lg:col-span-7 h-full">
+            <section className="bg-white rounded-[3rem] p-10 lg:p-12 h-full flex flex-col ghost-border ambient-shadow relative overflow-hidden">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2"></div>
                
-               <div className="lg:col-span-4 flex flex-col gap-8">
-                  <div className="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-outline-variant/10">
-                     <div className="flex items-center gap-3 mb-6">
-                        <span className="material-symbols-outlined text-secondary text-3xl" style={{fontVariationSettings: "'FILL' 1"}}>folder</span>
-                        <div>
-                           <h4 className="font-headline font-bold text-lg">English Communication</h4>
-                           <p className="text-xs font-label text-outline uppercase tracking-wider">Subcategory of GenEd</p>
-                        </div>
-                     </div>
-                     <div className="space-y-4">
-                        <div>
-                           <label className="block text-xs font-label text-on-surface-variant mb-1">Category Name</label>
-                           <input type="text" className="w-full bg-surface-container-high border-none rounded-md px-4 py-2 font-body text-sm" defaultValue="English Communication" />
-                        </div>
-                        <div>
-                           <label className="block text-xs font-label text-on-surface-variant mb-1">Description (Optional)</label>
-                           <textarea className="w-full bg-surface-container-high border-none rounded-md px-4 py-2 font-body text-sm resize-none" rows={3} defaultValue="Covers grammar, reading comprehension, and literature." />
-                        </div>
-                        <div className="flex gap-4 pt-2">
-                           <div className="flex-1 bg-surface-container py-3 rounded-md text-center">
-                              <span className="block text-2xl font-bold text-primary font-headline">120</span>
-                              <span className="text-xs text-on-surface-variant uppercase">Questions</span>
-                           </div>
-                           <div className="flex-1 bg-surface-container py-3 rounded-md text-center">
-                              <span className="block text-2xl font-bold text-secondary font-headline">Active</span>
-                              <span className="text-xs text-on-surface-variant uppercase">Status</span>
-                           </div>
-                        </div>
-                        <div className="mt-6 pt-4 border-t border-surface-container-high flex justify-end gap-3">
-                           <button className="px-4 py-2 rounded-full text-primary font-medium text-sm">Cancel</button>
-                           <button className="px-6 py-2 rounded-full gradient-primary text-white font-semibold text-sm shadow-sm">Save Changes</button>
-                        </div>
-                     </div>
+               <div className="flex justify-between items-start mb-12">
+                <div className="max-w-md">
+                  <h2 className="text-2xl font-headline font-black text-primary flex items-center gap-4 tracking-tight">
+                    <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>account_tree</span>
+                    Structural Hierarchy
+                  </h2>
+                  <p className="text-sm text-on-surface-variant mt-2 font-medium leading-relaxed">Dynamic reconfiguration of sub-domains. Positional data dictates student navigation logic.</p>
+                </div>
+                <button className="primary-gradient text-white rounded-full w-14 h-14 flex items-center justify-center shadow-2xl hover:scale-110 hover:shadow-primary/40 transition-all active:scale-95 group">
+                  <span className="material-symbols-outlined text-[24px] group-hover:rotate-90 transition-transform duration-500">add</span>
+                </button>
+              </div>
+
+              {/* Topic List */}
+              <div className="flex-1 space-y-4">
+                {[
+                  { id: '01', title: 'College Algebra', lessons: 12, quizzes: 4 },
+                  { id: '02', title: 'Introduction to Psychology', lessons: 8, timer: '60m' },
+                  { id: '03', title: 'World History I', lessons: 15, quizzes: 5 }
+                ].map((topic) => (
+                  <div 
+                    key={topic.id} 
+                    onClick={() => setSelectedTopic(topic.id)}
+                    className={`rounded-[2rem] p-8 flex items-center gap-8 transition-all group relative overflow-hidden cursor-pointer ${selectedTopic === topic.id ? 'bg-primary text-white shadow-2xl scale-[1.02] z-10' : 'bg-surface-container-low/30 hover:bg-white hover:ambient-shadow ghost-border'}`}
+                  >
+                    {selectedTopic === topic.id && <div className="absolute inset-0 primary-gradient opacity-10"></div>}
+                    <span className={`material-symbols-outlined opacity-20 group-hover:opacity-60 transition-opacity ${selectedTopic === topic.id ? 'text-white' : 'text-on-surface-variant'}`}>drag_indicator</span>
+                    
+                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-headline font-black text-xl transition-all duration-500 ${selectedTopic === topic.id ? 'bg-white text-primary rotate-12 shadow-xl' : 'bg-white text-primary ghost-border'}`}>
+                      {topic.id}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`text-2xl font-black font-headline tracking-tight truncate ${selectedTopic === topic.id ? 'text-white' : 'text-primary'}`}>{topic.title}</h3>
+                      <div className="flex items-center gap-6 mt-3">
+                        <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${selectedTopic === topic.id ? 'text-white/60' : 'text-on-surface-variant/60'}`}>
+                           <span className="material-symbols-outlined text-[16px]">description</span> 
+                           {topic.lessons} Lessons
+                        </span>
+                        {topic.timer ? (
+                          <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${selectedTopic === topic.id ? 'text-secondary-fixed' : 'text-on-secondary-container bg-secondary/10 px-3 py-1 rounded-full'}`}>
+                             <span className="material-symbols-outlined text-[16px]">timer</span> 
+                             Target: {topic.timer}
+                          </span>
+                        ) : (
+                          <span className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest ${selectedTopic === topic.id ? 'text-white/60' : 'text-on-surface-variant/60'}`}>
+                             <span className="material-symbols-outlined text-[16px]">quiz</span> 
+                             {topic.quizzes} Assessments
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); alert('Editing topic...'); }}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${selectedTopic === topic.id ? 'bg-white/10 hover:bg-white/20 text-white' : 'hover:bg-primary/5 text-on-surface-variant hover:text-primary ambient-shadow-sm bg-white'}`}
+                      >
+                        <span className="material-symbols-outlined text-[20px]">edit</span>
+                      </button>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); alert('Archiving topic...'); }}
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${selectedTopic === topic.id ? 'bg-white/10 hover:bg-white/20 text-white' : 'hover:bg-error/5 text-on-surface-variant hover:text-error ambient-shadow-sm bg-white'}`}
+                      >
+                        <span className="material-symbols-outlined text-[20px]">delete</span>
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="bg-primary-container text-on-primary-container rounded-xl p-6">
-                     <div className="flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined">lightbulb</span>
-                        <h4 className="font-headline font-bold">Taxonomy Tips</h4>
-                     </div>
-                     <p className="text-sm leading-relaxed opacity-90">Keep hierarchy shallow to ensure seamless navigation for students in the app.</p>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </main>
-    </div>
+                ))}
+
+                {/* Drop Zone Placeholder */}
+                <div className="border-4 border-dashed border-primary/5 rounded-[2.5rem] p-10 flex flex-col items-center justify-center bg-surface-container-low/20 text-on-surface-variant transition-colors hover:bg-primary/5 hover:border-primary/20">
+                   <span className="material-symbols-outlined text-4xl mb-2 opacity-20">south</span>
+                   <span className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">Sequential Append Zone</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </AdminLayout>
   );
 }

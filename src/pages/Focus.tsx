@@ -14,58 +14,63 @@ export default function Focus() {
   ];
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-[100dvh] flex flex-col antialiased">
-       <header className="px-6 py-4 flex items-center justify-between sticky top-0 bg-surface/80 backdrop-blur-md z-10">
-          <button className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface-variant">
-             <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          </button>
-          <div className="flex gap-1.5">
-             <div className="h-1.5 w-4 bg-surface-container-highest rounded-full"></div>
-             <div className="h-1.5 w-8 bg-primary rounded-full"></div>
-             <div className="h-1.5 w-4 bg-surface-container-highest rounded-full"></div>
+    <div className="bg-surface text-on-surface font-body min-h-[100dvh] flex flex-col antialiased relative bg-surface-container-lowest">
+       {/* Background accent */}
+       <div className="absolute top-0 right-0 w-full h-[600px] bg-primary/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+
+       <header className="px-8 py-8 flex items-center justify-between sticky top-0 z-20">
+          <Link to="/dashboard" className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-container-low hover:bg-white hover:ambient-shadow transition-all text-on-surface-variant group">
+             <span className="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">arrow_back</span>
+          </Link>
+          <div className="flex gap-2">
+             <div className="h-1.5 w-6 bg-surface-container rounded-full"></div>
+             <div className="h-1.5 w-12 primary-gradient rounded-full ambient-shadow"></div>
+             <div className="h-1.5 w-6 bg-surface-container rounded-full"></div>
           </div>
-          <div className="w-10"></div> {/* Spacer for symmetry */}
+          <div className="w-12"></div>
        </header>
 
-       <div className="flex-1 px-6 py-6 max-w-md mx-auto w-full flex flex-col">
-          <div className="mb-8">
-             <h1 className="text-2xl font-extrabold font-headline mb-2 tracking-tight">Select your Major</h1>
-             <p className="text-on-surface-variant text-sm font-medium">This customizes your Professional Education track.</p>
+       <div className="flex-1 px-8 py-8 max-w-xl mx-auto w-full flex flex-col z-10">
+          <div className="mb-12">
+             <h1 className="text-4xl md:text-5xl font-extrabold font-headline mb-4 tracking-tighter text-primary">Specialized Domain</h1>
+             <p className="text-on-surface-variant text-lg font-medium tracking-tight">Select your academic concentration to influence the simulation depth.</p>
           </div>
 
-          <div className="flex-1 space-y-3 overflow-y-auto pb-4 no-scrollbar">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 pb-12 no-scrollbar">
              {majors.map((major) => (
                <button
                  key={major.id}
                  onClick={() => setSelectedMajor(major.id)}
-                 className={`w-full p-4 rounded-2xl border-2 flex items-center gap-4 transition-all text-left ${
+                 className={`group p-6 rounded-2xl flex flex-col items-center gap-4 transition-all text-center relative overflow-hidden ${
                    selectedMajor === major.id 
-                     ? 'border-primary bg-primary-fixed/20 shadow-md' 
-                     : 'border-outline-variant/20 bg-surface-container-lowest hover:border-primary/40'
+                     ? 'bg-primary text-white ambient-shadow scale-[1.05] z-10' 
+                     : 'bg-surface-container-low hover:bg-white hover:ambient-shadow ghost-border'
                  }`}
                >
-                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                   selectedMajor === major.id ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant'
+                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 ${
+                   selectedMajor === major.id ? 'bg-white text-primary rotate-6' : 'bg-surface-container-high text-on-surface-variant group-hover:bg-primary/5 group-hover:text-primary'
                  }`}>
-                    <span className="material-symbols-outlined">{major.icon}</span>
+                    <span className="material-symbols-outlined text-3xl" style={{fontVariationSettings: selectedMajor === major.id ? "'FILL' 1" : ""}}>{major.icon}</span>
                  </div>
-                 <span className={`font-semibold ${selectedMajor === major.id ? 'text-primary' : 'text-on-surface'}`}>
-                   {major.label}
-                 </span>
+                 <div className="space-y-1">
+                    <span className={`font-black text-sm uppercase tracking-widest ${selectedMajor === major.id ? 'text-white' : 'text-primary'}`}>
+                      {major.label}
+                    </span>
+                 </div>
                  {selectedMajor === major.id && (
-                   <span className="material-symbols-outlined text-primary ml-auto" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
+                   <span className="material-symbols-outlined text-white absolute top-4 right-4 text-[18px]">verified</span>
                  )}
                </button>
              ))}
           </div>
 
-          <div className="pt-6 pb-4 bg-surface">
+          <div className="bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/80 to-transparent pt-12 pb-12 sticky bottom-0">
              <Link to="/exam" className="block w-full">
                <button 
                  disabled={!selectedMajor}
-                 className="w-full bg-primary text-on-primary font-bold py-4 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
+                 className="w-full primary-gradient text-white font-black py-6 rounded-full shadow-2xl hover:shadow-primary/40 transition-all disabled:opacity-50 disabled:shadow-none active:scale-95 text-xs uppercase tracking-widest"
                >
-                  Continue
+                  Verify Specialization & Launch
                </button>
              </Link>
           </div>

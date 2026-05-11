@@ -1,85 +1,137 @@
-import React from 'react';
+import React, { useState } from 'react';
+import AdminLayout from '../components/AdminLayout';
 
 export default function QuestionDetail() {
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
   return (
-    <div className="bg-surface text-on-surface min-h-screen font-body flex">
-      {/* SideNavBar Placeholder */}
-      <nav className="hidden md:flex flex-col bg-surface-container-low w-64 h-screen fixed z-50 p-6 border-r border-transparent">
-        <h2 className="text-lg font-bold text-primary-container font-headline">Admin Portal</h2>
-      </nav>
+    <AdminLayout title="Scholarly Reviewer">
+      <div className="p-8 md:p-12 max-w-7xl mx-auto w-full flex-1 space-y-12 pb-24">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
+                <div className="max-w-4xl">
+                    <div className="flex items-center gap-3 mb-4">
+                       <span className="text-[10px] font-black text-primary uppercase tracking-[0.2em] bg-primary/5 px-4 py-1.5 rounded-full border border-primary/10">Reference ID: BIO-402</span>
+                       <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                       <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-[0.2em]">Verified Curriculum</span>
+                    </div>
+                    <h2 className="text-4xl md:text-7xl font-extrabold font-headline text-primary tracking-tighter leading-[0.85]">Cellular Respiration:<br/>ATP Yield Analysis</h2>
+                </div>
+                <div className="flex gap-4">
+                    <button className="flex items-center gap-3 px-10 py-5 rounded-full primary-gradient text-white font-black text-[11px] uppercase tracking-widest shadow-2xl hover:shadow-primary/40 hover:-translate-y-1 transition-all active:scale-95">
+                      <span className="material-symbols-outlined text-[18px]">edit</span> Modify Directive
+                    </button>
+                </div>
+            </div>
 
-      <main className="flex-1 md:ml-64 relative min-h-screen">
-        <header className="fixed top-0 right-0 w-full md:w-[calc(100%-16rem)] h-16 z-40 bg-surface/80 backdrop-blur-lg flex items-center px-8 border-b border-surface-container shadow-sm">
-           <button className="text-outline hover:text-primary mr-4"><span className="material-symbols-outlined">arrow_back</span></button>
-           <h1 className="text-xl font-extrabold text-primary-container font-headline tracking-tighter">Scholarly Reviewer</h1>
-        </header>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+               <div className="lg:col-span-8 flex flex-col gap-12">
+                  <section className="bg-white rounded-[3rem] p-12 ghost-border ambient-shadow relative overflow-hidden group">
+                     <div className="absolute top-0 left-0 w-full h-2 primary-gradient"></div>
+                     <div className="flex items-center gap-4 mb-10">
+                        {['Biology', 'Advanced', 'Cognitive Analysis'].map(tag => (
+                           <span key={tag} className="bg-surface-container-low text-primary px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ghost-border shadow-sm">{tag}</span>
+                        ))}
+                     </div>
+                     <div className="prose text-on-surface font-body mb-12 text-3xl font-bold leading-relaxed tracking-tight text-primary">
+                        <p>During cellular respiration, a single molecule of glucose is completely oxidized to carbon dioxide and water. Assuming a perfectly efficient electron transport chain... what is the theoretical maximum net yield of ATP produced exclusively via oxidative phosphorylation?</p>
+                     </div>
+                     <div className="rounded-[3rem] overflow-hidden mb-12 bg-surface-container-low p-2 h-96 flex items-center justify-center ghost-border ambient-shadow-sm group-hover:scale-[1.005] transition-transform duration-700">
+                        <div className="flex flex-col items-center gap-6 opacity-40">
+                           <span className="material-symbols-outlined text-8xl">biology</span>
+                           <span className="text-[10px] font-black uppercase tracking-[0.3em]">Scientific Visualization Subsystem</span>
+                        </div>
+                     </div>
 
-        <div className="pt-24 pb-12 px-8 max-w-7xl mx-auto flex flex-col gap-8">
-           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-               <div>
-                   <span className="text-xs font-label text-outline uppercase tracking-wider mb-2 block">Question ID: BIO-402</span>
-                   <h2 className="text-3xl font-headline font-bold text-on-surface tracking-tight max-w-3xl">Cellular Respiration and ATP Yield Analysis</h2>
+                     <div className="space-y-6">
+                        <h3 className="text-[11px] font-black text-on-surface-variant uppercase tracking-[0.4em] mb-10 opacity-60">Objective Response Matrix</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                           {[
+                             { label: 'A', value: '2 ATP', correct: false },
+                             { label: 'B', value: '4 ATP', correct: false },
+                             { label: 'C', value: '34 ATP', correct: true },
+                             { label: 'D', value: '38 ATP', correct: false }
+                           ].map((item) => (
+                             <div 
+                               key={item.label} 
+                               onClick={() => setSelectedOption(item.label)}
+                               className={`p-10 rounded-[2.5rem] transition-all relative overflow-hidden group cursor-pointer ${selectedOption === item.label ? (item.correct ? 'bg-secondary text-white shadow-2xl scale-105' : 'bg-error/10 text-error ghost-border scale-95 opacity-80') : 'bg-surface-container-low/50 ghost-border hover:bg-white hover:ambient-shadow active:scale-95'}`}
+                             >
+                                {(selectedOption === item.label && item.correct) && <div className="absolute inset-0 primary-gradient opacity-10"></div>}
+                                <div className="flex items-start gap-8 relative z-10">
+                                   <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-black text-sm ambient-shadow transition-all duration-500 ${selectedOption === item.label ? (item.correct ? 'bg-white text-secondary scale-110 rotate-12' : 'bg-white text-error rotate-[-12deg]') : 'bg-white text-on-surface-variant group-hover:bg-primary group-hover:text-white group-hover:rotate-6'}`}>
+                                      {item.label}
+                                   </div>
+                                   <div className="flex-1 mt-1">
+                                      <p className="font-bold text-xl tracking-tight leading-tight">{item.value}</p>
+                                      {(selectedOption === item.label && item.correct) && <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mt-3 block">Validated Empirical Truth</span>}
+                                   </div>
+                                   {(selectedOption === item.label && item.correct) && <span className="material-symbols-outlined text-white text-3xl animate-in zoom-in spin-in-12 duration-500" style={{fontVariationSettings: "'FILL' 1"}}>verified</span>}
+                                   {(selectedOption === item.label && !item.correct) && <span className="material-symbols-outlined text-error text-3xl animate-in zoom-in duration-500">cancel</span>}
+                                </div>
+                             </div>
+                           ))}
+                        </div>
+                     </div>
+                  </section>
+
+                  <section className="bg-surface-container-low rounded-[3rem] p-12 ghost-border ambient-shadow relative overflow-hidden group">
+                     <div className="absolute top-0 left-0 w-2 h-full primary-gradient opacity-20 group-hover:opacity-100 transition-opacity"></div>
+                     <div className="flex items-center gap-4 mb-8">
+                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-primary shadow-sm ghost-border">
+                           <span className="material-symbols-outlined text-[24px]" style={{fontVariationSettings: "'FILL' 1"}}>lightbulb</span>
+                        </div>
+                        <h3 className="font-headline text-2xl font-extrabold text-primary tracking-tight">Pedagogical Rationale</h3>
+                     </div>
+                     <p className="text-lg text-on-surface-variant leading-relaxed font-medium">
+                        While the total theoretical yield of cellular respiration is often cited as 38 ATP... The question specifically asks for the yield produced exclusively via oxidative phosphorylation.
+                     </p>
+                  </section>
                </div>
-               <div className="flex gap-3">
-                   <button className="flex items-center gap-2 px-6 py-3 rounded-full bg-secondary-container text-on-secondary-container font-medium hover:bg-secondary hover:text-white transition-colors">
-                     <span className="material-symbols-outlined text-sm">edit</span> Edit
-                   </button>
+
+               <div className="lg:col-span-4 flex flex-col gap-10">
+                  <section className="bg-white rounded-[3rem] p-10 ghost-border ambient-shadow text-center relative overflow-hidden">
+                     <div className="absolute top-0 left-0 w-full h-1 bg-secondary opacity-20"></div>
+                     <h3 className="font-headline text-lg font-black text-primary mb-10 tracking-[0.1em] uppercase opacity-60">Candidate Performance</h3>
+                     <div className="relative inline-block mb-10">
+                        <svg className="w-48 h-48 transform -rotate-90">
+                           <circle cx="96" cy="96" r="88" fill="transparent" stroke="rgba(0,0,0,0.03)" strokeWidth="16" />
+                           <circle cx="96" cy="96" r="88" fill="transparent" stroke="var(--color-secondary)" strokeWidth="16" strokeDasharray="552" strokeDashoffset={552 * (1 - 0.68)} strokeLinecap="round" className="drop-shadow-[0_0_10px_rgba(var(--color-secondary-rgb),0.3)]" />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                           <span className="text-5xl font-black font-headline text-primary tracking-tighter">68%</span>
+                           <span className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60">Accuracy</span>
+                        </div>
+                     </div>
+                     <div className="grid grid-cols-2 gap-4 text-left">
+                        <div className="p-4 bg-surface-container-low rounded-2xl">
+                           <p className="text-[10px] font-black text-on-surface-variant uppercase mb-2 opacity-50">Total Attempts</p>
+                           <p className="text-2xl font-black text-primary tracking-tighter">1,402</p>
+                        </div>
+                        <div className="p-4 bg-surface-container-low rounded-2xl">
+                           <p className="text-[10px] font-black text-on-surface-variant uppercase mb-2 opacity-50">Avg. Time</p>
+                           <p className="text-2xl font-black text-primary tracking-tighter">42s</p>
+                        </div>
+                     </div>
+                  </section>
+
+                  <section className="bg-surface-container-low rounded-[3rem] p-10 ghost-border ambient-shadow">
+                     <h3 className="font-headline text-lg font-black text-primary mb-8 tracking-[0.1em] uppercase opacity-60">Subject Authority</h3>
+                     <div className="space-y-6">
+                        <div className="flex items-center gap-4">
+                           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black shadow-sm">Dr</div>
+                           <div>
+                              <p className="font-bold text-sm text-primary">Dr. Julian Scholarly</p>
+                              <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest opacity-60">Biology Content Lead</p>
+                           </div>
+                        </div>
+                        <p className="text-xs text-on-surface-variant font-medium leading-relaxed italic opacity-80">
+                           "This question calibrates a student's ability to distinguish between substrate-level and oxidative pathways."
+                        </p>
+                     </div>
+                  </section>
                </div>
-           </div>
-
-           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              <div className="lg:col-span-8 flex flex-col gap-8">
-                 <section className="elevated-card rounded-2xl p-8 ghost-border relative overflow-hidden bg-surface-container-lowest">
-                    <div className="flex items-center gap-3 mb-6">
-                       <span className="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-xs font-medium">Biology</span>
-                       <span className="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-xs font-medium">Advanced</span>
-                    </div>
-                    <div className="prose text-on-surface font-body mb-8 text-lg">
-                       <p>During cellular respiration, a single molecule of glucose is completely oxidized to carbon dioxide and water. Assuming a perfectly efficient electron transport chain... what is the theoretical maximum net yield of ATP produced exclusively via oxidative phosphorylation?</p>
-                    </div>
-                    <div className="rounded-lg overflow-hidden mb-8 bg-surface-container-low p-2 h-64 flex items-center justify-center border border-outline-variant/20">
-                       <span className="text-outline">Image Placeholder</span>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                       <h3 className="text-xl font-headline font-bold text-on-surface mb-2">Options</h3>
-                       <div className="p-4 rounded-xl bg-surface-container-low flex items-start gap-4">
-                          <span className="text-primary font-bold">A</span>
-                          <p>2 ATP</p>
-                       </div>
-                       <div className="p-4 rounded-xl bg-surface-container-lowest border-l-4 border-l-secondary relative overflow-hidden shadow-sm flex items-start gap-4">
-                          <div className="absolute inset-0 bg-secondary/5"></div>
-                          <span className="text-secondary font-bold flex items-center gap-2 z-10">C <span className="material-symbols-outlined text-sm" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span></span>
-                          <p className="font-medium z-10 mt-1">34 ATP</p>
-                       </div>
-                    </div>
-                 </section>
-
-                 <section className="bg-surface-container-low rounded-2xl p-8">
-                    <div className="flex items-center gap-2 mb-4">
-                       <span className="material-symbols-outlined text-primary" style={{fontVariationSettings: "'FILL' 1"}}>lightbulb</span>
-                       <h3 className="text-xl font-headline font-bold text-primary">Rationale</h3>
-                    </div>
-                    <p className="text-on-surface-variant leading-relaxed">
-                       While the total theoretical yield of cellular respiration is often cited as 38 ATP... The question specifically asks for the yield produced exclusively via oxidative phosphorylation.
-                    </p>
-                 </section>
-              </div>
-
-              <div className="lg:col-span-4 flex flex-col gap-6">
-                 <section className="elevated-card rounded-2xl p-6 ghost-border bg-surface-container-lowest">
-                    <h3 className="font-headline font-bold text-lg mb-6 border-b border-surface-variant pb-4">Performance Metrics</h3>
-                    <div className="flex justify-center py-6">
-                       <div className="w-32 h-32 rounded-full border-8 border-secondary flex flex-col items-center justify-center">
-                          <span className="text-3xl font-bold font-headline text-secondary tracking-tighter">68%</span>
-                          <span className="text-xs text-outline">Success</span>
-                       </div>
-                    </div>
-                 </section>
-              </div>
-           </div>
-        </div>
-      </main>
-    </div>
+            </div>
+         </div>
+    </AdminLayout>
   );
 }

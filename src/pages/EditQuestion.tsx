@@ -1,111 +1,111 @@
 import React from 'react';
+import AdminLayout from '../components/AdminLayout';
 
 export default function EditQuestion() {
   return (
-    <div className="bg-surface text-on-surface min-h-screen flex antialiased">
-      {/* SideNavBar Nav Area Hidden */}
-      <nav className="hidden lg:flex w-64 flex-col bg-surface-container-low fixed h-screen z-50 p-6 border-r border-transparent">
-        <h1 className="text-lg font-bold text-primary-container font-headline">Admin Portal</h1>
-      </nav>
-
-      <main className="flex-1 lg:ml-64 flex flex-col min-h-screen relative">
-         <header className="fixed top-0 right-0 w-full lg:w-[calc(100%-16rem)] z-40 bg-surface/70 backdrop-blur-xl h-16 flex items-center px-8 border-b border-surface-container">
-            <h1 className="text-xl font-extrabold text-primary-container font-headline tracking-tight">Scholarly Reviewer</h1>
-         </header>
-
-         <div className="mt-16 p-8 max-w-5xl mx-auto w-full flex-1">
-            <nav className="flex items-center gap-2 text-sm text-on-surface-variant font-label mb-6">
-              <span>Question Bank</span>
-              <span className="material-symbols-outlined text-sm">chevron_right</span>
-              <span className="text-primary font-medium">Edit Question</span>
+    <AdminLayout title="Scholarly Reviewer">
+      <div className="p-8 md:p-12 max-w-7xl mx-auto w-full flex-1 space-y-12 pb-24">
+            <nav className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/60">
+              <span className="hover:text-primary cursor-pointer transition-colors">Question Repository</span>
+              <span className="material-symbols-outlined text-[12px] opacity-40">chevron_right</span>
+              <span className="text-primary">Schema Editor</span>
             </nav>
 
-            <div className="flex justify-between items-end mb-8">
-               <div>
-                  <h2 className="text-3xl font-headline font-bold text-primary mb-2">Edit MCQ</h2>
-                  <p className="text-on-surface-variant text-sm">Update question content, options, and rationales.</p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+               <div className="max-w-2xl">
+                  <h2 className="text-4xl md:text-5xl font-extrabold font-headline text-primary tracking-tighter mb-4">Edit MCQ Directive</h2>
+                  <p className="text-lg text-on-surface-variant font-body">Refine the pedagogical intent, linguistic structure, and objective validation criteria.</p>
                </div>
-               <div className="flex gap-3">
-                  <button className="px-6 py-2.5 rounded-full text-primary font-medium">Cancel</button>
-                  <button className="px-6 py-2.5 rounded-full text-white gradient-primary font-medium shadow-sm">Save Changes</button>
+               <div className="flex gap-4">
+                  <button className="px-8 py-4 rounded-full text-on-surface-variant font-bold text-[11px] uppercase tracking-widest hover:bg-surface-container transition-all active:scale-95">Discard</button>
+                  <button className="px-10 py-4 rounded-full primary-gradient text-white font-bold text-[11px] uppercase tracking-widest shadow-xl hover:shadow-2xl transition-all active:scale-95">Verify & Commit</button>
                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-               <div className="lg:col-span-2 space-y-8">
-                  <div className="bg-surface-container-low rounded-xl p-6 relative overflow-hidden">
-                     <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
-                     <h3 className="font-headline font-semibold text-lg text-primary mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined">edit_note</span> Question Stem
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+               <div className="lg:col-span-8 space-y-10">
+                  <div className="bg-white rounded-[2rem] p-10 relative overflow-hidden group ghost-border ambient-shadow">
+                     <div className="absolute top-0 left-0 w-full h-1.5 primary-gradient"></div>
+                     <h3 className="font-headline text-2xl font-extrabold text-primary mb-8 flex items-center gap-4 tracking-tight">
+                        <span className="material-symbols-outlined text-primary" style={{fontVariationSettings: "'FILL' 1"}}>edit_note</span> 
+                        Cognitive Nucleus
                      </h3>
-                     <div className="flex items-center gap-2 mb-3 pb-3 border-b border-outline-variant/30 text-outline">
-                        <button className="p-1"><span className="material-symbols-outlined">format_bold</span></button>
-                        <button className="p-1"><span className="material-symbols-outlined">format_italic</span></button>
-                        <button className="p-1"><span className="material-symbols-outlined">format_underlined</span></button>
-                        <div className="w-px h-5 bg-outline-variant/50 mx-1"></div>
-                        <button className="p-1"><span className="material-symbols-outlined">format_list_bulleted</span></button>
+                     <div className="flex items-center gap-3 mb-6 pb-6 border-b border-surface-container-low text-on-surface-variant">
+                        {['format_bold', 'format_italic', 'format_list_bulleted'].map(icon => (
+                          <button key={icon} className="w-10 h-10 rounded-xl hover:bg-white hover:text-primary transition-all flex items-center justify-center ambient-shadow-sm">
+                            <span className="material-symbols-outlined text-[20px]">{icon}</span>
+                          </button>
+                        ))}
                      </div>
-                     <textarea className="w-full h-32 bg-surface-container-lowest border-none rounded-md resize-none p-3 text-sm font-body" defaultValue="The cognitive domain of Bloom's Taxonomy focuses on intellectual skills..."></textarea>
+                     <textarea className="w-full h-48 bg-surface-container-lowest border-none rounded-2xl p-8 text-lg font-body font-bold text-primary ambient-shadow-sm focus:ring-4 focus:ring-primary/5 outline-none resize-none transition-all" defaultValue="The cognitive domain of Bloom's Taxonomy focuses on intellectual skills..."></textarea>
                   </div>
 
-                  <div className="bg-surface-container-low rounded-xl p-6">
-                     <h3 className="font-headline font-semibold text-lg text-primary mb-4 flex items-center gap-2">
-                        <span className="material-symbols-outlined">checklist</span> Answer Options
+                  <div className="bg-white rounded-[2rem] p-10 ghost-border ambient-shadow">
+                     <h3 className="font-headline text-2xl font-extrabold text-primary mb-8 flex items-center gap-4 tracking-tight">
+                        <span className="material-symbols-outlined text-primary" style={{fontVariationSettings: "'FILL' 1"}}>checklist</span> 
+                        Distractor Calibration
                      </h3>
-                     <div className="space-y-4">
-                        <div className="flex items-start gap-4 p-4 rounded-md bg-surface-container-lowest outline outline-1 outline-outline-variant/20">
-                           <input type="radio" name="answer" className="mt-1 w-5 h-5 text-secondary accent-secondary" />
-                           <div className="flex-1">
-                              <span className="block font-semibold text-sm mb-1">Option A</span>
-                              <textarea className="w-full h-12 bg-transparent border-none p-0 text-sm resize-none" defaultValue="Reciting a poem from memory."></textarea>
-                           </div>
-                        </div>
-                        <div className="flex items-start gap-4 p-4 rounded-md bg-secondary/5 border-l-4 border-secondary/80">
-                           <input type="radio" name="answer" defaultChecked className="mt-1 w-5 h-5 text-secondary accent-secondary" />
-                           <div className="flex-1">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="font-semibold text-sm">Option B <span className="ml-2 text-[10px] uppercase bg-secondary/20 text-secondary px-2 rounded-full">Correct</span></span>
+                     <div className="space-y-6">
+                        {[
+                          { label: 'A', text: 'Reciting a poem from memory.', correct: false },
+                          { label: 'B', text: 'Critiquing a peer\'s essay based on a rubric.', correct: true }
+                        ].map((opt) => (
+                           <div key={opt.label} className={`flex items-start gap-6 p-8 rounded-2xl transition-all group ${opt.correct ? 'bg-secondary/5 border-l-8 border-secondary active:scale-[1.01]' : 'bg-surface-container-lowest ghost-border'}`}>
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-black text-sm ambient-shadow ${opt.correct ? 'bg-secondary text-white' : 'bg-surface-container-high text-on-surface-variant group-hover:bg-primary/5 group-hover:text-primary'}`}>
+                                 {opt.label}
                               </div>
-                              <textarea className="w-full h-12 bg-transparent border-none p-0 text-sm resize-none" defaultValue="Critiquing a peer's essay based on a rubric."></textarea>
+                              <div className="flex-1">
+                                 <div className="flex justify-between items-center mb-4">
+                                   <span className="font-headline text-sm font-black tracking-widest text-on-surface-variant uppercase flex items-center gap-3">
+                                     Option {opt.label}
+                                     {opt.correct && <span className="text-[10px] bg-secondary text-white px-3 py-1 rounded-full shadow-sm">Validated Truth</span>}
+                                   </span>
+                                 </div>
+                                 <textarea className="w-full h-16 bg-transparent border-none p-0 text-lg font-body font-bold text-primary outline-none resize-none" defaultValue={opt.text}></textarea>
+                              </div>
                            </div>
-                        </div>
+                        ))}
                      </div>
-                     <button className="mt-4 flex items-center gap-2 text-primary font-medium text-sm px-4 py-2 hover:bg-primary/5 rounded-full">
-                        <span className="material-symbols-outlined text-[20px]">add</span> Add Option
+                     <button className="mt-8 flex items-center gap-3 text-secondary font-black text-[10px] uppercase tracking-[0.2em] px-8 py-4 bg-white rounded-full ambient-shadow hover:-translate-y-1 transition-all active:scale-95">
+                        <span className="material-symbols-outlined text-[18px]">add</span> Insert Hypothesis
                      </button>
                   </div>
                </div>
 
-               <div className="space-y-8">
-                  <div className="bg-surface-container-low rounded-xl p-6">
-                     <h3 className="font-headline font-semibold text-base text-primary mb-4">Metadata</h3>
-                     <div className="space-y-4">
-                        <div>
-                           <label className="block text-xs font-semibold text-on-surface-variant mb-1">Subject / Domain</label>
-                           <select className="w-full bg-surface-container-lowest border-none rounded-md text-sm py-2 px-3">
-                              <option>Professional Education</option>
-                           </select>
+               <div className="lg:col-span-4 space-y-10">
+                  <div className="bg-white rounded-[2rem] p-10 ghost-border ambient-shadow">
+                     <h3 className="font-headline text-xl font-extrabold text-primary mb-8 tracking-tight">Taxonomic Data</h3>
+                     <div className="space-y-10 font-body">
+                        <div className="space-y-2">
+                           <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest ml-1">Domain Classification</label>
+                           <div className="relative">
+                              <select className="w-full appearance-none bg-surface-container-lowest border-none rounded-2xl px-6 py-4 text-xs font-bold text-primary ambient-shadow outline-none pr-12 cursor-pointer">
+                                 <option>Professional Education</option>
+                              </select>
+                              <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-primary pointer-events-none">expand_more</span>
+                           </div>
                         </div>
-                        <div>
-                           <label className="block text-xs font-semibold text-on-surface-variant mb-1">Difficulty Level</label>
-                           <div className="flex gap-2">
-                              <button className="flex-1 py-1.5 text-xs rounded-md bg-surface-container-lowest text-outline">Easy</button>
-                              <button className="flex-1 py-1.5 text-xs rounded-md bg-primary/10 text-primary">Medium</button>
-                              <button className="flex-1 py-1.5 text-xs rounded-md bg-surface-container-lowest text-outline">Hard</button>
+                        <div className="space-y-4">
+                           <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest ml-1">Complexity Vector</label>
+                           <div className="grid grid-cols-3 gap-3">
+                              {['Easy', 'Medium', 'Hard'].map(level => (
+                                <button key={level} className={`py-4 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${level === 'Medium' ? 'bg-primary text-white shadow-xl scale-105' : 'bg-surface-container-lowest text-on-surface-variant/40 hover:bg-white'}`}>
+                                  {level}
+                                </button>
+                              ))}
                            </div>
                         </div>
                      </div>
                   </div>
-                  <div className="bg-surface-container-low rounded-xl p-6">
-                     <h3 className="font-headline font-semibold text-base text-primary mb-4">Publishing</h3>
-                     <button className="w-full py-2 border border-error/50 text-error rounded-full text-sm font-medium hover:bg-error/5 flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined text-[18px]">archive</span> Archive Question
+                  <div className="bg-white rounded-[2rem] p-10 ghost-border ambient-shadow">
+                     <h3 className="font-headline text-xl font-extrabold text-primary mb-8 tracking-tight">Management</h3>
+                     <button className="w-full py-5 border-2 border-error/10 text-error rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-error hover:text-white transition-all flex items-center justify-center gap-3 active:scale-95">
+                        <span className="material-symbols-outlined text-[20px]">archive</span> Archive Directive
                      </button>
                   </div>
                </div>
             </div>
          </div>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

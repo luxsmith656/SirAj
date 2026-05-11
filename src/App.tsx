@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import CategoryManagement from './pages/CategoryManagement';
 import EditQuestion from './pages/EditQuestion';
@@ -15,6 +15,7 @@ import Onboarding from './pages/Onboarding';
 import Focus from './pages/Focus';
 import QuizResults from './pages/QuizResults';
 import ExamSimulation from './pages/ExamSimulation';
+import { SidebarProvider } from './context/SidebarContext';
 
 function DevIndex() {
   return (
@@ -53,29 +54,33 @@ function DevIndex() {
 
 export default function App() {
   return (
-    <Router>
-        <Routes>
-            <Route path="/" element={<DevIndex />} />
-            {/* Admin Routes */}
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/categories" element={<CategoryManagement />} />
-            <Route path="/question/edit" element={<EditQuestion />} />
-            <Route path="/question/detail" element={<QuestionDetail />} />
-            <Route path="/curriculum-settings" element={<CurriculumSettings />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/bulk-upload" element={<BulkUpload />} />
-            <Route path="/sync" element={<SyncCenter />} />
-            <Route path="/settings" element={<Settings />} />
+    <SidebarProvider>
+      <Router>
+          <Routes>
+              <Route path="/" element={<SignIn />} />
+              <Route path="/debug" element={<DevIndex />} />
+              {/* Admin Routes */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/categories" element={<CategoryManagement />} />
+              <Route path="/question/edit" element={<EditQuestion />} />
+              <Route path="/question/detail" element={<QuestionDetail />} />
+              <Route path="/curriculum-settings" element={<CurriculumSettings />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/bulk-upload" element={<BulkUpload />} />
+              <Route path="/sync" element={<SyncCenter />} />
+              <Route path="/settings" element={<Settings />} />
 
-            {/* Mobile / App Routes */}
-            <Route path="/sign-in" element={<SignIn />} />
-            <Route path="/loading" element={<Loading />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/focus" element={<Focus />} />
-            <Route path="/quiz-results" element={<QuizResults />} />
-            <Route path="/exam" element={<ExamSimulation />} />
-        </Routes>
-    </Router>
+              {/* Mobile / App Routes */}
+              <Route path="/sign-in" element={<SignIn />} />
+              <Route path="/loading" element={<Loading />} />
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="/focus" element={<Focus />} />
+              <Route path="/quiz-results" element={<QuizResults />} />
+              <Route path="/exam" element={<ExamSimulation />} />
+          </Routes>
+      </Router>
+    </SidebarProvider>
   );
 }
+
