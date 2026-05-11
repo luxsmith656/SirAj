@@ -358,6 +358,182 @@ const QUESTIONS = [
     options: [{ id: 'A', text: '0.25' }, { id: 'B', text: '0.75' }, { id: 'C', text: '0.50' }, { id: 'D', text: '1.00' }],
     correctOptionId: 'A',
     difficulty: 'Medium'
+  },
+  // --- FINAL CURRICULUM BATCH ---
+  {
+    categoryName: 'General Education',
+    stem: "Alin sa mga sumusunod ang 'Tayutay' na gumagamit ng paghahambing ng dalawang magkaibang bagay na DI-TUWIRAN (hindi gumagamit ng parang, gaya, atbp)?",
+    options: [{ id: 'A', text: 'Pagtutulad (Simile)' }, { id: 'B', text: 'Pagwawangis (Metaphor)' }, { id: 'C', text: 'Pagsasatao (Personification)' }, { id: 'D', text: 'Pagmamalabis (Hyperbole)' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who is the primary author of the 1987 Philippine Constitution?",
+    options: [{ id: 'A', text: 'Cecilia Muñoz-Palma' }, { id: 'B', text: 'Claro M. Recto' }, { id: 'C', text: 'Jose Laurel' }, { id: 'D', text: 'Diosdado Macapagal' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which element is the most abundant in the Earth's atmosphere?",
+    options: [{ id: 'A', text: 'Oxygen' }, { id: 'B', text: 'Carbon Dioxide' }, { id: 'C', text: 'Nitrogen' }, { id: 'D', text: 'Argon' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "The 'Tax Reform for Acceleration and Inclusion' (TRAIN) Law is otherwise known as:",
+    options: [{ id: 'A', text: 'RA 10963' }, { id: 'B', text: 'RA 10533' }, { id: 'C', text: 'RA 9155' }, { id: 'D', text: 'RA 7836' }],
+    correctOptionId: 'A',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the process by which plants convert light energy into chemical energy?",
+    options: [{ id: 'A', text: 'Respiration' }, { id: 'B', text: 'Transpiration' }, { id: 'C', text: 'Photosynthesis' }, { id: 'D', text: 'Oxidation' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "According to Kohlberg, what stage of moral development is characterized by an orientation towards 'Law and Order'?",
+    options: [{ id: 'A', text: 'Pre-conventional' }, { id: 'B', text: 'Conventional' }, { id: 'C', text: 'Post-conventional' }, { id: 'D', text: 'Sub-conventional' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following refers to the range of tasks that a learner can only perform with the help or guidance of others?",
+    options: [{ id: 'A', text: 'Scaffolding' }, { id: 'B', text: 'Schema' }, { id: 'C', text: 'Zone of Proximal Development' }, { id: 'D', text: 'Metacognition' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the type of assessment given at the end of a unit or course to determine student achievement?",
+    options: [{ id: 'A', text: 'Diagnostic' }, { id: 'B', text: 'Formative' }, { id: 'C', text: 'Summative' }, { id: 'D', text: 'Placement' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "The Magna Carta for Public School Teachers is also known as:",
+    options: [{ id: 'A', text: 'RA 4670' }, { id: 'B', text: 'RA 7836' }, { id: 'C', text: 'RA 9293' }, { id: 'D', text: 'RA 9155' }],
+    correctOptionId: 'A',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which teaching strategy is based on the idea of 'learning by doing'?",
+    options: [{ id: 'A', text: 'Lecturing' }, { id: 'B', text: 'Experiential Learning' }, { id: 'C', text: 'Memorization' }, { id: 'D', text: 'Direct Instruction' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the primary purpose of a 'Table of Specifications' (TOS)?",
+    options: [{ id: 'A', text: 'To record student grades' }, { id: 'B', text: 'To ensure content validity of a test' }, { id: 'C', text: 'To schedule classes' }, { id: 'D', text: 'To evaluate teacher performance' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Which of the following is an example of an 'Oxymoron'?",
+    options: [{ id: 'A', text: 'Brave lion' }, { id: 'B', text: 'Jumbo shrimp' }, { id: 'C', text: 'Fast car' }, { id: 'D', text: 'Dark night' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "In linguistics, what is the smallest unit of sound that can distinguish one word from another?",
+    options: [{ id: 'A', text: 'Morpheme' }, { id: 'B', text: 'Phoneme' }, { id: 'C', text: 'Allomorph' }, { id: 'D', text: 'Syntax' }],
+    correctOptionId: 'B',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "What is the value of 'x' in the equation 2x + 5 = 15?",
+    options: [{ id: 'A', text: '5' }, { id: 'B', text: '10' }, { id: 'C', text: '20' }, { id: 'D', text: '7.5' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "Which of the following describes the set of all possible outcomes of an experiment?",
+    options: [{ id: 'A', text: 'Event' }, { id: 'B', text: 'Sample Space' }, { id: 'C', text: 'Probability' }, { id: 'D', text: 'Mean' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Science',
+    stem: "Which law of motion states that 'For every action, there is an equal and opposite reaction'?",
+    options: [{ id: 'A', text: 'First Law' }, { id: 'B', text: 'Second Law' }, { id: 'C', text: 'Third Law' }, { id: 'D', text: 'Universal Law of Gravitation' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Science',
+    stem: "What is the center of an atom called?",
+    options: [{ id: 'A', text: 'Electron' }, { id: 'B', text: 'Proton' }, { id: 'C', text: 'Nucleus' }, { id: 'D', text: 'Neutron' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Social Science',
+    stem: "Which economic system is characterized by private ownership of the means of production?",
+    options: [{ id: 'A', text: 'Socialism' }, { id: 'B', text: 'Communism' }, { id: 'C', text: 'Capitalism' }, { id: 'D', text: 'Feudalism' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Social Science',
+    stem: "The movement of the Earth around the sun is called:",
+    options: [{ id: 'A', text: 'Rotation' }, { id: 'B', text: 'Revolution' }, { id: 'C', text: 'Precession' }, { id: 'D', text: 'Nutation' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who is the 'Father of the Filipino Language' (Ama ng Wikang Pambansa)?",
+    options: [{ id: 'A', text: 'Jose Rizal' }, { id: 'B', text: 'Lope K. Santos' }, { id: 'C', text: 'Manuel L. Quezon' }, { id: 'D', text: 'Francisco Balagtas' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is the highest level of 'Affective Domain' in Krathwohl's Taxonomy?",
+    options: [{ id: 'A', text: 'Responding' }, { id: 'B', text: 'Valuing' }, { id: 'C', text: 'Organization' }, { id: 'D', text: 'Characterization' }],
+    correctOptionId: 'D',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "A triangle with all three sides unequal in length is called:",
+    options: [{ id: 'A', text: 'Equilateral' }, { id: 'B', text: 'Isosceles' }, { id: 'C', text: 'Scalene' }, { id: 'D', text: 'Right' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What was the title of Jose Rizal's first novel?",
+    options: [{ id: 'A', text: 'El Filibusterismo' }, { id: 'B', text: 'Noli Me Tangere' }, { id: 'C', text: 'Mi Ultimo Adios' }, { id: 'D', text: 'A La Juventud Filipina' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following promotes 'Lifelong Learning'?",
+    options: [{ id: 'A', text: 'Strict assessment' }, { id: 'B', text: 'Rote memorization' }, { id: 'C', text: 'Self-directed learning' }, { id: 'D', text: 'Teacher-centered lecturing' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Which of the following is a 'Subordinate Conjunction'?",
+    options: [{ id: 'A', text: 'And' }, { id: 'B', text: 'But' }, { id: 'C', text: 'Because' }, { id: 'D', text: 'Or' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
   }
 ];
 
