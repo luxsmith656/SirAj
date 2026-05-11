@@ -534,6 +534,288 @@ const QUESTIONS = [
     options: [{ id: 'A', text: 'And' }, { id: 'B', text: 'But' }, { id: 'C', text: 'Because' }, { id: 'D', text: 'Or' }],
     correctOptionId: 'C',
     difficulty: 'Medium'
+  },
+  // --- ADDED 40+ TOTAL SPECIALIZED QUESTIONS BATCH ---
+  {
+    categoryName: 'General Education',
+    stem: "What is the study of the distribution of life forms over geographical areas?",
+    options: [{ id: 'A', text: 'Biogeography' }, { id: 'B', text: 'Geology' }, { id: 'C', text: 'Ecology' }, { id: 'D', text: 'Paleontology' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is the most important factor in the success of a classroom discussion?",
+    options: [{ id: 'A', text: 'The teacher\'s knowledge' }, { id: 'B', text: 'The quality of questions asked' }, { id: 'C', text: 'The number of students' }, { id: 'D', text: 'The duration of the class' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "What is the derivative of f(x) = x³ - 5x + 2?",
+    options: [{ id: 'A', text: '3x² - 5' }, { id: 'B', text: 'x² - 5' }, { id: 'C', text: '3x² + 5' }, { id: 'D', text: '3x - 5' }],
+    correctOptionId: 'A',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Major: Science',
+    stem: "Which organelle is responsible for cellular respiration?",
+    options: [{ id: 'A', text: 'Ribosome' }, { id: 'B', text: 'Mitochondria' }, { id: 'C', text: 'Golgi Apparatus' }, { id: 'D', text: 'Lysosome' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who was the 'Grand Old Man of Philippine Art'?",
+    options: [{ id: 'A', text: 'Fernando Amorsolo' }, { id: 'B', text: 'Juan Luna' }, { id: 'C', text: 'Guillermo Tolentino' }, { id: 'D', text: 'Vicente Manansala' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following refers to the consistency of a test's results?",
+    options: [{ id: 'A', text: 'Validity' }, { id: 'B', text: 'Reliability' }, { id: 'C', text: 'Usability' }, { id: 'D', text: 'Objectivity' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "What is the term for a figure of speech that uses 'like' or 'as' for comparison?",
+    options: [{ id: 'A', text: 'Metaphor' }, { id: 'B', text: 'Simile' }, { id: 'C', text: 'Personification' }, { id: 'D', text: 'Hyperbole' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Social Science',
+    stem: "Which theory states that the continents were once a single landmass called Pangaea?",
+    options: [{ id: 'A', text: 'Plate Tectonics' }, { id: 'B', text: 'Continental Drift' }, { id: 'C', text: 'Seafloor Spreading' }, { id: 'D', text: 'Evolution' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the reciprocal of 4/5?",
+    options: [{ id: 'A', text: '5/4' }, { id: 'B', text: '4/5' }, { id: 'C', text: '1/5' }, { id: 'D', text: '0.8' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "According to Erikson, what is the primary conflict during adolescence?",
+    options: [{ id: 'A', text: 'Trust vs Mistrust' }, { id: 'B', text: 'Autonomy vs Shame' }, { id: 'C', text: 'Identity vs Role Confusion' }, { id: 'D', text: 'Intimacy vs Isolation' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Which of the following is a 'Collective Noun'?",
+    options: [{ id: 'A', text: 'Team' }, { id: 'B', text: 'Dogs' }, { id: 'C', text: 'Water' }, { id: 'D', text: 'Happiness' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "In a right triangle, if the legs are 3 and 4, what is the length of the hypotenuse?",
+    options: [{ id: 'A', text: '5' }, { id: 'B', text: '7' }, { id: 'C', text: '25' }, { id: 'D', text: '12' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which department is responsible for the protection and management of the environment in the Philippines?",
+    options: [{ id: 'A', text: 'DepEd' }, { id: 'B', text: 'DOH' }, { id: 'C', text: 'DENR' }, { id: 'D', text: 'DOST' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the main goal of 'Differentiated Instruction'?",
+    options: [{ id: 'A', text: 'To give harder tasks to everyone' }, { id: 'B', text: 'To meet the unique needs of each student' }, { id: 'C', text: 'To standardize testing' }, { id: 'D', text: 'To reduce the teacher\'s workload' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Science',
+    stem: "Which planet is known as the 'Red Planet'?",
+    options: [{ id: 'A', text: 'Venus' }, { id: 'B', text: 'Mars' }, { id: 'C', text: 'Jupiter' }, { id: 'D', text: 'Saturn' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Social Science',
+    stem: "Who was the founder of the Katipunan?",
+    options: [{ id: 'A', text: 'Jose Rizal' }, { id: 'B', text: 'Andres Bonifacio' }, { id: 'C', text: 'Emilio Aguinaldo' }, { id: 'D', text: 'Apolinario Mabini' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the smallest prime number?",
+    options: [{ id: 'A', text: '0' }, { id: 'B', text: '1' }, { id: 'C', text: '2' }, { id: 'D', text: '3' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is an example of an 'Intrinsic Motivator'?",
+    options: [{ id: 'A', text: 'High Grades' }, { id: 'B', text: 'Praise from teacher' }, { id: 'C', text: 'Curiosity' }, { id: 'D', text: 'Monetary reward' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Which of the following is a 'Pronoun'?",
+    options: [{ id: 'A', text: 'Quickly' }, { id: 'B', text: 'They' }, { id: 'C', text: 'Under' }, { id: 'D', text: 'Green' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "What is the value of 5!? (5 factorial)",
+    options: [{ id: 'A', text: '120' }, { id: 'B', text: '25' }, { id: 'C', text: '60' }, { id: 'D', text: '15' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  // --- SUB-TOPIC DEPTH BATCH (ICT, CURRICULUM, ETHICS) ---
+  {
+    categoryName: 'General Education',
+    stem: "In computing, what does 'HTTP' stand for?",
+    options: [{ id: 'A', text: 'HyperText Transfer Protocol' }, { id: 'B', text: 'Hyperlink Text Transfer Process' }, { id: 'C', text: 'High-speed Tech Transfer Path' }, { id: 'D', text: 'HyperText Terminal Point' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which curriculum design centers on the learners' interests, needs, and backgrounds?",
+    options: [{ id: 'A', text: 'Subject-centered' }, { id: 'B', text: 'Learner-centered' }, { id: 'C', text: 'Problem-centered' }, { id: 'D', text: 'Society-centered' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Science',
+    stem: "Which of the following is a unit of power?",
+    options: [{ id: 'A', text: 'Joule' }, { id: 'B', text: 'Watt' }, { id: 'C', text: 'Newton' }, { id: 'D', text: 'Volt' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Social Science',
+    stem: "Which Philippine law established the free public secondary education?",
+    options: [{ id: 'A', text: 'RA 6655' }, { id: 'B', text: 'RA 7722' }, { id: 'C', text: 'RA 9155' }, { id: 'D', text: 'RA 10533' }],
+    correctOptionId: 'A',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the focus of 'Reconstructionism' in education?",
+    options: [{ id: 'A', text: 'Return to basics' }, { id: 'B', text: 'Social reform and change' }, { id: 'C', text: 'Individual freedom' }, { id: 'D', text: 'Great books' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the chemical symbol for Gold?",
+    options: [{ id: 'A', text: 'Ag' }, { id: 'B', text: 'Au' }, { id: 'C', text: 'Pb' }, { id: 'D', text: 'Fe' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which IQ range is considered 'Genius' level in most scales?",
+    options: [{ id: 'A', text: '90-110' }, { id: 'B', text: '120-130' }, { id: 'C', text: 'Above 140' }, { id: 'D', text: '70-80' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "What is the square root of 225?",
+    options: [{ id: 'A', text: '13' }, { id: 'B', text: '15' }, { id: 'C', text: '25' }, { id: 'D', text: '12' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following describes 'Biodiversity'?",
+    options: [{ id: 'A', text: 'The number of people in a city' }, { id: 'B', text: 'The variety of life forms in an ecosystem' }, { id: 'C', text: 'The amount of rain in a year' }, { id: 'D', text: 'The temperature of the ocean' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "In the 'PDCA' cycle of quality management, what does 'C' stand for?",
+    options: [{ id: 'A', text: 'Control' }, { id: 'B', text: 'Check' }, { id: 'C', text: 'Communicate' }, { id: 'D', text: 'Construct' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the main function of 'White Blood Cells'?",
+    options: [{ id: 'A', text: 'Transport oxygen' }, { id: 'B', text: 'Clotting' }, { id: 'C', text: 'Fights infection' }, { id: 'D', text: 'Digestion' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Who wrote 'The Waste Land'?",
+    options: [{ id: 'A', text: 'W.B. Yeats' }, { id: 'B', text: 'T.S. Eliot' }, { id: 'C', text: 'Robert Frost' }, { id: 'D', text: 'Ezra Pound' }],
+    correctOptionId: 'B',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which assessment is used to identify a student's strengths and weaknesses BEFORE instruction?",
+    options: [{ id: 'A', text: 'Summative' }, { id: 'B', text: 'Diagnostic' }, { id: 'C', text: 'Formative' }, { id: 'D', text: 'Placement' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "How many degrees are in a full circle?",
+    options: [{ id: 'A', text: '90°' }, { id: 'B', text: '180°' }, { id: 'C', text: '270°' }, { id: 'D', text: '360°' }],
+    correctOptionId: 'D',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: Science',
+    stem: "What is the speed of light in a vacuum approximately?",
+    options: [{ id: 'A', text: '300,000 km/s' }, { id: 'B', text: '150,000 km/s' }, { id: 'C', text: '1,000,000 km/s' }, { id: 'D', text: '10,000 km/s' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who was the Filipino general known as the 'Hero of Tirad Pass'?",
+    options: [{ id: 'A', text: 'Antonio Luna' }, { id: 'B', text: 'Gregorio del Pilar' }, { id: 'C', text: 'Miguel Malvar' }, { id: 'D', text: 'Macario Sakay' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What does 'NCBTS' stand for?",
+    options: [{ id: 'A', text: 'National Core Building for Teacher Standards' }, { id: 'B', text: 'National Competency-Based Teacher Standards' }, { id: 'C', text: 'Nationwide Curriculum Base for Teaching Success' }, { id: 'D', text: 'Newly Certified Basic Teaching Skills' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "What is the study of meaning in language?",
+    options: [{ id: 'A', text: 'Syntax' }, { id: 'B', text: 'Morphology' }, { id: 'C', text: 'Semantics' }, { id: 'D', text: 'Pragmatics' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is a non-renewable source of energy?",
+    options: [{ id: 'A', text: 'Solar' }, { id: 'B', text: 'Wind' }, { id: 'C', text: 'Coal' }, { id: 'D', text: 'Hydroelectric' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "In the context of the 21st-century learner, what does the '4Cs' stand for?",
+    options: [{ id: 'A', text: 'Calculation, Coding, Commerce, Craft' }, { id: 'B', text: 'Critical Thinking, Communication, Collaboration, Creativity' }, { id: 'C', text: 'Control, Command, Change, Climate' }, { id: 'D', text: 'Concepts, Content, Context, Curriculum' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
   }
 ];
 

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
 import { collection, onSnapshot, query, addDoc, updateDoc, doc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import Toast from '../components/Toast';
 
 interface Category {
   id: string;
@@ -17,6 +19,12 @@ export default function CategoryManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
+
+  // Deletion state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, 'categories'), orderBy('name', 'asc'));
@@ -36,6 +44,8 @@ export default function CategoryManagement() {
         description: '',
         questionCount: 0
       });
+      setToastMsg('New domain added');
+      setShowToast(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'categories');
     }
@@ -49,21 +59,29 @@ export default function CategoryManagement() {
         description: editDesc
       });
       setIsEditing(false);
+      setToastMsg('Domain updated successfully');
+      setShowToast(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `categories/${selectedCategory.id}`);
     }
   };
 
-  const handleDelete = async () => {
+  const confirmDelete = async () => {
     if (!selectedCategory) return;
-    if (confirm(`Are you sure you want to delete "${selectedCategory.name}"? This will not delete the questions assigned to it but will make them unreachable through this category link.`)) {
-      try {
-        await deleteDoc(doc(db, 'categories', selectedCategory.id));
-        setSelectedCategory(null);
-        setIsEditing(false);
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `categories/${selectedCategory.id}`);
-      }
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'categories', selectedCategory.id));
+      setSelectedCategory(null);
+      setIsEditing(false);
+      setShowDeleteModal(false);
+      setToastMsg('Domain deleted successfully');
+      setShowToast(true);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `categories/${selectedCategory.id}`);
+      setToastMsg('Failed to delete domain');
+      setShowToast(true);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -125,7 +143,7 @@ export default function CategoryManagement() {
                                  </div>
                               </div>
                               <button 
-                                onClick={handleDelete}
+                                onClick={() => setShowDeleteModal(true)}
                                 className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-colors"
                                 title="Delete Domain"
                               >
@@ -172,6 +190,22 @@ export default function CategoryManagement() {
                </div>
             </div>
          </div>
+
+      <DeleteConfirmModal 
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Domain?"
+        message={`Are you sure you want to delete "${selectedCategory?.name}"? This action cannot be undone and may affect associated questions.`}
+        isDeleting={isDeleting}
+      />
+
+      <Toast 
+        isVisible={showToast}
+        message={toastMsg}
+        onClose={() => setShowToast(false)}
+        type={toastMsg.includes('failed') ? 'error' : 'success'}
+      />
     </AdminLayout>
   );
 }

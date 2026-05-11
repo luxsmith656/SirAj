@@ -3,6 +3,8 @@ import AdminLayout from '../components/AdminLayout';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { Link, useNavigate } from 'react-router-dom';
+import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import Toast from '../components/Toast';
 
 interface Question {
   id: string;
@@ -23,6 +25,12 @@ export default function QuestionBank() {
   const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
+  // Deletion state
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+
   useEffect(() => {
     // Categories for mapping names
     const unsubCats = onSnapshot(collection(db, 'categories'), (snapshot) => {
@@ -40,13 +48,20 @@ export default function QuestionBank() {
     return () => { unsubCats(); unsubQs(); };
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this question?')) {
-      try {
-        await deleteDoc(doc(db, 'questions', id));
-      } catch (error) {
-        handleFirestoreError(error, OperationType.DELETE, `questions/${id}`);
-      }
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'questions', deleteId));
+      setDeleteId(null);
+      setToastMsg('Question deleted successfully');
+      setShowToast(true);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `questions/${deleteId}`);
+      setToastMsg('Failed to delete question');
+      setShowToast(true);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -126,7 +141,7 @@ export default function QuestionBank() {
                           <span className="material-symbols-outlined text-[18px]">edit</span>
                         </button>
                         <button 
-                          onClick={() => handleDelete(q.id)}
+                          onClick={() => setDeleteId(q.id)}
                           className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
                         >
                           <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -140,6 +155,22 @@ export default function QuestionBank() {
           </div>
         </div>
       </div>
+
+      <DeleteConfirmModal 
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={confirmDelete}
+        title="Delete Question?"
+        message="Are you sure you want to permanently remove this question from the bank? This action cannot be undone."
+        isDeleting={isDeleting}
+      />
+
+      <Toast 
+        isVisible={showToast}
+        message={toastMsg}
+        onClose={() => setShowToast(false)}
+        type={toastMsg.includes('failed') ? 'error' : 'success'}
+      />
     </AdminLayout>
   );
 }
