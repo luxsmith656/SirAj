@@ -273,6 +273,91 @@ const QUESTIONS = [
     options: [{ id: 'A', text: 'Licensure Exam' }, { id: 'B', text: 'Code of Ethics' }, { id: 'C', text: 'Daily Lesson Log' }, { id: 'D', text: 'Performance Appraisal' }],
     correctOptionId: 'B',
     difficulty: 'Medium'
+  },
+  // --- ADDITIONAL BATCH ---
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is the 'Brain of the Computer'?",
+    options: [{ id: 'A', text: 'RAM' }, { id: 'B', text: 'CPU' }, { id: 'C', text: 'Hard Drive' }, { id: 'D', text: 'Motherboard' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who wrote the national anthem 'Lupang Hinirang'?",
+    options: [{ id: 'A', text: 'Julian Felipe' }, { id: 'B', text: 'Jose Palma' }, { id: 'C', text: 'Juan Luna' }, { id: 'D', text: 'Apolinario Mabini' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which philosophy of education emphasizes on the teaching of 'Basic Skills' and the '3 Rs' (Reading, Writing, Arithmetic)?",
+    options: [{ id: 'A', text: 'Progressivism' }, { id: 'B', text: 'Essentialism' }, { id: 'C', text: 'Perennialism' }, { id: 'D', text: 'Existentialism' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "According to Maslow's Hierarchy of Needs, what is the most basic need of a human being?",
+    options: [{ id: 'A', text: 'Safety' }, { id: 'B', text: 'Love and Belonging' }, { id: 'C', text: 'Physiological' }, { id: 'D', text: 'Self-actualization' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Which of the following is a 'Direct Object' in the sentence: 'The teacher gave the students a difficult exam.'?",
+    options: [{ id: 'A', text: 'Teacher' }, { id: 'B', text: 'Students' }, { id: 'C', text: 'Exam' }, { id: 'D', text: 'Gave' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "What is the sum of the interior angles of a pentagon?",
+    options: [{ id: 'A', text: '180°' }, { id: 'B', text: '360°' }, { id: 'C', text: '540°' }, { id: 'D', text: '720°' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Science',
+    stem: "What type of bond is formed when atoms share electrons?",
+    options: [{ id: 'A', text: 'Ionic Bond' }, { id: 'B', text: 'Covalent Bond' }, { id: 'C', text: 'Hydrogen Bond' }, { id: 'D', text: 'Metallic Bond' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Social Science',
+    stem: "Which ancient civilization built the 'Hanging Gardens'?",
+    options: [{ id: 'A', text: 'Egyptians' }, { id: 'B', text: 'Babylonians' }, { id: 'C', text: 'Romans' }, { id: 'D', text: 'Greeks' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "A rectangle has a length of 10m and a width of 5m. What is its area?",
+    options: [{ id: 'A', text: '15 sq m' }, { id: 'B', text: '30 sq m' }, { id: 'C', text: '50 sq m' }, { id: 'D', text: '25 sq m' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the primary role of the teacher in a learner-centered classroom?",
+    options: [{ id: 'A', text: 'Lecturer' }, { id: 'B', text: 'Facilitator' }, { id: 'C', text: 'Disciplinarian' }, { id: 'D', text: 'Information Provider' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Major: English',
+    stem: "Who is the author of 'To Kill a Mockingbird'?",
+    options: [{ id: 'A', text: 'Ernest Hemingway' }, { id: 'B', text: 'Harper Lee' }, { id: 'C', text: 'Mark Twain' }, { id: 'D', text: 'F. Scott Fitzgerald' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Major: Mathematics',
+    stem: "If the probability of an event is 0.75, what is the probability of its complement?",
+    options: [{ id: 'A', text: '0.25' }, { id: 'B', text: '0.75' }, { id: 'C', text: '0.50' }, { id: 'D', text: '1.00' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
   }
 ];
 
