@@ -23,6 +23,7 @@ export default function QuestionBank() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const navigate = useNavigate();
 
   // Deletion state
@@ -66,10 +67,13 @@ export default function QuestionBank() {
   };
 
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown';
+  const getDomainCode = (name: string) => name.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
 
-  const filteredQuestions = questions.filter(q => 
-    q.stem.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredQuestions = questions.filter(q => {
+    const matchesSearch = q.stem.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategory === 'all' || q.categoryId === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <AdminLayout title="Admin Panel">
@@ -88,15 +92,31 @@ export default function QuestionBank() {
         </div>
 
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
-             <span className="material-symbols-outlined text-slate-400">search</span>
-             <input 
-               type="text" 
-               placeholder="Search by keyword or stem..." 
-               className="bg-transparent border-none outline-none text-sm w-full font-medium"
-               value={searchTerm}
-               onChange={(e) => setSearchTerm(e.target.value)}
-             />
+          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-stretch md:items-center gap-3">
+             <div className="flex-1 flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
+                <span className="material-symbols-outlined text-slate-400">search</span>
+                <input 
+                  type="text" 
+                  placeholder="Search by keyword or stem..." 
+                  className="bg-transparent border-none outline-none text-sm w-full font-medium text-slate-700"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+             </div>
+             
+             <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2 min-w-[200px]">
+                <span className="material-symbols-outlined text-slate-400 text-[20px]">filter_list</span>
+                <select 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="bg-transparent border-none outline-none text-xs font-bold uppercase tracking-widest text-[#1b366a] w-full"
+                >
+                   <option value="all">All Domains</option>
+                   {categories.map(cat => (
+                     <option key={cat.id} value={cat.id}>{cat.name}</option>
+                   ))}
+                </select>
+             </div>
           </div>
 
           <div className="overflow-x-auto">

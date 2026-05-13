@@ -1,10 +1,12 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
+import { useBranding } from '../context/BrandingContext';
 
 export default function Sidebar() {
   const location = useLocation();
   const { isOpen, toggle, isCollapsed, toggleCollapse } = useSidebar();
+  const { settings } = useBranding();
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
@@ -14,6 +16,13 @@ export default function Sidebar() {
     { name: 'Users', path: '/users', icon: 'group' },
     { name: 'Settings', path: '/settings', icon: 'settings' },
   ];
+
+  const renderLogo = () => {
+    if (settings.logo.startsWith('http')) {
+      return <img src={settings.logo} alt="Logo" className="w-8 h-8 object-contain" />;
+    }
+    return <span className="material-symbols-outlined text-[24px]">{settings.logo || 'school'}</span>;
+  };
 
   return (
     <>
@@ -33,12 +42,12 @@ export default function Sidebar() {
       `}>
         {/* Header / Brand */}
         <div className={`px-6 mt-8 mb-10 flex items-center transition-all duration-300 ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}>
-          <div className="w-12 h-12 rounded-full bg-[#1b366a] text-white flex items-center justify-center shadow-sm shrink-0">
-            <span className="material-symbols-outlined text-[24px]">menu_book</span>
+          <div className="w-12 h-12 rounded-full bg-primary text-white flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+            {renderLogo()}
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <div className="font-extrabold text-[#1b366a] text-[20px] tracking-tight leading-tight truncate">LET Mastery</div>
+              <div className="font-extrabold text-primary text-[20px] tracking-tight leading-tight truncate">{settings.siteName}</div>
               <div className="text-[11px] text-slate-500 font-medium font-body mt-0.5 truncate uppercase tracking-wider">Admin Control Panel</div>
             </div>
           )}
@@ -65,7 +74,7 @@ export default function Sidebar() {
                   isCollapsed ? 'justify-center px-0' : 'px-4 gap-4'
                 } ${
                   isActive 
-                    ? 'bg-white text-[#1b366a] font-bold shadow-sm' 
+                    ? 'bg-white text-primary font-bold shadow-sm' 
                     : 'text-slate-600 font-medium hover:bg-slate-200/50 hover:text-slate-900'
                 }`}
                 title={isCollapsed ? item.name : ''}
@@ -84,7 +93,7 @@ export default function Sidebar() {
 
         {/* Bottom Actions & Collapse Toggle */}
         <div className={`mt-auto pb-8 ${isCollapsed ? 'px-2' : 'px-4'} space-y-4`}>
-          <button className={`w-full flex items-center bg-[#1b366a] text-white rounded-full font-bold transition-all hover:bg-[#112349] hover:shadow-lg focus:outline-none ${
+          <button className={`w-full flex items-center bg-primary text-white rounded-full font-bold transition-all hover:opacity-90 hover:shadow-lg focus:outline-none ${
             isCollapsed ? 'justify-center p-3' : 'justify-center gap-2 px-4 py-3'
           }`}>
             <span className="material-symbols-outlined text-sm">download</span>
@@ -94,7 +103,7 @@ export default function Sidebar() {
           {/* Desktop Collapse Toggle */}
           <button 
             onClick={toggleCollapse}
-            className="hidden md:flex w-full items-center justify-center p-3 text-slate-400 hover:text-[#1b366a] hover:bg-slate-200/50 rounded-2xl transition-all"
+            className="hidden md:flex w-full items-center justify-center p-3 text-slate-400 hover:text-primary hover:bg-slate-200/50 rounded-2xl transition-all"
           >
             <span className={`material-symbols-outlined transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}>
               keyboard_double_arrow_left

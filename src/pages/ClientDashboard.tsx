@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -19,11 +20,19 @@ import { motion } from 'motion/react';
 
 export default function ClientDashboard() {
   const { user, signOut } = useAuth();
+  const { settings } = useBranding();
   const navigate = useNavigate();
 
   const handleSignOut = () => {
     signOut();
     navigate('/sign-in');
+  };
+
+  const renderLogo = () => {
+    if (settings.logo.startsWith('http')) {
+      return <img src={settings.logo} alt="Logo" className="w-8 h-8 object-contain" />;
+    }
+    return <span className="material-symbols-outlined text-primary text-[24px]">{settings.logo || 'school'}</span>;
   };
 
   return (
@@ -32,8 +41,13 @@ export default function ClientDashboard() {
       {/* Sidebar for Desktop */}
       <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen shadow-sm">
         <div className="p-6">
-          <h1 className="text-[#1b366a] text-2xl font-extrabold font-headline tracking-tight">LET Mastery</h1>
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-0.5">Student Portal</p>
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                {renderLogo()}
+             </div>
+             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tight leading-none truncate">{settings.siteName}</h1>
+          </div>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Student Portal</p>
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
@@ -79,8 +93,9 @@ export default function ClientDashboard() {
       <main className="flex-1 flex flex-col">
         {/* Top Header */}
         <header className="px-6 py-4 flex items-center justify-between bg-white md:bg-white/80 md:backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
-          <div className="md:hidden">
-            <h1 className="text-[#1b366a] text-xl font-extrabold font-headline tracking-tighter">LET Mastery</h1>
+          <div className="md:hidden flex items-center gap-2">
+             {renderLogo()}
+             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tighter truncate max-w-[200px]">{settings.siteName}</h1>
           </div>
           <div className="hidden md:flex items-center bg-slate-100 rounded-full px-4 py-2 w-72">
              <Search size={16} className="text-slate-400 mr-2" />

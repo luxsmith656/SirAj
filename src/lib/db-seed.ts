@@ -874,6 +874,28 @@ export async function seedDatabase() {
       });
     }
 
+    // 4. Seed Dummy Users (Profiles only - Auth must be created manually or via Sign Up)
+    const DUMMY_USERS = [
+      { email: 'admin@letmastery.test', role: 'admin', fullName: 'System Admin', onboarded: true },
+      { email: 'instructor@letmastery.test', role: 'instructor', fullName: 'Professor X', onboarded: true },
+      { email: 'student@letmastery.test', role: 'student', fullName: 'John Doe', onboarded: false }
+    ];
+
+    for (const dUser of DUMMY_USERS) {
+      const uQ = query(collection(db, 'users'), where('email', '==', dUser.email));
+      const uSnap = await getDocs(uQ);
+      if (uSnap.empty) {
+        // We use email as a temporary ID or just add it. 
+        // Real UID will be set upon first auth login if we don't have it.
+        // For testing, we'll just add it to 'users' collection.
+        await addDoc(collection(db, 'users'), {
+          ...dUser,
+          createdAt: new Date().toISOString()
+        });
+        console.log(`Seeded dummy profile: ${dUser.email}`);
+      }
+    }
+
     console.log('Database seed completed successfully!');
     return true;
   } catch (error: any) {

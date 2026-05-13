@@ -20,21 +20,29 @@ import ExamSimulation from './pages/ExamSimulation';
 import ClientDashboard from './pages/ClientDashboard';
 import { SidebarProvider } from './context/SidebarContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrandingProvider, useBranding } from './context/BrandingContext';
 
-function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 'admin' | 'client' }) {
+function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 'admin' | 'instructor' | 'student' }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
-    return null; // Or a simple loader
+    return <Loading />;
   }
 
   if (!user) {
     return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
+  // Handle onboarding for students
+  if (!user.onboarded && location.pathname !== '/onboarding' && user.role === 'student' && location.pathname !== '/sign-in') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   if (role && user.role !== role) {
-    return <Navigate to={user.role === 'admin' ? '/dashboard' : '/client-home'} replace />;
+    if (user.role === 'admin') return <Navigate to="/dashboard" replace />;
+    if (user.role === 'instructor') return <Navigate to="/analytics" replace />;
+    return <Navigate to="/client-home" replace />;
   }
 
   return <>{children}</>;
@@ -76,43 +84,59 @@ function DevIndex() {
   );
 }
 
+function AppContent() {
+  const { settings } = useBranding();
+
+  React.useEffect(() => {
+    if (settings.siteName) {
+      document.title = settings.siteName;
+    }
+  }, [settings.siteName]);
+
+  return (
+    <Router>
+        <Routes>
+            <Route path="/" element={<Navigate to="/sign-in" replace />} />
+            <Route path="/sign-in" element={<SignIn />} />
+            <Route path="/debug" element={<DevIndex />} />
+            
+            {/* Admin Routes */}
+            <Route path="/dashboard" element={<ProtectedRoute role="admin"><Dashboard /></ProtectedRoute>} />
+            <Route path="/categories" element={<ProtectedRoute role="admin"><CategoryManagement /></ProtectedRoute>} />
+            <Route path="/question/bank" element={<ProtectedRoute role="admin"><QuestionBank /></ProtectedRoute>} />
+            <Route path="/question/new" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
+            <Route path="/question/edit/:id" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
+            <Route path="/question/detail" element={<ProtectedRoute role="admin"><QuestionDetail /></ProtectedRoute>} />
+            <Route path="/curriculum-settings" element={<ProtectedRoute role="admin"><CurriculumSettings /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
+            <Route path="/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
+            <Route path="/sync" element={<ProtectedRoute role="admin"><SyncCenter /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
+
+            {/* Mobile / App Routes */}
+            <Route path="/loading" element={<Loading />} />
+            <Route path="/client-home" element={<ProtectedRoute role="student"><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/onboarding" element={<ProtectedRoute role="student"><Onboarding /></ProtectedRoute>} />
+            <Route path="/focus" element={<ProtectedRoute role="student"><Focus /></ProtectedRoute>} />
+            <Route path="/quiz-results" element={<ProtectedRoute role="student"><QuizResults /></ProtectedRoute>} />
+            <Route path="/exam" element={<ProtectedRoute role="student"><ExamSimulation /></ProtectedRoute>} />
+            
+            <Route path="*" element={<Navigate to="/sign-in" replace />} />
+        </Routes>
+    </Router>
+  );
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <SidebarProvider>
-        <Router>
-            <Routes>
-                <Route path="/" element={<Navigate to="/sign-in" replace />} />
-                <Route path="/sign-in" element={<SignIn />} />
-                <Route path="/debug" element={<DevIndex />} />
-                
-                {/* Admin Routes */}
-                <Route path="/dashboard" element={<ProtectedRoute role="admin"><Dashboard /></ProtectedRoute>} />
-                <Route path="/categories" element={<ProtectedRoute role="admin"><CategoryManagement /></ProtectedRoute>} />
-                <Route path="/question/bank" element={<ProtectedRoute role="admin"><QuestionBank /></ProtectedRoute>} />
-                <Route path="/question/new" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
-                <Route path="/question/edit/:id" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
-                <Route path="/question/detail" element={<ProtectedRoute role="admin"><QuestionDetail /></ProtectedRoute>} />
-                <Route path="/curriculum-settings" element={<ProtectedRoute role="admin"><CurriculumSettings /></ProtectedRoute>} />
-                <Route path="/analytics" element={<ProtectedRoute role="admin"><Analytics /></ProtectedRoute>} />
-                <Route path="/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
-                <Route path="/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
-                <Route path="/sync" element={<ProtectedRoute role="admin"><SyncCenter /></ProtectedRoute>} />
-                <Route path="/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
-
-                {/* Mobile / App Routes */}
-                <Route path="/loading" element={<Loading />} />
-                <Route path="/client-home" element={<ProtectedRoute role="client"><ClientDashboard /></ProtectedRoute>} />
-                <Route path="/onboarding" element={<ProtectedRoute role="client"><Onboarding /></ProtectedRoute>} />
-                <Route path="/focus" element={<ProtectedRoute role="client"><Focus /></ProtectedRoute>} />
-                <Route path="/quiz-results" element={<ProtectedRoute role="client"><QuizResults /></ProtectedRoute>} />
-                <Route path="/exam" element={<ProtectedRoute role="client"><ExamSimulation /></ProtectedRoute>} />
-                
-                <Route path="*" element={<Navigate to="/sign-in" replace />} />
-            </Routes>
-        </Router>
-      </SidebarProvider>
-    </AuthProvider>
+    <BrandingProvider>
+      <AuthProvider>
+        <SidebarProvider>
+          <AppContent />
+        </SidebarProvider>
+      </AuthProvider>
+    </BrandingProvider>
   );
 }
 

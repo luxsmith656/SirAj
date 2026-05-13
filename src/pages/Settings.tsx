@@ -1,9 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { settings, updateSettings } = useBranding();
+  const [siteName, setSiteName] = useState(settings.siteName);
+  const [logo, setLogo] = useState(settings.logo);
+  const [primaryColor, setPrimaryColor] = useState(settings.primaryColor);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
+
+  const handleSaveBranding = async () => {
+    setIsSaving(true);
+    setSaveStatus('saving');
+    try {
+      await updateSettings({ siteName, logo, primaryColor });
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      setSaveStatus('idle');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <AdminLayout title="System Preferences">
@@ -16,37 +38,95 @@ export default function Settings() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
-            <section className="lg:col-span-12 xl:col-span-8 bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#1b366a]">
-                  <span className="material-symbols-outlined">person</span>
-                </div>
-                <h3 className="font-headline text-xl font-bold text-slate-800">Admin Account</h3>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Display Email</label>
-                    <div className="w-full bg-slate-50 rounded-xl px-5 py-4 text-slate-700 font-medium text-sm border border-transparent">
-                       {user?.email}
-                    </div>
+            <section className="lg:col-span-12 xl:col-span-8 space-y-6">
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#1b366a]">
+                    <span className="material-symbols-outlined">palette</span>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Access Level</label>
-                    <div className="w-full bg-blue-50 rounded-xl px-5 py-4 text-[#1b366a] font-bold text-sm border border-blue-100 flex items-center gap-2">
-                       <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                       Platform Administrator
-                    </div>
-                  </div>
+                  <h3 className="font-headline text-xl font-bold text-slate-800">Site Branding</h3>
                 </div>
                 
-                <div className="pt-6 border-t border-slate-100">
-                  <h4 className="font-bold text-sm text-slate-800 mb-4">Account Security</h4>
-                  <p className="text-xs text-slate-400 mb-4 leading-relaxed">Your account is secured via Google Authentication. To change passwords or security settings, please visit your Google Account dashboard.</p>
-                  <button className="px-6 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-200 transition-all">
-                    Manage Security
-                  </button>
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Site Title</label>
+                      <input 
+                        type="text"
+                        value={siteName}
+                        onChange={(e) => setSiteName(e.target.value)}
+                        className="w-full bg-slate-50 rounded-xl px-5 py-4 text-slate-700 font-medium text-sm border border-transparent focus:bg-white focus:border-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logo (Icon Name or URL)</label>
+                      <input 
+                        type="text"
+                        value={logo}
+                        onChange={(e) => setLogo(e.target.value)}
+                        placeholder="e.g. school or https://logo.com/img.png"
+                        className="w-full bg-slate-50 rounded-xl px-5 py-4 text-slate-700 font-medium text-sm border border-transparent focus:bg-white focus:border-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Primary Brand Color</label>
+                    <div className="flex gap-4 items-center">
+                      <input 
+                        type="color"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="w-12 h-12 rounded-xl cursor-pointer border-none bg-transparent"
+                      />
+                      <input 
+                        type="text"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="flex-1 bg-slate-50 rounded-xl px-5 py-4 text-slate-700 font-mono text-sm border border-transparent focus:bg-white focus:border-primary/20 outline-none transition-all"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="pt-6 border-t border-slate-100 flex justify-end">
+                    <button 
+                      onClick={handleSaveBranding}
+                      disabled={isSaving}
+                      className={`px-8 py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${
+                        saveStatus === 'success' ? 'bg-emerald-500 text-white' : 'bg-primary text-white hover:bg-primary/90 shadow-lg'
+                      }`}
+                    >
+                      {isSaving && <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />}
+                      {saveStatus === 'success' ? 'Branding Saved' : 'Update Branding'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#1b366a]">
+                    <span className="material-symbols-outlined">person</span>
+                  </div>
+                  <h3 className="font-headline text-xl font-bold text-slate-800">Admin Account</h3>
+                </div>
+                
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Account Display Email</label>
+                      <div className="w-full bg-slate-50 rounded-xl px-5 py-4 text-slate-700 font-medium text-sm border border-transparent">
+                         {user?.email}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Access Level</label>
+                      <div className="w-full bg-blue-50 rounded-xl px-5 py-4 text-[#1b366a] font-bold text-sm border border-blue-100 flex items-center gap-2">
+                         <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                         Platform Administrator
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>

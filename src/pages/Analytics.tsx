@@ -1,19 +1,74 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
+import { useAuth } from '../context/AuthContext';
+import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+
+interface MetricData {
+  studentCount: number;
+  avgPassingScore: number;
+}
 
 export default function Analytics() {
+  const { user } = useAuth();
+  const [metrics, setMetrics] = useState<MetricData>({ studentCount: 0, avgPassingScore: 78 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [instructorFilter, setInstructorFilter] = useState('all');
+  const [instructors, setInstructors] = useState<{uid: string, fullName: string}[]>([]);
+
+  useEffect(() => {
+    // Fetch instructors for admin view
+    if (user?.role === 'admin') {
+      const q = query(collection(db, 'users'), where('role', '==', 'instructor'));
+      onSnapshot(q, (snap) => {
+        setInstructors(snap.docs.map(doc => ({ uid: doc.id, fullName: doc.data().fullName || doc.data().email })));
+      });
+    }
+
+    // Dynamic filtering for metrics
+    let q;
+    if (user?.role === 'instructor') {
+      q = query(collection(db, 'users'), where('instructorId', '==', user.uid), where('role', '==', 'student'));
+    } else if (user?.role === 'admin' && instructorFilter !== 'all') {
+      q = query(collection(db, 'users'), where('instructorId', '==', instructorFilter), where('role', '==', 'student'));
+    } else {
+      q = query(collection(db, 'users'), where('role', '==', 'student'));
+    }
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+      setMetrics(prev => ({
+        ...prev,
+        studentCount: snap.size
+      }));
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, instructorFilter]);
+
   return (
     <AdminLayout title="Performance Metrics">
       <div className="p-8 max-w-[1400px] mx-auto space-y-8 text-on-surface">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                <div>
                   <h1 className="text-3xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Performance Insights</h1>
-                  <p className="text-slate-500 font-medium font-body">Analyze student cohort mastery and simulation trends.</p>
+                  <p className="text-slate-500 font-medium font-body">Analyze {user?.role === 'instructor' ? 'your assigned students\'' : 'platform-wide'} cohort mastery.</p>
                </div>
-               <div className="flex bg-slate-100 rounded-xl p-1 border border-slate-200 shadow-sm">
-                  <button className="px-6 py-2 rounded-lg bg-white text-[#1b366a] font-bold shadow-sm text-xs uppercase tracking-widest">Global</button>
-                  <button className="px-6 py-2 rounded-lg text-slate-400 font-bold hover:text-slate-600 transition-colors text-xs uppercase tracking-widest">By Domain</button>
-               </div>
+               
+               {user?.role === 'admin' && (
+                 <div className="flex bg-slate-100 rounded-xl p-1 border border-slate-200 shadow-sm overflow-hidden">
+                    <select 
+                      value={instructorFilter}
+                      onChange={(e) => setInstructorFilter(e.target.value)}
+                      className="bg-transparent border-none outline-none px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#1b366a]"
+                    >
+                      <option value="all">Global View</option>
+                      {instructors.map(inst => (
+                        <option key={inst.uid} value={inst.uid}>By: {inst.fullName}</option>
+                      ))}
+                    </select>
+                 </div>
+               )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -22,11 +77,10 @@ export default function Analytics() {
                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1b366a] flex items-center justify-center">
                         <span className="material-symbols-outlined text-[20px]">groups</span>
                      </div>
-                     <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg uppercase tracking-widest">+12%</span>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">Live Data</h3>
-                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Engagement Index</p>
+                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">{metrics.studentCount}</h3>
+                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Active Students</p>
                   </div>
                </div>
                
@@ -37,7 +91,7 @@ export default function Analytics() {
                      </div>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">48<span className="text-xl">m</span></h3>
+                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">42<span className="text-xl">m</span></h3>
                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Daily Avg Simulation</p>
                   </div>
                </div>
@@ -49,23 +103,23 @@ export default function Analytics() {
                      </div>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">82<span className="text-xl">%</span></h3>
+                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">{metrics.avgPassingScore}<span className="text-xl">%</span></h3>
                      <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Avg Passing Score</p>
                   </div>
                   <div className="w-full bg-slate-100 mt-4 h-1.5 rounded-full overflow-hidden">
-                     <div className="w-[82%] h-full bg-emerald-500 rounded-full"></div>
+                     <div style={{ width: `${metrics.avgPassingScore}%` }} className="h-full bg-emerald-500 rounded-full"></div>
                   </div>
                </div>
 
                <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-4">
                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1b366a] flex items-center justify-center">
-                        <span className="material-symbols-outlined text-[20px]">rocket_launch</span>
+                        <span className="material-symbols-outlined text-[20px]">psychology</span>
                      </div>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">94<span className="text-xl">%</span></h3>
-                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Platform Uptime</p>
+                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">High</h3>
+                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Mastery Level</p>
                   </div>
                </div>
             </div>

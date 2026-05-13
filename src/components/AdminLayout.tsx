@@ -23,10 +23,9 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
         setIsSeeding(true);
         console.log('Admin Platform: Data missing or incomplete. Initializing preset data...');
         seedDatabase()
-          .then(() => alert('System initialized with preset curriculum and questions.'))
+          .then(() => console.log('System initialized with preset curriculum and questions.'))
           .catch(err => {
             console.error('Admin Platform: Initialization failed:', err);
-            alert(`Initialization failed: ${err.message || 'Unknown error'}. Please ensure you are logged in as castanar656@gmail.com`);
           })
           .finally(() => setIsSeeding(false));
       }

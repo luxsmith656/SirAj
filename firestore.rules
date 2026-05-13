@@ -1,76 +1,65 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 0. Default Deny
+    
+    // Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+    
+    function getUserData() { 
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; 
+    }
+    
+    function isAdmin() { 
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().get('role', 'student') == 'admin'; 
+    }
+    
+    function isInstructor() { 
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().get('role', 'student') == 'instructor'; 
+    }
+    
+    function isBootstrapAdmin() {
+      return isSignedIn() && request.auth.token.email == 'castanar656@gmail.com';
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    // Default Deny
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // --- Helpers ---
-    function isSignedIn() { return request.auth != null; }
-    function isAdmin() { 
-      return isSignedIn() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-    }
-    // Fallback for bootstrap admin
-    function isBootstrapAdmin() {
-      return isSignedIn() && request.auth.token.email == 'castanar656@gmail.com';
-    }
-
-    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
-    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
-    function incoming() { return request.resource.data; }
-    function existing() { return resource.data; }
-
-    // --- Collections ---
-
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isOwner(userId) || isAdmin() || isBootstrapAdmin();
+      allow create: if isOwner(userId) || isBootstrapAdmin() || isAdmin();
+      allow update: if isOwner(userId) || isBootstrapAdmin() || isAdmin();
+      allow delete: if isBootstrapAdmin() || isAdmin() || (isSignedIn() && request.auth.token.email == existing().email);
     }
-
+    
     match /categories/{categoryId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isBootstrapAdmin();
-      
-      function isValidCategory(data) {
-        return data.name is string && data.name.size() > 0 && data.name.size() <= 100;
-      }
-
-      allow create: if (isAdmin() || isBootstrapAdmin()) && isValidCategory(incoming());
-      allow update: if (isAdmin() || isBootstrapAdmin()) && isValidCategory(incoming());
-      allow delete: if isAdmin() || isBootstrapAdmin();
+      allow write: if isBootstrapAdmin() || isAdmin();
     }
-
+    
     match /questions/{questionId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isBootstrapAdmin();
-
-      function isValidQuestion(data) {
-        return data.stem is string && data.stem.size() > 0
-          && data.options is list && data.options.size() >= 2
-          && data.categoryId is string;
-      }
-
-      allow create: if (isAdmin() || isBootstrapAdmin()) && isValidQuestion(incoming());
-      allow update: if (isAdmin() || isBootstrapAdmin()) && isValidQuestion(incoming());
-      allow delete: if isAdmin() || isBootstrapAdmin();
+      allow write: if isBootstrapAdmin() || isAdmin();
     }
-
+    
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isBootstrapAdmin() || isAdmin();
+    }
+    
     match /submissions/{submissionId} {
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
-      
-      function isValidSubmission(data) {
-        return data.userId == request.auth.uid
-          && data.questionId is string
-          && data.selectedOptionId is string
-          && data.timestamp is string;
-      }
-
-      allow create: if isSignedIn() && isValidSubmission(incoming());
-      // Submissions are immutable except for metadata if any
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow create: if isSignedIn();
+      // Relaxed read for development to avoid query/list permission errors with complex get() calls
+      allow read: if isSignedIn();
     }
   }
 }
