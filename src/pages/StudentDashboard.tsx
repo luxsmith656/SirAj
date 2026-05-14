@@ -446,30 +446,49 @@ export default function StudentDashboard() {
                     Achievement Badges
                  </h2>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.streak && user.streak >= 10 ? 'border-amber-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
-                       <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.streak && user.streak >= 10 ? 'bg-amber-50 border-amber-100' : 'bg-slate-100 border-slate-200'}`}>
-                         <Flame className={user?.streak && user.streak >= 10 ? 'text-amber-500' : 'text-slate-400'} size={24} />
-                       </div>
-                       <p className="font-bold text-xs text-slate-800">10-Day Streak</p>
-                    </div>
-                    <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.diagnosticCompleted ? 'border-indigo-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
-                       <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.diagnosticCompleted ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-100 border-slate-200'}`}>
-                         <Award className={user?.diagnosticCompleted ? 'text-indigo-500' : 'text-slate-400'} size={24} />
-                       </div>
-                       <p className="font-bold text-xs text-slate-800">Diagnostic Done</p>
-                    </div>
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
-                       <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-                         <Brain className="text-slate-400" size={24} />
-                       </div>
-                       <p className="font-bold text-xs text-slate-800">Subject Master</p>
-                    </div>
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
-                       <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-                         <Medal className="text-slate-400" size={24} />
-                       </div>
-                       <p className="font-bold text-xs text-slate-800">Top 10% Rank</p>
-                    </div>
+                    {earnedBadges.length > 0 ? (
+                      earnedBadges.map((badge) => (
+                        <motion.div 
+                          key={badge.id}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm flex flex-col items-center justify-center text-center transition-all"
+                        >
+                           <div className="w-12 h-12 bg-amber-50 border border-amber-100 rounded-full flex items-center justify-center mb-2 shadow-inner">
+                             <Award className="text-amber-500" size={24} />
+                           </div>
+                           <p className="font-bold text-xs text-slate-800">{badge.name}</p>
+                           <p className="text-[10px] text-slate-400 font-medium">{badge.rarity}</p>
+                        </motion.div>
+                      ))
+                    ) : (
+                      <>
+                        <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.streak && user.streak >= 10 ? 'border-amber-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
+                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.streak && user.streak >= 10 ? 'bg-amber-50 border-amber-100' : 'bg-slate-100 border-slate-200'}`}>
+                             <Flame className={user?.streak && user.streak >= 10 ? 'text-amber-500' : 'text-slate-400'} size={24} />
+                           </div>
+                           <p className="font-bold text-xs text-slate-800">10-Day Streak</p>
+                        </div>
+                        <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.diagnosticCompleted ? 'border-indigo-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
+                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.diagnosticCompleted ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-100 border-slate-200'}`}>
+                             <Award className={user?.diagnosticCompleted ? 'text-indigo-500' : 'text-slate-400'} size={24} />
+                           </div>
+                           <p className="font-bold text-xs text-slate-800">Diagnostic Done</p>
+                        </div>
+                        <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
+                           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
+                             <Brain className="text-slate-400" size={24} />
+                           </div>
+                           <p className="font-bold text-xs text-slate-800">Subject Master</p>
+                        </div>
+                        <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
+                           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
+                             <Medal className="text-slate-400" size={24} />
+                           </div>
+                           <p className="font-bold text-xs text-slate-800">Top 10% Rank</p>
+                        </div>
+                      </>
+                    )}
                  </div>
               </div>
             </div>

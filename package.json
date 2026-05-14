@@ -36,7 +36,8 @@
   },
   "overrides": {
     "react-virtualized-auto-sizer": {
-      "react": "$react"
+      "react": "$react",
+      "react-dom": "$react-dom"
     }
   },
   "devDependencies": {
