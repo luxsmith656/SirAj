@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { BrainCircuit, Loader2, Save, X } from 'lucide-react';
+import { BrainCircuit, Loader2, Save, X, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import Toast from '../components/Toast';
 
@@ -13,6 +13,15 @@ export default function AIDrafts() {
   const [drafts, setDrafts] = useState<any[]>([]);
   const [toastMsg, setToastMsg] = useState('');
   const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    const q = query(collection(db, 'aiDrafts'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, snap => {
+      const ms = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setDrafts(ms);
+    });
+    return () => unsub();
+  }, []);
 
   const handleGenerate = async () => {
     if (!topic) return;
@@ -27,7 +36,17 @@ export default function AIDrafts() {
       });
       const data = await res.json();
       if (data.success) {
-        setDrafts(data.questions);
+        // Save all to aiDrafts
+        for (const q of data.questions) {
+          await addDoc(collection(db, 'aiDrafts'), {
+            ...q,
+            topic,
+            difficulty,
+            createdAt: Date.now()
+          });
+        }
+        setToastMsg('Generated and saved to drafts!');
+        setShowToast(true);
       } else {
         throw new Error(data.error);
       }
@@ -39,21 +58,33 @@ export default function AIDrafts() {
     }
   };
 
-  const saveDraft = async (draft: any, index: number) => {
+  const approveDraft = async (draft: any) => {
     try {
        await addDoc(collection(db, 'questions'), {
-          ...draft,
-          categoryId: 'ai-generated',
+          stem: draft.stem,
+          options: draft.options,
+          correctOptionId: draft.correctOptionId,
+          explanation: draft.explanation,
+          categoryId: 'ai-generated', // Admin has to assign category later or here
+          difficulty: draft.difficulty,
           createdAt: Date.now()
        });
-       setToastMsg('Question saved to bank!');
+       await deleteDoc(doc(db, 'aiDrafts', draft.id));
+       setToastMsg('Question approved and saved to bank!');
        setShowToast(true);
-       
-       // Remove from drafts list
-       setDrafts(d => d.filter((_, i) => i !== index));
     } catch (e: any) {
-       setToastMsg('Failed to save: ' + e.message);
+       setToastMsg('Failed to approve: ' + e.message);
        setShowToast(true);
+    }
+  };
+
+  const rejectDraft = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'aiDrafts', id));
+      setToastMsg('Draft discarded');
+      setShowToast(true);
+    } catch (e: any) {
+      console.error(e);
     }
   };
 
@@ -106,17 +137,17 @@ export default function AIDrafts() {
 
         {drafts.length > 0 && (
           <div className="space-y-6">
-             <h3 className="text-xl font-bold text-slate-800">Generated Drafts</h3>
+             <h3 className="text-xl font-bold text-slate-800">Pending Review ({drafts.length})</h3>
              {drafts.map((draft, i) => (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  key={i} 
+                  key={draft.id} 
                   className="bg-white rounded-2xl border border-indigo-100 shadow-sm p-6 relative overflow-hidden group"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                     <button onClick={() => setDrafts(d => d.filter((_, idx) => idx !== i))} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"><X size={18} /></button>
-                     <button onClick={() => saveDraft(draft, i)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 flex items-center gap-1 font-bold text-sm"><Save size={18}/> Appprove</button>
+                  <div className="absolute top-0 right-0 p-4 opacity-100 flex gap-2">
+                     <button onClick={() => rejectDraft(draft.id)} className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100"><Trash2 size={18} /></button>
+                     <button onClick={() => approveDraft(draft)} className="p-2 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 flex items-center gap-1 font-bold text-sm"><Save size={18}/> Approve</button>
                   </div>
                   <h4 className="font-bold text-lg text-slate-800 mb-4 pr-32">{draft.stem}</h4>
                   <div className="space-y-2 mb-4">
@@ -134,9 +165,7 @@ export default function AIDrafts() {
           </div>
         )}
 
-        {showToast && (
-          <Toast message={toastMsg} isVisible={showToast} onClose={() => setShowToast(false)} type={toastMsg.includes('Failed') ? 'error' : 'success'} />
-        )}
+        <Toast message={toastMsg} isVisible={showToast} onClose={() => setShowToast(false)} type={toastMsg.includes('Failed') ? 'error' : 'success'} />
       </div>
     </DashboardLayout>
   );

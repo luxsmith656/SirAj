@@ -57,6 +57,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const userData = userDoc.data() as UserProfile;
           const currentRole = isAdminEmail ? 'admin' : userData.role;
           
+          let newStreak = userData.streak || 0;
+          let newLastLogin = userData.lastLoginDate || '';
+
+          const todayStr = new Date().toISOString().split('T')[0];
+          
+          if (newLastLogin !== todayStr) {
+             const yesterday = new Date();
+             yesterday.setDate(yesterday.getDate() - 1);
+             const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+             if (newLastLogin === yesterdayStr) {
+                newStreak += 1;
+             } else {
+                newStreak = 1;
+             }
+             newLastLogin = todayStr;
+             
+             updateDoc(doc(db, 'users', firebaseUser.uid), {
+                streak: newStreak,
+                lastLoginDate: newLastLogin
+             }).catch(err => console.error('Failed to update streak:', err));
+             
+             userData.streak = newStreak;
+             userData.lastLoginDate = newLastLogin;
+          }
+
           setUser({ ...userData, uid: firebaseUser.uid, role: (currentRole as Role) || 'student' });
 
           if (isAdminEmail && userData.role !== 'admin') {
@@ -102,7 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             onboarded: existingData.onboarded ?? (pendingData.fullName && pendingData.age ? false : false), 
             fullName: pendingData.fullName || existingData.fullName || '',
             age: pendingData.age ? parseInt(pendingData.age) : (existingData.age || undefined),
-            instructorId: existingData.instructorId || null
+            instructorId: existingData.instructorId || null,
+            streak: 1,
+            lastLoginDate: new Date().toISOString().split('T')[0]
           } as any;
           
           await setDoc(doc(db, 'users', firebaseUser.uid), newUser);

@@ -51,6 +51,24 @@ export default function ExamSimulation() {
              }
           }
         }
+        
+        if (fetched.length === 0) {
+          // Fallback to firestore directly
+          const { collection, getDocs, query, where } = await import('firebase/firestore');
+          const { db } = await import('../lib/firebase');
+          let firestoreQuestions: Question[] = [];
+          
+          if (categoryId) {
+             const qSnap = await getDocs(query(collection(db, 'questions'), where('categoryId', '==', categoryId)));
+             qSnap.forEach(d => firestoreQuestions.push({ id: d.id, ...d.data() } as Question));
+          } else {
+             const qSnap = await getDocs(collection(db, 'questions'));
+             qSnap.forEach(d => firestoreQuestions.push({ id: d.id, ...d.data() } as Question));
+             firestoreQuestions = firestoreQuestions.sort(() => 0.5 - Math.random()).slice(0, isMock ? 50 : 10);
+          }
+          fetched = firestoreQuestions;
+        }
+
         setQuestions(fetched);
       } catch (error) {
         console.error('Failed to load local questions', error);

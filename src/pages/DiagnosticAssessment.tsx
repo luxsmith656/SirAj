@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { OfflineData } from '../lib/offline/offlineData';
 import { motion } from 'motion/react';
@@ -24,34 +24,58 @@ export default function DiagnosticAssessment() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // We'll gather 5-10 questions from different categories to assess baseline
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        const cats = await OfflineData.getCategories();
-        let loaded: Question[] = [];
-        for (const cat of cats) {
-           const someQs = await OfflineData.getRandomQuestions(cat.id, 2);
-           loaded = [...loaded, ...someQs];
+        let qs: Question[] = [];
+        
+        // Map user selected focus to category name
+        let targetCategoryNames: string[] = [];
+        if (user?.learningMode === 'class_based') {
+           // We could get class details, but since user.selectedFocus is set:
+           targetCategoryNames = mapFocusToCategories(user?.selectedFocus);
+        } else {
+           targetCategoryNames = mapFocusToCategories(user?.selectedFocus);
         }
 
-        if (loaded.length === 0) {
-          // Large sample fallback data to ensure diagnostic is completely functional
-          loaded = [
+        const catsSnap = await getDocs(collection(db, 'categories'));
+        let targetCatIds: string[] = [];
+        catsSnap.forEach(snap => {
+          if (targetCategoryNames.length === 0 || targetCategoryNames.includes(snap.data().name)) {
+            targetCatIds.push(snap.id);
+          }
+        });
+
+        // Pull questions. No "IN" operator works easily for large arrays, but we will just query all or a few chunks.
+        const qSnap = await getDocs(collection(db, 'questions'));
+        let allQuestions: Question[] = [];
+        qSnap.forEach(snap => {
+          const d = snap.data();
+          if (targetCatIds.includes(d.categoryId)) {
+            allQuestions.push({
+              id: snap.id,
+              stem: d.stem,
+              options: d.options,
+              correctOptionId: d.correctOptionId
+            });
+          }
+        });
+
+        // Shuffle and pick 10
+        allQuestions.sort(() => 0.5 - Math.random());
+        qs = allQuestions.slice(0, 10);
+
+        if (qs.length === 0) {
+          qs = [
             { id: 'f1', stem: 'Which philosophy of education strongly emphasizes the back-to-basics curriculum?', options: [{id:'A', text:'Essentialism'},{id:'B', text:'Progressivism'},{id:'C', text:'Existentialism'},{id:'D', text:'Perennialism'}], correctOptionId: 'A' },
             { id: 'f2', stem: 'In Piaget’s theory, what is the process of modifying existing schemas to fit new information?', options: [{id:'A', text:'Assimilation'},{id:'B', text:'Accommodation'},{id:'C', text:'Equilibration'},{id:'D', text:'Conservation'}], correctOptionId: 'B' },
             { id: 'f3', stem: 'According to Erikson, what is the primary psychosocial crisis of adolescence?', options: [{id:'A', text:'Trust vs. Mistrust'},{id:'B', text:'Identity vs. Role Confusion'},{id:'C', text:'Intimacy vs. Isolation'},{id:'D', text:'Industry vs. Inferiority'}], correctOptionId: 'B' },
             { id: 'f4', stem: 'What type of assessment is given before instruction to determine students\' entry knowledge and skills?', options: [{id:'A', text:'Formative Assessment'},{id:'B', text:'Summative Assessment'},{id:'C', text:'Diagnostic Assessment'},{id:'D', text:'Placement Assessment'}], correctOptionId: 'C' },
             { id: 'f5', stem: 'Which of the following is an example of an extrinsic motivation?', options: [{id:'A', text:'Learning for the joy of it'},{id:'B', text:'Studying to get a high grade'},{id:'C', text:'Reading a book out of curiosity'},{id:'D', text:'Solving puzzles for fun'}], correctOptionId: 'B' },
-            { id: 'f6', stem: 'Who is known as the "Father of Modern Kindergarten"?', options: [{id:'A', text:'John Dewey'},{id:'B', text:'Maria Montessori'},{id:'C', text:'Friedrich Froebel'},{id:'D', text:'Jean Piaget'}], correctOptionId: 'C' },
-            { id: 'f7', stem: 'What is the highest level in Bloom\'s Original Taxonomy of the Cognitive Domain?', options: [{id:'A', text:'Synthesis'},{id:'B', text:'Evaluation'},{id:'C', text:'Analysis'},{id:'D', text:'Application'}], correctOptionId: 'B' },
-            { id: 'f8', stem: 'Which law professionalized teaching in the Philippines?', options: [{id:'A', text:'RA 7722'},{id:'B', text:'RA 7836'},{id:'C', text:'RA 9293'},{id:'D', text:'RA 10533'}], correctOptionId: 'B' },
-            { id: 'f9', stem: 'What learning theory states that learning is a change in observable behavior?', options: [{id:'A', text:'Cognitivism'},{id:'B', text:'Constructivism'},{id:'C', text:'Behaviorism'},{id:'D', text:'Humanism'}], correctOptionId: 'C' },
-            { id: 'f10', stem: 'The "Zone of Proximal Development" is a concept introduced by whom?', options: [{id:'A', text:'Lev Vygotsky'},{id:'B', text:'Albert Bandura'},{id:'C', text:'B.F. Skinner'},{id:'D', text:'Ivan Pavlov'}], correctOptionId: 'A' },
           ];
         }
 
-        setQuestions(loaded);
+        setQuestions(qs);
       } catch (error) {
         console.error('Failed to load diagnostic questions', error);
       } finally {
@@ -59,7 +83,17 @@ export default function DiagnosticAssessment() {
       }
     };
     loadQuestions();
-  }, []);
+  }, [user]);
+
+  const mapFocusToCategories = (focus?: string) => {
+    switch (focus) {
+      case 'general_education': return ['General Education'];
+      case 'professional_education': return ['Professional Education'];
+      case 'major_specialization': return ['Major: English', 'Major: Mathematics', 'Major: Science', 'Major: Social Science'];
+      case 'full_let_review': return []; // All
+      default: return [];
+    }
+  };
 
   const handleNext = async (optionId: string) => {
     const newAnswers = { ...answers, [questions[currentIndex].id]: optionId };
@@ -78,18 +112,37 @@ export default function DiagnosticAssessment() {
       const baselineScore = Math.round((correct / questions.length) * 100);
 
       try {
-        // Save learner profile online since it's a structural thing, but could also be local
+        const attemptRef = doc(collection(db, 'diagnosticAttempts'));
+        await setDoc(attemptRef, {
+          userId: user!.uid,
+          score: baselineScore,
+          totalQuestions: questions.length,
+          answers: newAnswers,
+          completedAt: Date.now()
+        });
+
+        const strengths = baselineScore >= 70 ? ['Concept Mastery'] : [];
+        const weaknesses = baselineScore < 70 ? ['Needs Review', 'Test Taking'] : [];
+
+        // Save learner profile
         await setDoc(doc(db, 'learnerProfiles', user!.uid), {
            userId: user!.uid,
            baselineScore,
            completedAt: Date.now(),
-           weaknesses: [],
-           strengths: [],
-           recommendedPath: 'Standard'
+           weaknesses: weaknesses,
+           strengths: strengths,
+           recommendedPath: baselineScore >= 70 ? 'Advanced Review' : 'Standard Foundation'
         });
+
+        // Update user
+        await setDoc(doc(db, 'users', user!.uid), {
+           diagnosticCompleted: true,
+           updatedAt: Date.now()
+        }, { merge: true });
+
         await refreshUser();
         navigate('/student/dashboard');
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to save profile', err);
         // Fallback to offline dash anyway
         navigate('/student/dashboard');

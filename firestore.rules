@@ -86,6 +86,30 @@ service cloud.firestore {
       allow delete: if isBootstrapAdmin() || isAdmin() || (isInstructor() && existing().instructorId == request.auth.uid);
     }
     
+    match /diagnosticAttempts/{attemptId} {
+      allow create, update: if isSignedIn();
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor() || isAdmin());
+    }
+
+    match /learnerProfiles/{profileId} {
+      allow create, update: if isSignedIn() && request.auth.uid == profileId;
+      allow read: if isSignedIn() && (profileId == request.auth.uid || isInstructor() || isAdmin());
+    }
+
+    match /quizAttempts/{attemptId} {
+      allow create, update: if isSignedIn() && (incoming().userId == request.auth.uid || existing().userId == request.auth.uid);
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor() || isAdmin());
+    }
+
+    match /moduleProgress/{progressId} {
+      allow create, update: if isSignedIn() && (incoming().userId == request.auth.uid || existing().userId == request.auth.uid);
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor() || isAdmin());
+    }
+    
+    match /aiDrafts/{draftId} {
+      allow read, write: if isSignedIn() && (isInstructor() || isAdmin() || isBootstrapAdmin());
+    }
+    
     match /settings/{docId} {
       allow read: if true;
       allow write: if isBootstrapAdmin() || isAdmin();

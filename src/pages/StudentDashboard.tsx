@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 import { useSync } from '../context/SyncContext';
+import { OfflineData } from '../lib/offline/offlineData';
 import { 
   BookOpen, 
   GraduationCap, 
@@ -19,7 +20,8 @@ import {
   Bell,
   Search,
   RefreshCw,
-  BookText
+  BookText,
+  Flame, Award, Brain, Medal
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -28,6 +30,59 @@ export default function StudentDashboard() {
   const { settings } = useBranding();
   const { isSyncing, lastSync, triggerSync } = useSync();
   const navigate = useNavigate();
+
+  const [profile, setProfile] = useState<any>(null);
+  const [stats, setStats] = useState({
+    avgScore: '0%',
+    timeSpent: '0 hrs',
+    mastery: '0%'
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return;
+      try {
+        const profileRef = await getDoc(doc(db, 'learnerProfiles', user.uid));
+        let baseMastery = 0;
+        if (profileRef.exists()) {
+          setProfile(profileRef.data());
+          baseMastery = profileRef.data().baselineScore || 0;
+          setStats(prev => ({ ...prev, mastery: `${baseMastery}%` }));
+        }
+
+        const attemptsQ = query(collection(db, 'quizAttempts'), where('userId', '==', user.uid));
+        const attemptsSnap = await getDocs(attemptsQ);
+        
+        const offlineQ = await OfflineData.getUnsyncedAttempts();
+        const allAttempts = [...attemptsSnap.docs.map(d => d.data()), ...offlineQ];
+
+        if (allAttempts.length > 0) {
+          let totalScore = 0;
+          let totalTime = 0;
+          let totalQuestions = 0;
+          
+          allAttempts.forEach(att => {
+            totalScore += att.score || 0;
+            totalQuestions += att.total || 0;
+            totalTime += att.timeSpent || 0;
+          });
+
+          const avg = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
+          // Simple mastery inflation just for demo
+          const mastery = Math.round(baseMastery + (avg * 0.2));
+
+          setStats({
+            avgScore: `${avg}%`,
+            timeSpent: `${(totalTime / 3600).toFixed(1)} hrs`,
+            mastery: `${Math.min(100, Math.max(baseMastery, mastery))}%` 
+          });
+        }
+      } catch (e) {
+        console.error('Failed to fetch dashboard data', e);
+      }
+    };
+    fetchData();
+  }, [user]);
 
   useEffect(() => {
     // Auto-sync on load if never synced or synced > 24 hours ago
@@ -185,9 +240,9 @@ export default function StudentDashboard() {
                 {user?.learningMode === 'class_based' ? 'Class Enrolled' : 'Self Review Mode'}
               </span>
               <h1 className="text-2xl md:text-3xl font-extrabold font-headline tracking-tight leading-tight">
-                Master the {user?.selectedFocus ? user.selectedFocus.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'LET'} Path
+                Master the {user?.selectedFocus ? user.selectedFocus.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'LET'} Path
               </h1>
-              <p className="text-blue-100 text-sm font-medium opacity-90 leading-relaxed md:max-w-md">You've reached 68% mastery. Take a simulated exam today to test your readiness for the actual board exam.</p>
+              <p className="text-blue-100 text-sm font-medium opacity-90 leading-relaxed md:max-w-md">You've reached {stats.mastery} mastery. Take a simulated exam today to test your readiness for the actual board exam.</p>
               <div className="flex flex-wrap gap-3 pt-2">
                 <motion.button 
                   whileHover={{ scale: 1.02 }}
@@ -202,7 +257,7 @@ export default function StudentDashboard() {
 
             <div className="hidden lg:block relative z-10 shrink-0">
                <div className="w-36 h-36 rounded-full border-[6px] border-white/10 flex flex-col items-center justify-center bg-white/5 backdrop-blur-sm shadow-inner">
-                  <span className="text-4xl font-extrabold font-headline tracking-tighter">68%</span>
+                  <span className="text-4xl font-extrabold font-headline tracking-tighter">{stats.mastery}</span>
                   <span className="text-[9px] font-bold uppercase opacity-60 mt-0.5 tracking-widest">Mastery</span>
                </div>
             </div>
@@ -212,8 +267,8 @@ export default function StudentDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: 'Study Streak', value: `${user?.streak || 1} Days`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' },
-              { label: 'Time Spent', value: '14.5 hrs', icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-              { label: 'Avg Score', value: '78%', icon: BarChart, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+              { label: 'Time Spent', value: stats.timeSpent, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
+              { label: 'Avg Score', value: stats.avgScore, icon: BarChart, color: 'text-emerald-500', bg: 'bg-emerald-50' },
               { label: 'Rank', value: '#248', icon: GraduationCap, color: 'text-indigo-500', bg: 'bg-indigo-50' },
             ].map((stat, i) => (
               <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
@@ -236,8 +291,8 @@ export default function StudentDashboard() {
                 Recommended Path
               </h2>
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 mb-4 shadow-sm">
-                 <h3 className="font-bold text-indigo-900 text-lg mb-2">Focus Area: Child & Adolescent Development</h3>
-                 <p className="text-sm text-indigo-700 mb-4">Based on your diagnostic assessment, mastering this module will yield the highest impact on your overall score.</p>
+                 <h3 className="font-bold text-indigo-900 text-lg mb-2">Focus Area: {profile?.recommendedPath || 'General Foundations'}</h3>
+                 <p className="text-sm text-indigo-700 mb-4">Based on your diagnostic assessment and recent activity, mastering this module will yield the highest impact on your overall score.</p>
                  <button onClick={() => navigate('/quest')} className="bg-[#1b366a] text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-[#112244] shadow-md transition-all">Start Recommended Module</button>
               </div>
 
@@ -281,34 +336,33 @@ export default function StudentDashboard() {
                 </motion.button>
               </div>
 
-              {/* Achievements / Gamification */}
-              <div className="mt-8 space-y-4 pb-20 md:pb-0">
+               <div className="mt-8 space-y-4 pb-20 md:pb-0">
                  <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
                     <Trophy className="text-amber-500" size={20} />
                     Achievement Badges
                  </h2>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center">
-                       <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center mb-2 shadow-inner border border-amber-100">
-                         <span className="material-symbols-outlined text-amber-500">local_fire_department</span>
+                    <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.streak && user.streak >= 10 ? 'border-amber-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
+                       <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.streak && user.streak >= 10 ? 'bg-amber-50 border-amber-100' : 'bg-slate-100 border-slate-200'}`}>
+                         <Flame className={user?.streak && user.streak >= 10 ? 'text-amber-500' : 'text-slate-400'} size={24} />
                        </div>
                        <p className="font-bold text-xs text-slate-800">10-Day Streak</p>
                     </div>
-                    <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center">
-                       <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mb-2 shadow-inner border border-indigo-100">
-                         <span className="material-symbols-outlined text-indigo-500">workspace_premium</span>
+                    <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.diagnosticCompleted ? 'border-indigo-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
+                       <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.diagnosticCompleted ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-100 border-slate-200'}`}>
+                         <Award className={user?.diagnosticCompleted ? 'text-indigo-500' : 'text-slate-400'} size={24} />
                        </div>
-                       <p className="font-bold text-xs text-slate-800">First Exam Completed</p>
+                       <p className="font-bold text-xs text-slate-800">Diagnostic Done</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-                         <span className="material-symbols-outlined text-slate-400">psychology</span>
+                         <Brain className="text-slate-400" size={24} />
                        </div>
                        <p className="font-bold text-xs text-slate-800">Subject Master</p>
                     </div>
                     <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-                         <span className="material-symbols-outlined text-slate-400">military_tech</span>
+                         <Medal className="text-slate-400" size={24} />
                        </div>
                        <p className="font-bold text-xs text-slate-800">Top 10% Rank</p>
                     </div>
