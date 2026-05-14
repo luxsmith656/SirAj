@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 import { useSync } from '../context/SyncContext';
+import { useTheme } from '../context/ThemeContext';
 import { OfflineData } from '../lib/offline/offlineData';
 import { 
   BookOpen, 
@@ -30,6 +31,7 @@ export default function StudentDashboard() {
   const { user, signOut } = useAuth();
   const { settings } = useBranding();
   const { isSyncing, lastSync, triggerSync } = useSync();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<any>(null);
@@ -42,14 +44,56 @@ export default function StudentDashboard() {
   });
   const [earnedBadges, setEarnedBadges] = useState<any[]>([]);
 
+  enum OperationType {
+    CREATE = 'create',
+    UPDATE = 'update',
+    DELETE = 'delete',
+    LIST = 'list',
+    GET = 'get',
+    WRITE = 'write',
+  }
+
+  interface FirestoreErrorInfo {
+    error: string;
+    operationType: OperationType;
+    path: string | null;
+    authInfo: {
+      userId?: string | null;
+      email?: string | null;
+      emailVerified?: boolean | null;
+      isAnonymous?: boolean | null;
+    }
+  }
+
+  function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+    const errInfo: FirestoreErrorInfo = {
+      error: error instanceof Error ? error.message : String(error),
+      authInfo: {
+        userId: auth.currentUser?.uid,
+        email: auth.currentUser?.email,
+        emailVerified: auth.currentUser?.emailVerified,
+        isAnonymous: auth.currentUser?.isAnonymous
+      },
+      operationType,
+      path
+    };
+    console.error('Firestore Error: ', JSON.stringify(errInfo));
+    throw new Error(JSON.stringify(errInfo));
+  }
+
   useEffect(() => {
     const fetchBadges = async () => {
       if (!user?.earnedBadges || user.earnedBadges.length === 0) return;
       try {
         const badgeList: any[] = [];
         for (const bid of user.earnedBadges) {
-          const bdoc = await getDoc(doc(db, 'badges', bid));
-          if (bdoc.exists()) badgeList.push({ id: bdoc.id, ...bdoc.data() });
+          const badgePath = `badges/${bid}`;
+          try {
+            const bdoc = await getDoc(doc(db, 'badges', bid));
+            if (bdoc.exists()) badgeList.push({ id: bdoc.id, ...bdoc.data() });
+          } catch (e) {
+            handleFirestoreError(e, OperationType.GET, badgePath);
+          }
         }
         setEarnedBadges(badgeList);
       } catch (e) {
@@ -177,10 +221,10 @@ export default function StudentDashboard() {
   };
 
   return (
-    <div className="bg-[#f0f2f5] text-slate-800 font-body min-h-screen antialiased flex flex-col md:flex-row">
+    <div className="bg-surface text-on-surface font-body min-h-screen antialiased flex flex-col md:flex-row transition-colors duration-300">
       
       {/* Sidebar for Desktop */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen shadow-sm">
+      <aside className="hidden md:flex w-64 bg-surface-container-lowest border-r border-outline-variant flex-col sticky top-0 h-screen shadow-sm">
         <div className="p-6">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -188,41 +232,41 @@ export default function StudentDashboard() {
              </div>
              <h1 className="text-primary text-xl font-extrabold font-headline tracking-tight leading-none truncate">{settings.siteName}</h1>
           </div>
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest mt-2">Student Portal</p>
+          <p className="text-on-surface-variant/40 text-[10px] font-bold uppercase tracking-widest mt-2">Student Portal</p>
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 text-[#1b366a] font-bold transition-all">
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary font-bold transition-all">
             <LayoutDashboard size={18} />
             Dashboard
           </button>
-          <button onClick={() => navigate('/focus')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors font-semibold">
+          <button onClick={() => navigate('/focus')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors font-semibold">
             <Target size={18} />
             My Focus
           </button>
-          <button onClick={() => navigate('/exam?type=mock')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors font-semibold">
+          <button onClick={() => navigate('/exam?type=mock')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors font-semibold">
             <GraduationCap size={18} />
             Take Exam
           </button>
-          <button onClick={() => navigate('/quiz-results')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-slate-50 transition-colors font-semibold">
+          <button onClick={() => navigate('/quiz-results')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container transition-colors font-semibold">
             <BarChart size={18} />
             Performance
           </button>
         </nav>
 
-        <div className="p-4 mt-auto border-t border-slate-100">
-          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl mb-3 border border-slate-100">
-             <div className="w-9 h-9 bg-[#1b366a] rounded-full flex items-center justify-center text-white font-bold text-sm uppercase">
-               {user?.email[0]}
+        <div className="p-4 mt-auto border-t border-outline-variant">
+          <div className="flex items-center gap-3 p-3 bg-surface-container rounded-xl mb-3 border border-outline-variant">
+             <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center text-on-primary font-bold text-sm uppercase shrink-0">
+                {user?.email?.[0] || 'U'}
              </div>
-             <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-800 truncate">{user?.fullName || user?.email}</p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">{user?.email}</p>
+             <div className="flex-1 min-w-0 pr-2">
+                <p className="text-xs font-bold text-on-surface truncate">{user?.fullName || user?.email}</p>
+                <p className="text-[10px] text-on-surface-variant/60 font-medium truncate lowercase">{user?.email}</p>
              </div>
           </div>
           <button 
             onClick={handleSignOut}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-red-600 font-bold hover:bg-red-50 transition-colors text-sm"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-error font-bold hover:bg-error/5 transition-colors text-sm"
           >
             <LogOut size={18} />
             Sign Out
@@ -233,40 +277,46 @@ export default function StudentDashboard() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col">
         {/* Top Header */}
-        <header className="px-6 py-4 flex items-center justify-between bg-white md:bg-white/80 md:backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
+        <header className="px-6 py-4 flex items-center justify-between bg-surface-container-lowest md:bg-surface/80 md:backdrop-blur-md border-b border-outline-variant sticky top-0 z-30">
           <div className="md:hidden flex items-center gap-2">
              {renderLogo()}
              <h1 className="text-primary text-xl font-extrabold font-headline tracking-tighter truncate max-w-[200px]">{settings.siteName}</h1>
           </div>
-          <div className="hidden md:flex items-center bg-slate-100 rounded-full px-4 py-2 w-72">
-             <Search size={16} className="text-slate-400 mr-2" />
-             <input type="text" placeholder="Search modules..." className="bg-transparent border-none outline-none text-xs w-full" />
+          <div className="hidden md:flex items-center bg-surface-container rounded-full px-4 py-2 w-72">
+             <Search size={16} className="text-on-surface-variant/40 mr-2" />
+             <input type="text" placeholder="Search modules..." className="bg-transparent border-none outline-none text-xs w-full text-on-surface" />
           </div>
           <div className="flex items-center gap-2">
-            {/* Sync Indicator */}
-            <div className="hidden md:flex items-center mr-4 text-xs font-semibold text-slate-400">
+            <button 
+              onClick={toggleTheme}
+              className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-10 h-10 flex items-center justify-center"
+            >
+              <span className="material-symbols-outlined text-[20px]">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
+            </button>
+            
+            <div className="hidden md:flex items-center mr-4 text-xs font-semibold text-on-surface-variant/40">
               {isSyncing ? (
                 <>
-                   <RefreshCw size={14} className="mr-2 animate-spin text-[#1b366a]" />
-                   Syncing offline data...
+                   <RefreshCw size={14} className="mr-2 animate-spin text-primary" />
+                   Syncing...
                 </>
               ) : (
-                <button onClick={triggerSync} className="flex items-center hover:text-slate-600 transition-colors" title={lastSync ? `Last synced: ${new Date(lastSync).toLocaleString()}` : 'Sync now'}>
+                <button onClick={triggerSync} className="flex items-center hover:text-on-surface-variant transition-colors" title={lastSync ? `Last synced: ${new Date(lastSync).toLocaleString()}` : 'Sync now'}>
                    <RefreshCw size={14} className="mr-2" />
                    Synced
                 </button>
               )}
             </div>
             
-            <button onClick={() => alert('No new notifications')} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
+            <button onClick={() => alert('No new notifications')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors">
               <Bell size={20} />
             </button>
-            <button onClick={() => navigate('/admin/settings')} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors hidden md:block">
+            <button onClick={() => navigate('/admin/settings')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors hidden md:block">
               <Settings size={20} />
             </button>
             <button 
               onClick={handleSignOut}
-              className="p-2 text-slate-400 md:hidden"
+              className="p-2 text-on-surface-variant md:hidden"
             >
               <LogOut size={20} />
             </button>
@@ -277,7 +327,7 @@ export default function StudentDashboard() {
         <div className="p-4 md:p-8 max-w-6xl mx-auto w-full space-y-6">
           
           {/* Banner */}
-          <div className="relative overflow-hidden bg-[#1b366a] text-white p-6 md:p-10 rounded-3xl shadow-xl md:flex md:items-center md:justify-between group">
+          <div className="relative overflow-hidden bg-primary text-on-primary p-6 md:p-10 rounded-[2.5rem] shadow-xl md:flex md:items-center md:justify-between group">
             <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity">
               <BookOpen className="absolute -top-10 -right-10 w-64 h-64 rotate-12" />
               <Target className="absolute -bottom-10 -left-10 w-48 h-48 -rotate-12" />
@@ -314,19 +364,36 @@ export default function StudentDashboard() {
           {/* Mini Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Study Streak', value: `${user?.streak || 1} Days`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' },
-              { label: 'Time Spent', value: stats.timeSpent, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-50' },
-              { label: 'Avg Score', value: stats.avgScore, icon: BarChart, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-              { label: 'Rank', value: '#248', icon: GraduationCap, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+              { label: 'Study Streak', value: `${user?.streak || 1} Days`, icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+              { label: 'Time Spent', value: stats.timeSpent, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+              { label: 'Avg Score', value: stats.avgScore, icon: BarChart, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+              { 
+                label: `Level ${user?.level || 1}`, 
+                value: `${user?.xp || 0} XP`, 
+                icon: Award, 
+                color: 'text-indigo-500', 
+                bg: 'bg-indigo-500/10',
+                progress: ((user?.xp || 0) % 1000) / 10 
+              },
             ].map((stat, i) => (
-              <div key={i} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-                <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center shrink-0`}>
-                  <stat.icon size={20} />
+              <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm flex flex-col gap-3">
+                <div className="flex items-center gap-4 text-on-surface">
+                  <div className={`w-10 h-10 ${stat.bg} ${stat.color} rounded-xl flex items-center justify-center shrink-0`}>
+                    <stat.icon size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+                    <p className="text-lg font-extrabold tracking-tight leading-none">{stat.value}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
-                  <p className="text-lg font-extrabold text-slate-800 tracking-tight leading-none">{stat.value}</p>
-                </div>
+                {stat.progress !== undefined && (
+                  <div className="w-full h-1.5 bg-surface-container rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-indigo-500" 
+                      style={{ width: `${stat.progress}%` }}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -338,32 +405,32 @@ export default function StudentDashboard() {
               {user?.learningMode === 'class_based' ? (
                 // CLASS BASED VIEW
                 <div className="space-y-6">
-                  <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
-                    <Users className="text-[#1b366a]" size={20} />
+                  <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-on-surface">
+                    <Users className="text-primary" size={20} />
                     Class Information
                   </h2>
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                  <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                       <div>
-                        <h3 className="font-bold text-xl text-slate-800">{classData?.className || 'Loading Class...'}</h3>
-                        <p className="text-sm text-slate-500 font-medium">Instructor: <span className="text-[#1b366a] font-bold">{classData?.instructorName || 'Your Instructor'}</span></p>
+                        <h3 className="font-bold text-xl text-on-surface">{classData?.className || 'Loading Class...'}</h3>
+                        <p className="text-sm text-on-surface-variant font-medium">Instructor: <span className="text-primary font-bold">{classData?.instructorName || 'Your Instructor'}</span></p>
                       </div>
-                      <div className="bg-blue-50 text-[#1b366a] px-4 py-2 rounded-xl border border-blue-100">
+                      <div className="bg-primary/10 text-primary px-4 py-2 rounded-xl border border-primary/20">
                         <span className="text-[10px] font-bold uppercase tracking-widest block leading-none mb-1">Class Code</span>
                         <span className="font-mono font-bold text-base">{classData?.classCode}</span>
                       </div>
                     </div>
                     
                     <div className="space-y-3">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Assigned Modules</h4>
+                      <h4 className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest ml-1">Assigned Modules</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {assignedModules.map(mod => (
-                          <div key={mod.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between group hover:border-[#1b366a]/20 transition-all">
+                          <div key={mod.id} className="bg-surface-container p-4 rounded-xl border border-outline-variant/10 flex items-center justify-between group hover:border-primary/20 transition-all">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#1b366a] shadow-sm font-bold text-xs">{mod.id[0].toUpperCase()}</div>
-                              <span className="text-sm font-bold text-slate-700">{mod.title}</span>
+                              <div className="w-8 h-8 bg-surface-container-lowest rounded-lg flex items-center justify-center text-primary shadow-sm font-bold text-xs">{mod.id[0].toUpperCase()}</div>
+                              <span className="text-sm font-bold text-on-surface">{mod.title}</span>
                             </div>
-                            <span className="text-[9px] font-bold px-2 py-1 bg-white rounded-md text-slate-400 uppercase tracking-tighter">{mod.status}</span>
+                            <span className="text-[9px] font-bold px-2 py-1 bg-surface-container-lowest rounded-md text-on-surface-variant/40 uppercase tracking-tighter">{mod.status}</span>
                           </div>
                         ))}
                       </div>
@@ -373,26 +440,26 @@ export default function StudentDashboard() {
               ) : (
                 // SELF REVIEW VIEW
                 <div className="space-y-6">
-                  <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
-                    <Target className="text-[#1b366a]" size={20} />
+                  <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-on-surface">
+                    <Target className="text-primary" size={20} />
                     Self-Review Focus
                   </h2>
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm">
+                  <div className="bg-secondary-container/20 border border-secondary-container/30 rounded-2xl p-6 shadow-sm">
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#1b366a] shadow-sm">
+                      <div className="w-12 h-12 bg-surface-container rounded-2xl flex items-center justify-center text-primary shadow-sm">
                         <Target size={24} />
                       </div>
                       <div>
-                         <h3 className="font-bold text-indigo-900 text-lg leading-tight">{user?.selectedFocus ? user.selectedFocus.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'General Education'}</h3>
-                         <p className="text-xs text-indigo-700">Currently focusing on your selected curriculum</p>
+                         <h3 className="font-bold text-on-surface text-lg leading-tight">{user?.selectedFocus ? user.selectedFocus.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'General Education'}</h3>
+                         <p className="text-xs text-on-surface-variant/80">Currently focusing on your selected curriculum</p>
                       </div>
                     </div>
                     
-                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-blue-200/50">
-                       <h4 className="text-[10px] font-bold text-indigo-900/40 uppercase tracking-widest mb-2">Weak Topics to Work On</h4>
+                    <div className="bg-surface-container-lowest/50 backdrop-blur-sm rounded-xl p-4 border border-outline-variant/30">
+                       <h4 className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-2">Weak Topics to Work On</h4>
                        <div className="flex flex-wrap gap-2">
                          {(profile?.weaknesses?.length > 0 ? profile.weaknesses : ['Pedagogical Theories', 'Research Methods']).map((w: string, i: number) => (
-                           <span key={i} className="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold border border-red-100">{w}</span>
+                           <span key={i} className="px-2.5 py-1 bg-error-container/30 text-error rounded-lg text-[10px] font-bold border border-error/10">{w}</span>
                          ))}
                        </div>
                     </div>
@@ -400,24 +467,24 @@ export default function StudentDashboard() {
                 </div>
               )}
 
-              <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800 mt-6">
-                <BookOpen className="text-[#1b366a]" size={20} />
+              <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-on-surface mt-6">
+                <BookOpen className="text-primary" size={20} />
                 Explore Activities
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <motion.button 
                   whileHover={{ y: -4 }}
                   onClick={() => navigate('/library')}
-                  className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col gap-4 text-left group hover:border-[#1b366a]/30 transition-all shadow-sm"
+                  className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant flex flex-col gap-4 text-left group hover:border-primary/30 transition-all shadow-sm"
                 >
-                  <div className="w-10 h-10 bg-[#1b366a] rounded-xl flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
+                  <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary shadow-lg shadow-primary/20">
                     <BookText size={20} />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base text-slate-800 leading-tight mb-1">Textbook Library</h3>
-                    <p className="text-xs text-slate-500 font-medium">Browse thousands of resources.</p>
+                    <h3 className="font-extrabold text-base text-on-surface leading-tight mb-1">Textbook Library</h3>
+                    <p className="text-xs text-on-surface-variant font-medium">Browse thousands of resources.</p>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-2 text-[#1b366a] font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                  <div className="flex items-center gap-1.5 mt-2 text-primary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
                     Open Library <ChevronRight size={14} />
                   </div>
                 </motion.button>
@@ -425,23 +492,40 @@ export default function StudentDashboard() {
                 <motion.button 
                   whileHover={{ y: -4 }}
                   onClick={() => navigate('/quest')}
-                  className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col gap-4 text-left group hover:border-indigo-200 transition-all shadow-sm"
+                  className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant flex flex-col gap-4 text-left group hover:border-tertiary-container transition-all shadow-sm"
                 >
-                  <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+                  <div className="w-10 h-10 bg-tertiary rounded-xl flex items-center justify-center text-on-tertiary shadow-lg shadow-tertiary/20">
                     <BookOpen size={20} />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-base text-slate-800 leading-tight mb-1">Learning Quest</h3>
-                    <p className="text-xs text-slate-500 font-medium">Bite-sized daily lessons.</p>
+                    <h3 className="font-extrabold text-base text-on-surface leading-tight mb-1">Learning Quest</h3>
+                    <p className="text-xs text-on-surface-variant font-medium">Bite-sized daily lessons.</p>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-2 text-indigo-600 font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                  <div className="flex items-center gap-1.5 mt-2 text-tertiary font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
                     Start Quest <ChevronRight size={14} />
+                  </div>
+                </motion.button>
+
+                <motion.button 
+                  whileHover={{ y: -4 }}
+                  onClick={() => navigate('/flashcards')}
+                  className="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant flex flex-col gap-4 text-left group hover:border-amber-500/30 transition-all shadow-sm"
+                >
+                  <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
+                    <Brain size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-on-surface leading-tight mb-1">Daily Flashcards</h3>
+                    <p className="text-xs text-on-surface-variant font-medium">Quick mastery of key concepts.</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-2 text-amber-600 font-bold text-[10px] uppercase tracking-widest group-hover:gap-3 transition-all">
+                    Flip Cards <ChevronRight size={14} />
                   </div>
                 </motion.button>
               </div>
 
                <div className="mt-8 space-y-4 pb-20 md:pb-0">
-                 <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
+                 <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-on-surface">
                     <Trophy className="text-amber-500" size={20} />
                     Achievement Badges
                  </h2>
@@ -452,40 +536,40 @@ export default function StudentDashboard() {
                           key={badge.id}
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          className="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm flex flex-col items-center justify-center text-center transition-all"
+                          className="bg-surface-container-lowest rounded-2xl p-4 border border-amber-500/30 shadow-sm flex flex-col items-center justify-center text-center transition-all"
                         >
-                           <div className="w-12 h-12 bg-amber-50 border border-amber-100 rounded-full flex items-center justify-center mb-2 shadow-inner">
+                           <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-full flex items-center justify-center mb-2 shadow-inner">
                              <Award className="text-amber-500" size={24} />
                            </div>
-                           <p className="font-bold text-xs text-slate-800">{badge.name}</p>
-                           <p className="text-[10px] text-slate-400 font-medium">{badge.rarity}</p>
+                           <p className="font-bold text-xs text-on-surface">{badge.name}</p>
+                           <p className="text-[10px] text-on-surface-variant/40 font-medium">{badge.rarity}</p>
                         </motion.div>
                       ))
                     ) : (
                       <>
-                        <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.streak && user.streak >= 10 ? 'border-amber-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
-                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.streak && user.streak >= 10 ? 'bg-amber-50 border-amber-100' : 'bg-slate-100 border-slate-200'}`}>
-                             <Flame className={user?.streak && user.streak >= 10 ? 'text-amber-500' : 'text-slate-400'} size={24} />
+                        <div className={`bg-surface-container-lowest rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.streak && user.streak >= 10 ? 'border-amber-500/30 shadow-sm' : 'border-outline-variant opacity-30 grayscale hover:opacity-100 hover:grayscale-0'}`}>
+                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.streak && user.streak >= 10 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-surface-container border-outline-variant'}`}>
+                             <Flame className={user?.streak && user.streak >= 10 ? 'text-amber-500' : 'text-on-surface-variant/40'} size={24} />
                            </div>
-                           <p className="font-bold text-xs text-slate-800">10-Day Streak</p>
+                           <p className="font-bold text-xs text-on-surface">10-Day Streak</p>
                         </div>
-                        <div className={`bg-white rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.diagnosticCompleted ? 'border-indigo-200 shadow-sm' : 'border-slate-200 opacity-50 grayscale hover:opacity-100 hover:grayscale-0 cursor-crosshair'}`}>
-                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.diagnosticCompleted ? 'bg-indigo-50 border-indigo-100' : 'bg-slate-100 border-slate-200'}`}>
-                             <Award className={user?.diagnosticCompleted ? 'text-indigo-500' : 'text-slate-400'} size={24} />
+                        <div className={`bg-surface-container-lowest rounded-2xl p-4 border flex flex-col items-center justify-center text-center transition-all ${user?.diagnosticCompleted ? 'border-primary/20 shadow-sm' : 'border-outline-variant opacity-30 grayscale hover:opacity-100 hover:grayscale-0'}`}>
+                           <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 shadow-inner border ${user?.diagnosticCompleted ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-surface-container border-outline-variant'}`}>
+                             <Award className={user?.diagnosticCompleted ? 'text-primary' : 'text-on-surface-variant/40'} size={24} />
                            </div>
-                           <p className="font-bold text-xs text-slate-800">Diagnostic Done</p>
+                           <p className="font-bold text-xs text-on-surface">Diagnostic Done</p>
                         </div>
-                        <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
-                           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-                             <Brain className="text-slate-400" size={24} />
+                        <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant flex flex-col items-center justify-center text-center opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+                           <div className="w-12 h-12 bg-surface-container rounded-full flex items-center justify-center mb-2">
+                             <Brain className="text-on-surface-variant/40" size={24} />
                            </div>
-                           <p className="font-bold text-xs text-slate-800">Subject Master</p>
+                           <p className="font-bold text-xs text-on-surface">Subject Master</p>
                         </div>
-                        <div className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col items-center justify-center text-center opacity-50 grayscale hover:opacity-100 hover:grayscale-0 transition-all cursor-crosshair">
-                           <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-2">
-                             <Medal className="text-slate-400" size={24} />
+                        <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant flex flex-col items-center justify-center text-center opacity-30 grayscale hover:opacity-100 hover:grayscale-0 transition-all">
+                           <div className="w-12 h-12 bg-surface-container rounded-full flex items-center justify-center mb-2">
+                             <Medal className="text-on-surface-variant/40" size={24} />
                            </div>
-                           <p className="font-bold text-xs text-slate-800">Top 10% Rank</p>
+                           <p className="font-bold text-xs text-on-surface">Top 10% Rank</p>
                         </div>
                       </>
                     )}
@@ -494,29 +578,29 @@ export default function StudentDashboard() {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
-                <BarChart className="text-slate-400" size={20} />
+              <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-on-surface">
+                <BarChart className="text-on-surface-variant/40" size={20} />
                 {user?.learningMode === 'class_based' ? 'Class Progress' : 'Category Progress'}
               </h2>
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+              <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant shadow-sm space-y-5">
                 {(user?.learningMode === 'class_based' ? [
                   { label: 'Weekly Tasks', score: 45, color: 'bg-emerald-500', subtitle: '4/9 tasks completed' },
-                  { label: 'Class Participation', score: 80, color: 'bg-[#1b366a]', subtitle: 'Top tier learner' },
-                  { label: 'Quiz Performance', score: 68, color: 'bg-indigo-500', subtitle: 'Above class average' },
+                  { label: 'Class Participation', score: 80, color: 'bg-primary', subtitle: 'Top tier learner' },
+                  { label: 'Quiz Performance', score: 68, color: 'bg-tertiary', subtitle: 'Above class average' },
                 ] : [
-                  { label: 'General Ed', score: 82, color: 'bg-[#1b366a]', subtitle: 'Last accessed: 2 days ago' },
-                  { label: 'Professional Ed', score: 64, color: 'bg-indigo-500', subtitle: 'Last accessed: Today' },
-                  { label: 'Specialization', score: 71, color: 'bg-slate-800', subtitle: 'Last accessed: Yesterday' },
+                  { label: 'General Ed', score: 82, color: 'bg-primary', subtitle: 'Last accessed: 2 days ago' },
+                  { label: 'Professional Ed', score: 64, color: 'bg-tertiary', subtitle: 'Last accessed: Today' },
+                  { label: 'Specialization', score: 71, color: 'bg-on-surface-variant', subtitle: 'Last accessed: Yesterday' },
                 ]).map((item, idx) => (
                   <div key={idx} className="space-y-2">
                     <div className="flex justify-between text-[10px] items-center mb-1.5">
                       <div className="flex flex-col">
-                        <span className="font-bold uppercase tracking-widest text-slate-800">{item.label}</span>
-                        <span className="text-[9px] text-slate-400 font-medium">{item.subtitle}</span>
+                        <span className="font-bold uppercase tracking-widest text-on-surface">{item.label}</span>
+                        <span className="text-[9px] text-on-surface-variant/40 font-medium">{item.subtitle}</span>
                       </div>
-                      <span className="font-bold text-slate-800 text-sm">{item.score}% Mastery</span>
+                      <span className="font-bold text-on-surface text-sm">{item.score}% Mastery</span>
                     </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-surface-container rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${item.score}%` }}
@@ -526,7 +610,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                 ))}
-                <button onClick={() => navigate('/quiz-results')} className="w-full mt-2 text-[#1b366a] text-[10px] font-bold uppercase tracking-[0.1em] hover:bg-slate-50 py-2 transition-colors">
+                <button onClick={() => navigate('/quiz-results')} className="w-full mt-2 text-primary text-[10px] font-bold uppercase tracking-[0.1em] hover:bg-surface-container py-2 transition-colors rounded-lg">
                   View Full Analytics
                 </button>
               </div>
@@ -537,21 +621,21 @@ export default function StudentDashboard() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 flex justify-around p-3 z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-        <button className="flex flex-col items-center gap-1 text-[#1b366a]">
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant flex justify-around p-3 z-50 shadow-lg">
+        <button className="flex flex-col items-center gap-1 text-primary">
           <LayoutDashboard size={20} />
           <span className="text-[10px] font-bold tracking-tight">Home</span>
         </button>
-        <button onClick={() => navigate('/focus')} className="flex flex-col items-center gap-1 text-slate-400">
+        <button onClick={() => navigate('/focus')} className="flex flex-col items-center gap-1 text-on-surface-variant/40">
           <Target size={20} />
           <span className="text-[10px] font-bold tracking-tight">Focus</span>
         </button>
-        <button onClick={() => navigate('/exam?type=mock')} className="flex flex-col items-center gap-1 text-slate-400">
+        <button onClick={() => navigate('/exam?type=mock')} className="flex flex-col items-center gap-1 text-on-surface-variant/40">
           <GraduationCap size={20} />
           <span className="text-[10px] font-bold tracking-tight">Exam</span>
         </button>
-        <button onClick={triggerSync} className="flex flex-col items-center gap-1 text-slate-400">
-          <RefreshCw size={20} className={isSyncing ? 'animate-spin text-[#1b366a]' : ''} />
+        <button onClick={triggerSync} className="flex flex-col items-center gap-1 text-on-surface-variant/40">
+          <RefreshCw size={20} className={isSyncing ? 'animate-spin text-primary' : ''} />
           <span className="text-[10px] font-bold tracking-tight">Sync</span>
         </button>
       </nav>

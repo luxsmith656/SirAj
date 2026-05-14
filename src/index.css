@@ -33,17 +33,17 @@
   --color-on-error: #ffffff;
   --color-on-error-container: #93000a;
 
-  --color-surface: #f8f9fb;
-  --color-surface-dim: #d9dadc;
-  --color-surface-bright: #f8f9fb;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f3f4f6;
-  --color-surface-container: #edeef0;
+  --color-surface: var(--bg-surface, #f8f9fb);
+  --color-surface-dim: var(--bg-surface-dim, #d9dadc);
+  --color-surface-bright: var(--bg-surface-bright, #f8f9fb);
+  --color-surface-container-lowest: var(--bg-card, #ffffff);
+  --color-surface-container-low: var(--bg-container-low, #f3f4f6);
+  --color-surface-container: var(--bg-container, #edeef0);
   --color-surface-container-high: #e7e8ea;
   --color-surface-container-highest: #e1e2e4;
 
-  --color-on-surface: #191c1e;
-  --color-on-surface-variant: #444651;
+  --color-on-surface: var(--text-main, #191c1e);
+  --color-on-surface-variant: var(--text-muted, #444651);
   --color-outline: #757682;
   --color-outline-variant: #c5c5d3;
 
@@ -54,6 +54,45 @@
   --font-headline: 'Plus Jakarta Sans', sans-serif;
   --font-body: 'Inter', sans-serif;
   --font-label: 'Inter', sans-serif;
+}
+
+:root {
+  --bg-surface: #f8f9fb;
+  --bg-surface-dim: #d9dadc;
+  --bg-surface-bright: #f8f9fb;
+  --bg-card: #ffffff;
+  --bg-container-low: #f3f4f6;
+  --bg-container: #edeef0;
+  --text-main: #191c1e;
+  --text-muted: #444651;
+}
+
+.dark {
+  --bg-surface: #1f1f1f;
+  --bg-surface-dim: #181818;
+  --bg-surface-bright: #2d2d2d;
+  --bg-card: #252525;
+  --bg-container-low: #222222;
+  --bg-container: #2d2d2d;
+  --text-main: #f5f5f5;
+  --text-muted: #a1a1aa;
+  --dynamic-primary: #5599ff;
+  --color-outline-variant: #333333;
+}
+
+@layer base {
+  table {
+    @apply w-full border-collapse text-left;
+  }
+  th {
+    @apply px-4 py-3 font-bold text-xs uppercase tracking-widest text-on-surface-variant/60 border-b border-outline-variant bg-surface-container/30;
+  }
+  td {
+    @apply px-4 py-3 text-sm text-on-surface border-b border-outline-variant/50;
+  }
+  tr:hover td {
+    @apply bg-surface-container/20 transition-colors;
+  }
 }
 
 @layer utilities {

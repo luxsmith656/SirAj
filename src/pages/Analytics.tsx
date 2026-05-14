@@ -51,20 +51,20 @@ export default function Analytics() {
       <div className="p-8 max-w-[1400px] mx-auto space-y-8 text-on-surface">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                <div>
-                  <h1 className="text-3xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Performance Insights</h1>
-                  <p className="text-slate-500 font-medium font-body">Analyze {user?.role === 'instructor' ? 'your assigned students\'' : 'platform-wide'} cohort mastery.</p>
+                  <h1 className="text-3xl font-extrabold text-primary font-headline tracking-tight mb-2">Performance Insights</h1>
+                  <p className="text-on-surface-variant/60 font-medium font-body">Analyze {user?.role === 'instructor' ? 'your assigned students\'' : 'platform-wide'} cohort mastery.</p>
                </div>
                
                {user?.role === 'admin' && (
-                 <div className="flex bg-slate-100 rounded-xl p-1 border border-slate-200 shadow-sm overflow-hidden">
+                 <div className="flex bg-surface-container/50 rounded-xl p-1 border border-outline-variant shadow-sm overflow-hidden">
                     <select 
                       value={instructorFilter}
                       onChange={(e) => setInstructorFilter(e.target.value)}
-                      className="bg-transparent border-none outline-none px-4 py-2 text-xs font-bold uppercase tracking-widest text-[#1b366a]"
+                      className="bg-transparent border-none outline-none px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary focus:ring-0"
                     >
-                      <option value="all">Global View</option>
+                      <option value="all" className="bg-surface-container text-on-surface">Global View</option>
                       {instructors.map(inst => (
-                        <option key={inst.uid} value={inst.uid}>By: {inst.fullName}</option>
+                        <option key={inst.uid} value={inst.uid} className="bg-surface-container text-on-surface">By: {inst.fullName}</option>
                       ))}
                     </select>
                  </div>
@@ -72,98 +72,98 @@ export default function Analytics() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+               <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-4">
-                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1b366a] flex items-center justify-center">
+                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <span className="material-symbols-outlined text-[20px]">groups</span>
                      </div>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">{metrics.studentCount}</h3>
-                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Active Students</p>
+                     <h3 className="text-3xl font-extrabold font-headline text-on-surface mb-1">{metrics.studentCount}</h3>
+                     <p className="text-[10px] text-on-surface-variant/40 uppercase font-bold tracking-widest">Active Students</p>
                   </div>
                </div>
                
-               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+               <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-4">
-                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1b366a] flex items-center justify-center">
+                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <span className="material-symbols-outlined text-[20px]">timer</span>
                      </div>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">42<span className="text-xl">m</span></h3>
-                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Daily Avg Simulation</p>
+                     <h3 className="text-3xl font-extrabold font-headline text-on-surface mb-1">42<span className="text-xl">m</span></h3>
+                     <p className="text-[10px] text-on-surface-variant/40 uppercase font-bold tracking-widest">Daily Avg Simulation</p>
                   </div>
                </div>
 
-               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+               <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-4">
-                     <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                         <span className="material-symbols-outlined text-[20px]">check_circle</span>
                      </div>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">{metrics.avgPassingScore}<span className="text-xl">%</span></h3>
-                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Avg Passing Score</p>
+                     <h3 className="text-3xl font-extrabold font-headline text-on-surface mb-1">{metrics.avgPassingScore}<span className="text-xl">%</span></h3>
+                     <p className="text-[10px] text-on-surface-variant/40 uppercase font-bold tracking-widest">Avg Passing Score</p>
                   </div>
-                  <div className="w-full bg-slate-100 mt-4 h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-surface-container mt-4 h-1.5 rounded-full overflow-hidden">
                      <div style={{ width: `${metrics.avgPassingScore}%` }} className="h-full bg-emerald-500 rounded-full"></div>
                   </div>
                </div>
 
-               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden group">
+               <div className="bg-surface-container-lowest rounded-2xl p-6 border border-outline-variant shadow-sm relative overflow-hidden group">
                   <div className="flex justify-between items-start mb-4">
-                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1b366a] flex items-center justify-center">
+                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <span className="material-symbols-outlined text-[20px]">psychology</span>
                      </div>
                   </div>
                   <div>
-                     <h3 className="text-3xl font-extrabold font-headline text-slate-800 mb-1">High</h3>
-                     <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Mastery Level</p>
+                     <h3 className="text-3xl font-extrabold font-headline text-on-surface mb-1">High</h3>
+                     <p className="text-[10px] text-on-surface-variant/40 uppercase font-bold tracking-widest">Mastery Level</p>
                   </div>
                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
-               <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-                  <h3 className="text-xl font-extrabold font-headline mb-6 text-slate-800">Mastery by Subject Area</h3>
+               <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant">
+                  <h3 className="text-xl font-extrabold font-headline mb-6 text-on-surface">Mastery by Subject Area</h3>
                   <div className="space-y-6">
                      <div>
                         <div className="flex justify-between text-xs mb-2 font-bold uppercase tracking-widest">
-                           <span className="text-slate-400">Professional Education</span>
-                           <span className="text-[#1b366a]">82%</span>
+                           <span className="text-on-surface-variant/40">Professional Education</span>
+                           <span className="text-primary">82%</span>
                         </div>
-                        <div className="w-full bg-slate-50 h-2.5 rounded-full overflow-hidden border border-slate-100">
-                           <div className="h-full bg-[#1b366a] w-[82%] rounded-full shadow-lg shadow-blue-900/20"></div>
+                        <div className="w-full bg-surface-container h-2.5 rounded-full overflow-hidden border border-outline-variant/10">
+                           <div className="h-full bg-primary w-[82%] rounded-full shadow-lg shadow-primary/20"></div>
                         </div>
                      </div>
                      <div>
                         <div className="flex justify-between text-xs mb-2 font-bold uppercase tracking-widest">
-                           <span className="text-slate-400">General Education</span>
-                           <span className="text-[#1b366a]">75%</span>
+                           <span className="text-on-surface-variant/40">General Education</span>
+                           <span className="text-primary">75%</span>
                         </div>
-                        <div className="w-full bg-slate-50 h-2.5 rounded-full overflow-hidden border border-slate-100">
+                        <div className="w-full bg-surface-container h-2.5 rounded-full overflow-hidden border border-outline-variant/10">
                            <div className="h-full bg-blue-400 w-[75%] rounded-full shadow-lg shadow-blue-400/20"></div>
                         </div>
                      </div>
                   </div>
                </div>
 
-               <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-                  <h3 className="text-xl font-extrabold font-headline mb-6 text-slate-800">Difficult Concepts</h3>
+               <div className="bg-surface-container-lowest rounded-2xl p-8 shadow-sm border border-outline-variant">
+                  <h3 className="text-xl font-extrabold font-headline mb-6 text-on-surface">Difficult Concepts</h3>
                   <div className="space-y-4">
-                     <div className="flex gap-4 p-4 rounded-xl border border-slate-100 bg-slate-50/30 hover:border-blue-200 transition-all cursor-pointer group">
-                        <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#1b366a] flex flex-col items-center justify-center shrink-0 border border-blue-100">
+                     <div className="flex gap-4 p-4 rounded-xl border border-outline-variant/30 bg-surface-container/30 hover:border-primary/50 transition-all cursor-pointer group">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex flex-col items-center justify-center shrink-0 border border-primary/20">
                            <span className="text-[9px] uppercase font-bold">Accuracy</span>
                            <span className="text-sm font-black">22%</span>
                         </div>
                         <div>
-                           <p className="text-sm font-bold text-slate-700 mb-1 group-hover:text-[#1b366a] transition-colors">Vygotsky's Zone of Proximal Development</p>
-                           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Professional Education</span>
+                           <p className="text-sm font-bold text-on-surface mb-1 group-hover:text-primary transition-colors">Vygotsky's Zone of Proximal Development</p>
+                           <span className="text-[10px] text-on-surface-variant/40 font-bold uppercase tracking-widest">Professional Education</span>
                         </div>
                      </div>
                   </div>
-                  <button className="w-full mt-6 py-4 rounded-xl bg-slate-50 text-slate-400 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-100 hover:text-slate-600 transition-all">
+                  <button className="w-full mt-6 py-4 rounded-xl bg-surface-container text-on-surface-variant/40 font-bold text-[11px] uppercase tracking-widest hover:bg-surface-container-high hover:text-on-surface transition-all">
                      View Deep Analysis
                   </button>
                </div>

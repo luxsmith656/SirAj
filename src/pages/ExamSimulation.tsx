@@ -152,18 +152,18 @@ export default function ExamSimulation() {
   );
 
   return (
-    <div className="bg-white text-slate-800 font-body min-h-[100dvh] flex flex-col antialiased relative">
-       <header className="px-5 py-4 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-20">
+    <div className="bg-surface text-on-surface font-body min-h-[100dvh] flex flex-col antialiased relative">
+       <header className="px-5 py-4 flex items-center justify-between bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-20">
           <div className="flex items-center gap-3">
-             <button onClick={() => navigate('/focus')} className="text-slate-400 hover:text-slate-600 transition-colors">
+             <button onClick={() => navigate('/focus')} className="text-on-surface-variant/40 hover:text-on-surface transition-colors">
                 <span className="material-symbols-outlined">close</span>
              </button>
-             <div className="bg-slate-50 px-3 py-1.5 rounded-xl text-xs font-bold font-mono text-slate-700 flex items-center gap-1.5 border border-slate-100">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+             <div className="bg-surface-container px-3 py-1.5 rounded-xl text-xs font-bold font-mono text-on-surface-variant flex items-center gap-1.5 border border-outline-variant/30">
+                <span className="w-2 h-2 rounded-full bg-error animate-pulse"></span>
                 {formatTime(timeRemaining)}
              </div>
           </div>
-          <div className="font-bold text-[11px] tracking-widest text-[#1b366a] uppercase">
+          <div className="font-bold text-[11px] tracking-widest text-primary uppercase">
              Question <span className="text-lg tabular-nums">{currentIndex + 1}</span> / {questions.length}
           </div>
           <button 
@@ -171,7 +171,7 @@ export default function ExamSimulation() {
               signOut();
               navigate('/sign-in');
             }}
-            className="w-10 h-10 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-full text-on-surface-variant/40 hover:bg-surface-container transition-colors"
             title="Sign Out"
           >
              <span className="material-symbols-outlined">logout</span>
@@ -180,10 +180,10 @@ export default function ExamSimulation() {
 
        <div className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-5 py-8">
           <div className="flex items-center gap-2 mb-6">
-             <span className="bg-blue-50 text-[#1b366a] px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100">Simulation Mode</span>
+             <span className="bg-primary/10 text-primary px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border border-primary/10">Simulation Mode</span>
           </div>
 
-          <div className="text-slate-800 font-headline text-xl mb-10 leading-snug font-extrabold tracking-tight">
+          <div className="text-on-surface font-headline text-xl mb-10 leading-snug font-extrabold tracking-tight">
              {currentQuestion.stem}
           </div>
 
@@ -196,16 +196,16 @@ export default function ExamSimulation() {
                    onClick={() => setSelectedOption(opt.id)}
                    className={`w-full p-5 rounded-2xl border-2 flex items-start gap-4 transition-all text-left ${
                      isSelected 
-                       ? 'border-[#1b366a] bg-blue-50/50 shadow-sm' 
-                       : 'border-slate-100 bg-slate-50 hover:border-blue-200'
+                       ? 'border-primary bg-primary/10 shadow-sm' 
+                       : 'border-outline-variant/10 bg-surface-container/30 hover:border-primary/50'
                    }`}
                  >
                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm transition-colors ${
-                     isSelected ? 'bg-[#1b366a] text-white' : 'bg-slate-200 text-slate-500'
+                     isSelected ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant/40'
                    }`}>
                       {opt.id}
                    </div>
-                   <span className={`font-bold text-[15px] pt-1 leading-snug ${isSelected ? 'text-[#1b366a]' : 'text-slate-700'}`}>
+                   <span className={`font-bold text-[15px] pt-1 leading-snug ${isSelected ? 'text-primary' : 'text-on-surface-variant'}`}>
                      {opt.text}
                    </span>
                  </button>
@@ -214,18 +214,18 @@ export default function ExamSimulation() {
           </div>
        </div>
 
-       <div className="bg-white border-t border-slate-100 p-5 flex justify-between items-center sticky bottom-0 z-20">
+       <div className="bg-surface-container-lowest border-t border-outline-variant p-5 flex justify-between items-center sticky bottom-0 z-20">
           <button 
             disabled={currentIndex === 0}
             onClick={handlePrevious}
-            className="px-6 py-3 rounded-xl font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
+            className="px-6 py-3 rounded-xl font-bold text-on-surface-variant/40 hover:text-on-surface hover:bg-surface-container transition-colors disabled:opacity-30 disabled:hover:bg-transparent"
           >
              Previous
           </button>
           <button 
             disabled={!selectedOption}
             onClick={handleNext}
-            className="px-10 py-4 rounded-2xl bg-[#1b366a] text-white font-bold shadow-lg shadow-blue-900/20 disabled:opacity-50 disabled:shadow-none hover:bg-[#112349] transition-all text-xs uppercase tracking-widest flex items-center gap-2"
+            className="px-10 py-4 rounded-2xl bg-primary text-on-primary font-bold shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none transition-all text-xs uppercase tracking-widest flex items-center gap-2"
           >
              {currentIndex === questions.length - 1 ? 'Finish Exam' : 'Next Question'}
              <span className="material-symbols-outlined text-[18px]">arrow_forward</span>

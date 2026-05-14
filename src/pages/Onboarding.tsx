@@ -53,12 +53,18 @@ export default function Onboarding() {
     if (!user) return;
     setIsSubmitting(true);
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      const updateData: any = {
         fullName,
-        age: parseInt(age),
         onboarded: true,
         agreementAccepted: true
-      });
+      };
+
+      const parsedAge = parseInt(age);
+      if (!isNaN(parsedAge)) {
+        updateData.age = parsedAge;
+      }
+
+      await updateDoc(doc(db, 'users', user.uid), updateData);
       await refreshUser();
       navigate(from, { replace: true });
     } catch (error) {

@@ -86,20 +86,20 @@ export default function QuestionBank() {
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const q = filteredQuestions[index];
     return (
-      <div style={style} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group flex items-center">
+      <div style={style} className="border-b border-outline-variant/10 hover:bg-surface-container/20 transition-colors group flex items-center">
         <div className="flex-1 px-4 min-w-0">
-          <p className="text-sm font-bold text-slate-700 truncate">{q.stem}</p>
+          <p className="text-sm font-bold text-on-surface truncate">{q.stem}</p>
         </div>
         <div className="w-[200px] px-4 shrink-0">
-          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full truncate block whitespace-nowrap overflow-hidden text-ellipsis">
+          <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg truncate block whitespace-nowrap overflow-hidden text-ellipsis border border-primary/10">
             {getCategoryName(q.categoryId)}
           </span>
         </div>
         <div className="w-[120px] px-4 shrink-0">
-          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-            q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-600' :
-            q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-600' :
-            'bg-red-50 text-red-600'
+          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${
+            q.difficulty === 'Easy' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' :
+            q.difficulty === 'Medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/10' :
+            'bg-error/10 text-error border-error/10'
           }`}>
             {q.difficulty}
           </span>
@@ -108,13 +108,13 @@ export default function QuestionBank() {
           <div className="flex justify-end gap-2">
             <button 
               onClick={() => navigate(getEditPath(q.id))}
-              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+              className="p-1.5 text-on-surface-variant/40 hover:text-primary hover:bg-primary/10 rounded-lg transition-all"
             >
               <span className="material-symbols-outlined text-[18px]">edit</span>
             </button>
             <button 
               onClick={() => setDeleteId(q.id)}
-              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+              className="p-1.5 text-on-surface-variant/40 hover:text-error hover:bg-error-container/20 rounded-lg transition-all"
             >
               <span className="material-symbols-outlined text-[18px]">delete</span>
             </button>
@@ -129,36 +129,36 @@ export default function QuestionBank() {
       <div className="max-w-6xl mx-auto w-full text-on-surface flex flex-col h-[calc(100vh-64px)] p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
           <div>
-            <h2 className="text-4xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Question Bank</h2>
-            <p className="text-slate-500 font-medium">Manage board exam multiple choice questions.</p>
+            <h2 className="text-4xl font-extrabold text-primary font-headline tracking-tight mb-2">Question Bank</h2>
+            <p className="text-on-surface-variant/60 font-medium">Manage board exam multiple choice questions.</p>
           </div>
           <button 
             onClick={() => navigate(getEditPath())}
-            className="px-6 py-2.5 rounded-xl bg-[#1b366a] text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-900/20"
+            className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20"
           >
             <span className="material-symbols-outlined text-[18px]">add</span> Add Question
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
-             <div className="flex-1 flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
-                <span className="material-symbols-outlined text-slate-400">search</span>
+        <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+          <div className="p-4 border-b border-outline-variant bg-surface-container/30 flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
+             <div className="flex-1 flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
+                <span className="material-symbols-outlined text-on-surface-variant/40">search</span>
                 <input 
-                  type="text" 
-                  placeholder="Search by keyword or stem..." 
-                  className="bg-transparent border-none outline-none text-sm w-full font-medium text-slate-700"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                   type="text" 
+                   placeholder="Search by keyword or stem..." 
+                   className="bg-transparent border-none outline-none text-sm w-full font-medium text-on-surface placeholder:text-on-surface-variant/30"
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
              </div>
              
-             <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-4 py-2 min-w-[200px]">
-                <span className="material-symbols-outlined text-slate-400 text-[20px]">filter_list</span>
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[200px]">
+                <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">filter_list</span>
                 <select 
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="bg-transparent border-none outline-none text-xs font-bold uppercase tracking-widest text-[#1b366a] w-full"
+                   value={selectedCategory}
+                   onChange={(e) => setSelectedCategory(e.target.value)}
+                   className="bg-transparent border-none outline-none text-xs font-bold uppercase tracking-widest text-primary w-full appearance-none"
                 >
                    <option value="all">All Domains</option>
                    {categories.map(cat => (
@@ -170,17 +170,17 @@ export default function QuestionBank() {
 
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center bg-slate-50/30 border-b border-slate-100 shrink-0">
-              <div className="flex-1 p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Question Stem</div>
-              <div className="w-[200px] p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Domain</div>
-              <div className="w-[120px] p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Difficulty</div>
-              <div className="w-[120px] p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right shrink-0">Actions</div>
+            <div className="flex items-center bg-surface-container/20 border-b border-outline-variant shrink-0">
+              <div className="flex-1 p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Question Stem</div>
+              <div className="w-[200px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Domain</div>
+              <div className="w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Difficulty</div>
+              <div className="w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest text-right shrink-0">Actions</div>
             </div>
 
             {/* List */}
             <div className="flex-1">
               {filteredQuestions.length === 0 ? (
-                <div className="p-12 text-center text-slate-400 italic">No questions found.</div>
+                <div className="p-12 text-center text-on-surface-variant/40 italic">No questions found.</div>
               ) : (
                 <AutoSizer>
                   {({ height, width }) => (

@@ -147,11 +147,11 @@ export default function DiagnosticAssessment() {
         }, { merge: true });
 
         await refreshUser();
-        navigate('/student/dashboard');
+        navigate('/student-dashboard');
       } catch (err: any) {
         console.error('Failed to save profile', err);
-        // Fallback to offline dash anyway
-        navigate('/student/dashboard');
+        // Fallback to dash anyway
+        navigate('/student-dashboard');
       }
     }
   };
@@ -170,41 +170,41 @@ export default function DiagnosticAssessment() {
 
   if (!hasStarted) {
     return (
-      <div className="bg-[#f0f2f5] text-slate-800 font-body min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-blue-900/10 border border-slate-100">
-          <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+      <div className="bg-surface text-on-surface font-body min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-2xl w-full bg-surface-container-lowest rounded-3xl p-8 md:p-12 shadow-xl shadow-primary/10 border border-outline-variant/30">
+          <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mb-6">
             <span className="material-symbols-outlined text-3xl">psychology</span>
           </div>
-          <h1 className="text-3xl font-black font-headline text-slate-800 mb-4">Diagnostic Assessment</h1>
-          <p className="text-slate-600 font-medium mb-8 leading-relaxed">
+          <h1 className="text-3xl font-black font-headline text-on-surface mb-4">Diagnostic Assessment</h1>
+          <p className="text-on-surface-variant font-medium mb-8 leading-relaxed">
             Welcome to the Let Mastery review process! Before you begin, we need to understand your current baseline.
             This diagnostic exam helps the AI tailor your learning path.
           </p>
           
           <div className="space-y-4 mb-10">
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex gap-4 items-start">
-               <span className="material-symbols-outlined text-slate-400 mt-1">target</span>
+            <div className="bg-surface-container p-4 rounded-2xl border border-outline-variant/30 flex gap-4 items-start">
+               <span className="material-symbols-outlined text-on-surface-variant/40 mt-1">target</span>
                <div>
-                 <h3 className="font-bold text-slate-800">Based on your focus</h3>
-                 <p className="text-sm text-slate-500">
+                 <h3 className="font-bold text-on-surface">Based on your focus</h3>
+                 <p className="text-sm text-on-surface-variant/60">
                    {user?.learningMode === 'class_based' 
                      ? "This assessment uses the curriculum assigned by your instructor." 
                      : "This assessment focuses on your selected study area."}
                  </p>
                </div>
             </div>
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex gap-4 items-start">
-               <span className="material-symbols-outlined text-slate-400 mt-1">analytics</span>
+            <div className="bg-surface-container p-4 rounded-2xl border border-outline-variant/30 flex gap-4 items-start">
+               <span className="material-symbols-outlined text-on-surface-variant/40 mt-1">analytics</span>
                <div>
-                 <h3 className="font-bold text-slate-800">Personalized Learning Path</h3>
-                 <p className="text-sm text-slate-500">Your results will not be graded for a score, but will unlock modules based on what you need to study most.</p>
+                 <h3 className="font-bold text-on-surface">Personalized Learning Path</h3>
+                 <p className="text-sm text-on-surface-variant/60">Your results will not be graded for a score, but will unlock modules based on what you need to study most.</p>
                </div>
             </div>
           </div>
 
           <button 
             onClick={() => setHasStarted(true)}
-            className="w-full bg-[#1b366a] text-white font-bold py-4 px-6 rounded-2xl shadow-lg hover:-translate-y-0.5 transition-transform uppercase tracking-widest text-sm flex items-center justify-center gap-2"
+            className="w-full bg-primary text-on-primary font-bold py-4 px-6 rounded-2xl shadow-lg hover:-translate-y-0.5 transition-transform uppercase tracking-widest text-sm flex items-center justify-center gap-2"
           >
             Start Assessment <span className="material-symbols-outlined text-lg">arrow_forward</span>
           </button>
@@ -216,23 +216,23 @@ export default function DiagnosticAssessment() {
   const currentQuestion = questions[currentIndex];
 
   return (
-     <div className="bg-[#f0f2f5] text-slate-800 font-body min-h-screen flex flex-col antialiased">
-       <header className="px-5 py-4 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-20">
-          <div className="font-bold text-[#1b366a]">Diagnostic Assessment {isSubmitting && '- Saving...'}</div>
-          <div className="text-xs font-bold text-slate-400">Question {currentIndex + 1} of {questions.length}</div>
+     <div className="bg-surface text-on-surface font-body min-h-screen flex flex-col antialiased">
+       <header className="px-5 py-4 flex items-center justify-between bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-20">
+          <div className="font-bold text-primary">Diagnostic Assessment {isSubmitting && '- Saving...'}</div>
+          <div className="text-xs font-bold text-on-surface-variant/40">Question {currentIndex + 1} of {questions.length}</div>
        </header>
 
        <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full px-5 py-8 opacity-100">
          <div className="mb-8">
-            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
                <div 
-                 className="bg-[#1b366a] h-full transition-all duration-300"
+                 className="bg-primary h-full transition-all duration-300"
                  style={{ width: `${((currentIndex) / questions.length) * 100}%` }}
                />
             </div>
          </div>
 
-         <div className="text-xl font-extrabold font-headline mb-8 text-slate-800">
+         <div className="text-xl font-extrabold font-headline mb-8 text-on-surface">
            {currentQuestion.stem}
          </div>
 
@@ -243,9 +243,9 @@ export default function DiagnosticAssessment() {
                whileTap={{ scale: 0.99 }}
                key={opt.id}
                onClick={() => !isSubmitting && handleNext(opt.id)}
-               className="w-full text-left p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-blue-300 transition-all font-semibold flex items-start gap-4"
+               className="w-full text-left p-5 rounded-2xl bg-surface-container-lowest border border-outline-variant shadow-sm hover:border-primary/50 transition-all font-semibold flex items-start gap-4"
              >
-                <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-500 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-xl bg-surface-container text-on-surface-variant/60 flex items-center justify-center font-bold">
                    {opt.id}
                 </div>
                 <div className="pt-1.5 flex-1">{opt.text}</div>

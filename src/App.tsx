@@ -28,6 +28,7 @@ import TextbookLibrary from './pages/TextbookLibrary';
 import ChooseLearningMode from './pages/ChooseLearningMode';
 import ChooseFocus from './pages/ChooseFocus';
 import JoinClass from './pages/JoinClass';
+import Flashcards from './pages/Flashcards';
 import { SidebarProvider } from './context/SidebarContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BrandingProvider, useBranding } from './context/BrandingContext';
@@ -152,6 +153,7 @@ function AppContent() {
             <Route path="/focus" element={<ProtectedRoute role="student"><Focus /></ProtectedRoute>} />
             <Route path="/quiz-results" element={<ProtectedRoute role="student"><QuizResults /></ProtectedRoute>} />
             <Route path="/exam" element={<ProtectedRoute role="student"><ExamSimulation /></ProtectedRoute>} />
+            <Route path="/flashcards" element={<ProtectedRoute role="student"><Flashcards /></ProtectedRoute>} />
             
             <Route path="*" element={<Navigate to="/sign-in" replace />} />
         </Routes>
@@ -159,17 +161,21 @@ function AppContent() {
   );
 }
 
+import { ThemeProvider } from './context/ThemeContext';
+
 export default function App() {
   return (
-    <BrandingProvider>
-      <AuthProvider>
-        <SyncProvider>
-          <SidebarProvider>
-            <AppContent />
-          </SidebarProvider>
-        </SyncProvider>
-      </AuthProvider>
-    </BrandingProvider>
+    <ThemeProvider>
+      <BrandingProvider>
+        <AuthProvider>
+          <SyncProvider>
+            <SidebarProvider>
+              <AppContent />
+            </SidebarProvider>
+          </SyncProvider>
+        </AuthProvider>
+      </BrandingProvider>
+    </ThemeProvider>
   );
 }
 

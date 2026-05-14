@@ -21,6 +21,8 @@ interface UserProfile {
   streak?: number;
   lastLoginDate?: string;
   earnedBadges?: string[];
+  xp?: number;
+  level?: number;
 }
 
 interface AuthContextType {
@@ -126,14 +128,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             email: firebaseUser.email || '',
             role: isAdminEmail ? 'admin' : (existingData.role || 'student'),
             uid: firebaseUser.uid,
-            onboarded: existingData.onboarded ?? (pendingData.fullName && pendingData.age ? false : false), 
+            onboarded: existingData.onboarded ?? false, 
             fullName: pendingData.fullName || existingData.fullName || '',
-            age: pendingData.age ? parseInt(pendingData.age) : (existingData.age || undefined),
             instructorId: existingData.instructorId || null,
             streak: 1,
             lastLoginDate: new Date().toISOString().split('T')[0]
-          } as any;
+          };
           
+          if (pendingData.age) {
+            const parsedAge = parseInt(pendingData.age);
+            if (!isNaN(parsedAge)) newUser.age = parsedAge;
+          } else if (existingData.age) {
+            newUser.age = existingData.age;
+          }
+
           await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
           setUser(newUser);
         }

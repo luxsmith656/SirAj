@@ -2,25 +2,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
     // Helpers
     function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
     function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
     
+    // Auth tokens do not contain custom claims. We lookup the user document.
     function getUserData() { 
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; 
     }
     
-    function isAdmin() { 
+    // Check role from users collection
+    function hasRole(role) {
       return isSignedIn() && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().get('role', 'student') == 'admin'; 
+             getUserData().get('role', 'student') == role;
     }
     
-    function isInstructor() { 
-      return isSignedIn() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             getUserData().get('role', 'student') == 'instructor'; 
-    }
+    function isAdmin() { return hasRole('admin') || isBootstrapAdmin(); }
+    function isInstructor() { return hasRole('instructor') || isAdmin(); }
     
     function isBootstrapAdmin() {
       return isSignedIn() && request.auth.token.email == 'castanar656@gmail.com';
@@ -29,100 +34,92 @@ service cloud.firestore {
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
 
-    // Default Deny
-    match /{document=**} {
-      allow read, write: if false;
+    // --- Entity Validations ---
+    function isValidUser(data) {
+      return (data.keys().hasAll(['email', 'role']) || data.keys().hasAll(['email', 'role', 'fullName'])) && 
+             data.email is string && 
+             data.role in ['student', 'instructor', 'admin'];
     }
+
+    // --- RULES ---
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isOwner(userId) && incoming().role == "student" || isBootstrapAdmin() || isAdmin();
-      allow update: if (isOwner(userId) && !incoming().diff(existing()).affectedKeys().hasAny(["role", "email"])) || isBootstrapAdmin() || isAdmin();
-      allow delete: if isBootstrapAdmin() || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(incoming()) || isAdmin();
+      allow update: if (isOwner(userId) && !incoming().diff(existing()).affectedKeys().hasAny(["role", "email"])) || isAdmin();
+      allow delete: if isAdmin();
     }
     
     match /learnerProfiles/{userId} {
-      allow read: if isOwner(userId) || isInstructor() || isAdmin() || isBootstrapAdmin();
-      allow write: if isOwner(userId) || isAdmin() || isBootstrapAdmin();
+      allow read: if isOwner(userId) || isInstructor();
+      allow write: if isOwner(userId) || isAdmin();
     }
     
     match /badges/{badgeId} {
-      allow read: if true;
-      allow write: if isAdmin() || isBootstrapAdmin();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
     
     match /quizAttempts/{attemptId} {
-      allow read: if isSignedIn();
-      allow write: if isOwner(incoming().userId) || isBootstrapAdmin() || isAdmin();
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor());
+      allow create: if isSignedIn() && (incoming().userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
     }
     
     match /categories/{categoryId} {
       allow read: if isSignedIn();
-      allow write: if isBootstrapAdmin() || isAdmin() || isInstructor();
+      allow write: if isInstructor();
     }
     
     match /topics/{topicId} {
       allow read: if isSignedIn();
-      allow write: if isBootstrapAdmin() || isAdmin() || isInstructor();
+      allow write: if isInstructor();
     }
     
     match /modules/{moduleId} {
       allow read: if isSignedIn();
-      allow write: if isBootstrapAdmin() || isAdmin() || isInstructor();
+      allow write: if isInstructor();
     }
     
     match /questions/{questionId} {
       allow read: if isSignedIn();
-      allow write: if isBootstrapAdmin() || isAdmin() || isInstructor();
+      allow write: if isInstructor();
     }
     
     match /classes/{classId} {
-      // Anyone can read a class by its code or if they are enrolled, but we allow signed-in users to list/query to make it easier for now (or at least read by ID)
       allow read: if isSignedIn();
-      allow create: if isInstructor() || isAdmin() || isBootstrapAdmin();
-      allow update: if isBootstrapAdmin() || isAdmin() || (isInstructor() && existing().instructorId == request.auth.uid);
-      allow delete: if isBootstrapAdmin() || isAdmin();
+      allow create: if isInstructor();
+      allow update: if isInstructor() && (existing().instructorId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
     }
     
     match /classEnrollments/{enrollmentId} {
       allow read: if isSignedIn();
-      allow create: if isSignedIn() && (incoming().studentId == request.auth.uid || isInstructor() || isAdmin());
-      allow update: if isBootstrapAdmin() || isAdmin() || (isInstructor() && existing().instructorId == request.auth.uid) || isOwner(existing().studentId);
-      allow delete: if isBootstrapAdmin() || isAdmin() || (isInstructor() && existing().instructorId == request.auth.uid);
+      allow create: if isSignedIn() && (incoming().studentId == request.auth.uid || isInstructor());
+      allow update, delete: if isInstructor() || isOwner(existing().studentId);
     }
     
     match /diagnosticAttempts/{attemptId} {
-      allow create, update: if isSignedIn();
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor() || isAdmin());
-    }
-
-    match /learnerProfiles/{profileId} {
-      allow create, update: if isSignedIn() && request.auth.uid == profileId;
-      allow read: if isSignedIn() && (profileId == request.auth.uid || isInstructor() || isAdmin());
-    }
-
-    match /quizAttempts/{attemptId} {
-      allow create, update: if isSignedIn() && (incoming().userId == request.auth.uid || existing().userId == request.auth.uid);
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor() || isAdmin());
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor());
+      allow create, update: if isSignedIn() && incoming().userId == request.auth.uid;
     }
 
     match /moduleProgress/{progressId} {
-      allow create, update: if isSignedIn() && (incoming().userId == request.auth.uid || existing().userId == request.auth.uid);
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor() || isAdmin());
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isInstructor());
+      allow create, update: if isSignedIn() && (incoming().userId == request.auth.uid || (resource != null && existing().userId == request.auth.uid));
     }
     
     match /aiDrafts/{draftId} {
-      allow read, write: if isSignedIn() && (isInstructor() || isAdmin() || isBootstrapAdmin());
+      allow read, write: if isInstructor();
     }
     
     match /settings/{docId} {
       allow read: if true;
-      allow write: if isBootstrapAdmin() || isAdmin();
+      allow write: if isAdmin();
     }
     
     match /submissions/{submissionId} {
       allow create: if isSignedIn();
-      // Relaxed read for development to avoid query/list permission errors with complex get() calls
       allow read: if isSignedIn();
     }
   }

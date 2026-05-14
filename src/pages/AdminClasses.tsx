@@ -37,16 +37,16 @@ export default function AdminClasses() {
   return (
     <AdminLayout title="Global Class Management">
       <div className="p-8 max-w-6xl mx-auto w-full text-on-surface">
-        <h2 className="text-3xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Platform Classes</h2>
-        <p className="text-slate-500 font-medium mb-8">Oversee all instructor-led classes across the platform.</p>
+        <h2 className="text-3xl font-extrabold text-primary font-headline tracking-tight mb-2">Platform Classes</h2>
+        <p className="text-on-surface-variant/60 font-medium mb-8">Oversee all instructor-led classes across the platform.</p>
 
         {loading ? (
-          <div className="text-center p-12 text-slate-500 font-bold">Loading classes...</div>
+          <div className="text-center p-12 text-on-surface-variant/60 font-bold">Loading classes...</div>
         ) : (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-widest text-[10px] font-bold">
+                <thead className="bg-surface-container border-b border-outline-variant/30 text-on-surface-variant/40 uppercase tracking-widest text-[10px] font-bold">
                   <tr>
                     <th className="px-6 py-4">Class Code & Name</th>
                     <th className="px-6 py-4">Instructor</th>
@@ -56,16 +56,16 @@ export default function AdminClasses() {
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                <tbody className="divide-y divide-outline-variant/5 font-medium text-on-surface">
                   {classes.map(cls => (
-                    <tr key={cls.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={cls.id} className="hover:bg-surface-container/20 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900">{cls.className}</div>
-                        <div className="font-mono text-slate-400 text-xs mt-0.5">{cls.classCode}</div>
+                        <div className="font-bold text-on-surface">{cls.className}</div>
+                        <div className="font-mono text-on-surface-variant/40 text-xs mt-0.5">{cls.classCode}</div>
                       </td>
                       <td className="px-6 py-4">{cls.instructorName}</td>
                       <td className="px-6 py-4">
-                        <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest">
+                        <span className="bg-primary/10 text-primary px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border border-primary/10">
                           {cls.focus?.replace('_', ' ')}
                         </span>
                       </td>
@@ -76,16 +76,16 @@ export default function AdminClasses() {
                       </td>
                       <td className="px-6 py-4">
                         {cls.status === 'active' ? (
-                          <span className="text-emerald-600 font-bold flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
+                          <span className="text-emerald-500 font-bold flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Active</span>
                         ) : (
-                          <span className="text-slate-400 font-bold flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-300"></span> Archived</span>
+                          <span className="text-on-surface-variant/40 font-bold flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-outline-variant"></span> Archived</span>
                         )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button 
                           onClick={() => toggleStatus(cls.id, cls.status)}
                           className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                            cls.status === 'active' ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                            cls.status === 'active' ? 'bg-error/10 text-error hover:bg-error/20' : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'
                           }`}
                         >
                           {cls.status === 'active' ? 'Archive' : 'Restore'}
@@ -95,7 +95,7 @@ export default function AdminClasses() {
                   ))}
                   {classes.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-500 font-medium">No classes found on the platform.</td>
+                      <td colSpan={6} className="px-6 py-12 text-center text-on-surface-variant/40 font-medium">No classes found on the platform.</td>
                     </tr>
                   )}
                 </tbody>

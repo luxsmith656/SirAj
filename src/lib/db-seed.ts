@@ -535,6 +535,433 @@ const QUESTIONS = [
     correctOptionId: 'C',
     difficulty: 'Medium'
   },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is an example of an informal fallback in Filipino communication?",
+    options: [{ id: 'A', text: 'Po and Opo' }, { id: 'B', text: 'Pagmamano' }, { id: 'C', text: 'Hospitality' }, { id: 'D', text: 'Bayanihan' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which Philippine President is known for his 'Filipino First Policy'?",
+    options: [{ id: 'A', text: 'Carlos P. Garcia' }, { id: 'B', text: 'Ramon Magsaysay' }, { id: 'C', text: 'Elpidio Quirino' }, { id: 'D', text: 'Manuel Roxas' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the process of water moving from the Earth's surface to the atmosphere and back?",
+    options: [{ id: 'A', text: 'Carbon Cycle' }, { id: 'B', text: 'Nitrogen Cycle' }, { id: 'C', text: 'Water Cycle' }, { id: 'D', text: 'Oxygen Cycle' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "The binary system is composed of which two numbers?",
+    options: [{ id: 'A', text: '0 and 1' }, { id: 'B', text: '1 and 2' }, { id: 'C', text: '0 and 2' }, { id: 'D', text: '1 and 10' }],
+    correctOptionId: 'A',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who is the primary philosopher of 'Stoicism'?",
+    options: [{ id: 'A', text: 'Zeno of Citium' }, { id: 'B', text: 'Epicurus' }, { id: 'C', text: 'Aristotle' }, { id: 'D', text: 'Plato' }],
+    correctOptionId: 'A',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "How many syllables are in a traditional Haiku poem?",
+    options: [{ id: 'A', text: '12' }, { id: 'B', text: '14' }, { id: 'C', text: '17' }, { id: 'D', text: '19' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is a primary color?",
+    options: [{ id: 'A', text: 'Green' }, { id: 'B', text: 'Orange' }, { id: 'C', text: 'Red' }, { id: 'D', text: 'Purple' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the capital of the Philippines?",
+    options: [{ id: 'A', text: 'Quezon City' }, { id: 'B', text: 'Manila' }, { id: 'C', text: 'Cebu' }, { id: 'D', text: 'Davao' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the largest organ of the human body?",
+    options: [{ id: 'A', text: 'Liver' }, { id: 'B', text: 'Skin' }, { id: 'C', text: 'Brain' }, { id: 'D', text: 'Heart' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which gas do plants primarily release during photosynthesis?",
+    options: [{ id: 'A', text: 'Carbon Dioxide' }, { id: 'B', text: 'Hydrogen' }, { id: 'C', text: 'Oxygen' }, { id: 'D', text: 'Nitrogen' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the name of the nearest star to Earth?",
+    options: [{ id: 'A', text: 'Sirius' }, { id: 'B', text: 'Alpha Centauri' }, { id: 'C', text: 'Proxima Centauri' }, { id: 'D', text: 'The Sun' }],
+    correctOptionId: 'D',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who is the author of 'Florante at Laura'?",
+    options: [{ id: 'A', text: 'Jose Rizal' }, { id: 'B', text: 'Francisco Balagtas' }, { id: 'C', text: 'Apolinario Mabini' }, { id: 'D', text: 'Emilio Jacinto' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which stage of Piaget's development involves the concept of 'Conservation'?",
+    options: [{ id: 'A', text: 'Sensorimotor' }, { id: 'B', text: 'Pre-operational' }, { id: 'C', text: 'Concrete Operational' }, { id: 'D', text: 'Formal Operational' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "In Pavlov's experiment, the bell after conditioning is the:",
+    options: [{ id: 'A', text: 'Unconditioned Stimulus' }, { id: 'B', text: 'Conditioned Stimulus' }, { id: 'C', text: 'Unconditioned Response' }, { id: 'D', text: 'Conditioned Response' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which type of intelligence involves the ability to understand oneself?",
+    options: [{ id: 'A', text: 'Interpersonal' }, { id: 'B', text: 'Intrapersonal' }, { id: 'C', text: 'Existential' }, { id: 'D', text: 'Naturalist' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is a characteristic of a 'Formative Assessment'?",
+    options: [{ id: 'A', text: 'Graded at the end of semester' }, { id: 'B', text: 'Used to provide feedback during learning' }, { id: 'C', text: 'Used for ranking' }, { id: 'D', text: 'Final exam' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "The 'Philippine Professional Standards for Teachers' (PPST) has how many domains?",
+    options: [{ id: 'A', text: '5' }, { id: 'B', text: '7' }, { id: 'C', text: '10' }, { id: 'D', text: '12' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following refers to the teacher's role as a model of good character?",
+    options: [{ id: 'A', text: 'Instructional' }, { id: 'B', text: 'Exemplary' }, { id: 'C', text: 'Managerial' }, { id: 'D', text: 'Civic' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the primary purpose of 'Parent-Teacher Conferences'?",
+    options: [{ id: 'A', text: 'To collect fees' }, { id: 'B', text: 'To discuss student progress and welfare' }, { id: 'C', text: 'To discipline parents' }, { id: 'D', text: 'To socialize' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is a 'High-Stakes' test?",
+    options: [{ id: 'A', text: 'Weekly Quiz' }, { id: 'B', text: 'Unit Test' }, { id: 'C', text: 'Licensure Examination for Teachers' }, { id: 'D', text: 'Seatwork' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which philosophy believes that 'Education is Life' and not just a preparation for life?",
+    options: [{ id: 'A', text: 'Progressivism' }, { id: 'B', text: 'Essentialism' }, { id: 'C', text: 'Perennialism' }, { id: 'D', text: 'Existentialism' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "In a 'Spiral Curriculum', topics are:",
+    options: [{ id: 'A', text: 'Taught only once' }, { id: 'B', text: 'Revisited with increasing complexity' }, { id: 'C', text: 'Taught randomly' }, { id: 'D', text: 'Ignored if too difficult' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the 'Hidden Curriculum'?",
+    options: [{ id: 'A', text: 'Secret lesson plans' }, { id: 'B', text: 'Lessons taught illegally' }, { id: 'C', text: 'Unintended lessons learned in school' }, { id: 'D', text: 'Curriculum for gifted students' }],
+    correctOptionId: 'C',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is an example of 'Scaffolding'?",
+    options: [{ id: 'A', text: 'Giving the answer directly' }, { id: 'B', text: 'Providing hints and cues' }, { id: 'C', text: 'Ignoring the student' }, { id: 'D', text: 'Punishing mistakes' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "The 'Enhanced Basic Education Act of 2013' is also known as:",
+    options: [{ id: 'A', text: 'RA 9155' }, { id: 'B', text: 'RA 10533' }, { id: 'C', text: 'RA 7836' }, { id: 'D', text: 'RA 4670' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which component of the lesson plan states what students should be able to do after the lesson?",
+    options: [{ id: 'A', text: 'Subject Matter' }, { id: 'B', text: 'Objectives' }, { id: 'C', text: 'Procedure' }, { id: 'D', text: 'Evaluation' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the main focus of 'Pragmatism'?",
+    options: [{ id: 'A', text: 'Ideal forms' }, { id: 'B', text: 'Practicality and utility' }, { id: 'C', text: 'Religious dogma' }, { id: 'D', text: 'Abstract theories' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is a 'Non-Verbal' cue in teaching?",
+    options: [{ id: 'A', text: 'Speaking clearly' }, { id: 'B', text: 'Writing on the board' }, { id: 'C', text: 'Eye contact' }, { id: 'D', text: 'Explaining a concept' }],
+    correctOptionId: 'C',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is a 'Criterion-Referenced' interpretation?",
+    options: [{ id: 'A', text: 'Top 10 of the class' }, { id: 'B', text: 'Passed the minimum score requirement' }, { id: 'C', text: 'Average performance' }, { id: 'D', text: 'Better than 80% of the class' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the primary objective of 'Inclusive Education'?",
+    options: [{ id: 'A', text: 'To separate students by ability' }, { id: 'B', text: 'To include all learners regardless of background or ability' }, { id: 'C', text: 'To teach only the gifted' }, { id: 'D', text: 'To reduce school funding' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is a benefit of 'Collaborative Learning'?",
+    options: [{ id: 'A', text: 'Increased competition' }, { id: 'B', text: 'Development of social and teamwork skills' }, { id: 'C', text: 'Less work for the teacher' }, { id: 'D', text: 'Lower grades for everyone' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is the importance of 'Feedback' in the learning process?",
+    options: [{ id: 'A', text: 'To discourage students' }, { id: 'B', text: 'To inform students of their progress and guide improvement' }, { id: 'C', text: 'To waste time' }, { id: 'D', text: 'To show teacher authority' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is an example of an 'Authentic Assessment'?",
+    options: [{ id: 'A', text: 'Multiple choice test' }, { id: 'B', text: 'Performance task or project' }, { id: 'C', text: 'Matching type' }, { id: 'D', text: 'True or False' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who is the national hero of the Philippines?",
+    options: [{ id: 'A', text: 'Andres Bonifacio' }, { id: 'B', text: 'Jose Rizal' }, { id: 'C', text: 'Emilio Aguinaldo' }, { id: 'D', text: 'Apolinario Mabini' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is the national fruit of the Philippines?",
+    options: [{ id: 'A', text: 'Durian' }, { id: 'B', text: 'Mango' }, { id: 'C', text: 'Pineapple' }, { id: 'D', text: 'Banana' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the national leaf of the Philippines?",
+    options: [{ id: 'A', text: 'Banana Leaf' }, { id: 'B', text: 'Anahaw' }, { id: 'C', text: 'Nipa' }, { id: 'D', text: 'Sambong' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the smallest province in the Philippines in terms of land area?",
+    options: [{ id: 'A', text: 'Camiguin' }, { id: 'B', text: 'Batanes' }, { id: 'C', text: 'Siquijor' }, { id: 'D', text: 'Catanduanes' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which volcano is known for its 'Perfect Cone'?",
+    options: [{ id: 'A', text: 'Mount Pinatubo' }, { id: 'B', text: 'Mount Mayon' }, { id: 'C', text: 'Mount Apo' }, { id: 'D', text: 'Mount Taal' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who was the first female president of the Philippines?",
+    options: [{ id: 'A', text: 'Gloria Macapagal Arroyo' }, { id: 'B', text: 'Corazon Aquino' }, { id: 'C', text: 'Imelda Marcos' }, { id: 'D', text: 'Miriam Defensor Santiago' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the currency of the Philippines?",
+    options: [{ id: 'A', text: 'Dollar' }, { id: 'B', text: 'Peso' }, { id: 'C', text: 'Baht' }, { id: 'D', text: 'Yen' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is the longest river in the Philippines?",
+    options: [{ id: 'A', text: 'Pasig River' }, { id: 'B', text: 'Cagayan River' }, { id: 'C', text: 'Agusan River' }, { id: 'D', text: 'Pampanga River' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the national flower of the Philippines?",
+    options: [{ id: 'A', text: 'Rose' }, { id: 'B', text: 'Sampaguita' }, { id: 'C', text: 'Orchid' }, { id: 'D', text: 'Sunflower' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which city is known as the 'Summer Capital' of the Philippines?",
+    options: [{ id: 'A', text: 'Tagaytay' }, { id: 'B', text: 'Baguio' }, { id: 'C', text: 'Cebu' }, { id: 'D', text: 'Davao' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the primary language used in the 1987 Constitution for official communications?",
+    options: [{ id: 'A', text: 'Filipino and English' }, { id: 'B', text: 'Filipino only' }, { id: 'C', text: 'English and Spanish' }, { id: 'D', text: 'Tagalog and English' }],
+    correctOptionId: 'A',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who was the 'Brains of the Katipunan'?",
+    options: [{ id: 'A', text: 'Andres Bonifacio' }, { id: 'B', text: 'Emilio Jacinto' }, { id: 'C', text: 'Apolinario Mabini' }, { id: 'D', text: 'Antonio Luna' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "How many islands are there in the Philippine archipelago?",
+    options: [{ id: 'A', text: '7,107' }, { id: 'B', text: '7,641' }, { id: 'C', text: '8,000' }, { id: 'D', text: '5,000' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which explorer led the first circumnavigation of the world (though he died in the Philippines)?",
+    options: [{ id: 'A', text: 'Christopher Columbus' }, { id: 'B', text: 'Ferdinand Magellan' }, { id: 'C', text: 'Vasco da Gama' }, { id: 'D', text: 'Miguel Lopez de Legazpi' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the largest island in the Philippines?",
+    options: [{ id: 'A', text: 'Mindanao' }, { id: 'B', text: 'Luzon' }, { id: 'C', text: 'Samar' }, { id: 'D', text: 'Leyte' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Who said 'The youth is the hope of the Fatherland'?",
+    options: [{ id: 'A', text: 'Andres Bonifacio' }, { id: 'B', text: 'Jose Rizal' }, { id: 'C', text: 'Manuel Quezon' }, { id: 'D', text: 'Ferdinand Marcos' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the name of the Philippine national anthem?",
+    options: [{ id: 'A', text: 'Bayang Magiliw' }, { id: 'B', text: 'Lupang Hinirang' }, { id: 'C', text: 'Perlas ng Silangan' }, { id: 'D', text: 'Marangal na Dalit ng Katagalugan' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is the highest mountain in the Philippines?",
+    options: [{ id: 'A', text: 'Mount Pulag' }, { id: 'B', text: 'Mount Apo' }, { id: 'C', text: 'Mount Dulang-dulang' }, { id: 'D', text: 'Mount Kitanglad' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the date of the Philippine Independence Day?",
+    options: [{ id: 'A', text: 'July 4' }, { id: 'B', text: 'June 12' }, { id: 'C', text: 'December 30' }, { id: 'D', text: 'Wait, which year?' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which of the following is a primary greenhouse gas?",
+    options: [{ id: 'A', text: 'Oxygen' }, { id: 'B', text: 'Carbon Dioxide' }, { id: 'C', text: 'Nitrogen' }, { id: 'D', text: 'Argon' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the chemical formula for water?",
+    options: [{ id: 'A', text: 'CO2' }, { id: 'B', text: 'H2O' }, { id: 'C', text: 'NaCl' }, { id: 'D', text: 'O2' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which organ is responsible for pumping blood throughout the body?",
+    options: [{ id: 'A', text: 'Lungs' }, { id: 'B', text: 'Heart' }, { id: 'C', text: 'Liver' }, { id: 'D', text: 'Kidneys' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the value of Pi (to two decimal places)?",
+    options: [{ id: 'A', text: '3.12' }, { id: 'B', text: '3.14' }, { id: 'C', text: '3.16' }, { id: 'D', text: '3.18' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "Which planet is closest to the Sun?",
+    options: [{ id: 'A', text: 'Venus' }, { id: 'B', text: 'Mercury' }, { id: 'C', text: 'Earth' }, { id: 'D', text: 'Mars' }],
+    correctOptionId: 'B',
+    difficulty: 'Easy'
+  },
+  {
+    categoryName: 'General Education',
+    stem: "What is the color of a mirror?",
+    options: [{ id: 'A', text: 'Silver' }, { id: 'B', text: 'White' }, { id: 'C', text: 'Green' }, { id: 'D', text: 'Colorless' }],
+    correctOptionId: 'C',
+    difficulty: 'Hard'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which of the following is an example of 'Operant Conditioning'?",
+    options: [{ id: 'A', text: 'Salivating at the smell of food' }, { id: 'B', text: 'Receiving a reward for good behavior' }, { id: 'C', text: 'Pulling your hand away from a hot stove' }, { id: 'D', text: 'Blinking at a bright light' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "Which type of test is used to measure a student's potential for future success?",
+    options: [{ id: 'A', text: 'Achievement Test' }, { id: 'B', text: 'Aptitude Test' }, { id: 'C', text: 'Intelligence Test' }, { id: 'D', text: 'Projective Test' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
+  {
+    categoryName: 'Professional Education',
+    stem: "What is 'Reliability' in testing?",
+    options: [{ id: 'A', text: 'The test measures what it intends to measure' }, { id: 'B', text: 'The consistency of scores across multiple administrations' }, { id: 'C', text: 'The ease of scoring the test' }, { id: 'D', text: 'The length of the test' }],
+    correctOptionId: 'B',
+    difficulty: 'Medium'
+  },
   // --- ADDED 40+ TOTAL SPECIALIZED QUESTIONS BATCH ---
   {
     categoryName: 'General Education',
