@@ -35,6 +35,25 @@ export default function Dashboard() {
                 <p className="font-body text-[11px] font-bold text-slate-400 uppercase tracking-widest">Real-time Platform Monitoring</p>
               </div>
             </div>
+            <div className="flex gap-2">
+               <button 
+                onClick={async () => {
+                  if (confirm('This will populate the database with curriculum-aligned categories and 100+ questions. Continue?')) {
+                    try {
+                      await seedDatabase();
+                      alert('Database seeded successfully!');
+                    } catch (e: any) {
+                      alert(e.message);
+                    }
+                  }
+                }}
+                className="bg-white border border-slate-200 px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-2"
+               >
+                 <span className="material-symbols-outlined text-[18px]">database</span>
+                 Seed Database
+               </button>
+               <button className="bg-[#1b366a] px-5 py-2 rounded-xl text-xs font-bold text-white shadow-lg shadow-blue-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all">Export Reports</button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

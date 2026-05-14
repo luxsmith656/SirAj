@@ -121,8 +121,11 @@ export default function DiagnosticAssessment() {
           completedAt: Date.now()
         });
 
-        const strengths = baselineScore >= 70 ? ['Concept Mastery'] : [];
-        const weaknesses = baselineScore < 70 ? ['Needs Review', 'Test Taking'] : [];
+        const strengths = baselineScore >= 70 ? ['Concept Mastery', 'Quick Learner'] : ['Diligent Reviewer'];
+        const weaknesses = baselineScore < 70 ? ['Theoretical Foundations', 'Test Taking Strategy'] : ['Advanced Application'];
+
+        // Badge ID for "Pathfinder"
+        const badgeId = 'badge_pioneer';
 
         // Save learner profile
         await setDoc(doc(db, 'learnerProfiles', user!.uid), {
@@ -131,13 +134,16 @@ export default function DiagnosticAssessment() {
            completedAt: Date.now(),
            weaknesses: weaknesses,
            strengths: strengths,
-           recommendedPath: baselineScore >= 70 ? 'Advanced Review' : 'Standard Foundation'
+           recommendedPath: baselineScore >= 70 ? 'Advanced Review' : 'Standard Foundation',
+           earnedBadges: [badgeId]
         });
 
         // Update user
         await setDoc(doc(db, 'users', user!.uid), {
            diagnosticCompleted: true,
-           updatedAt: Date.now()
+           earnedBadges: [badgeId],
+           updatedAt: Date.now(),
+           onboardingStep: 3
         }, { merge: true });
 
         await refreshUser();

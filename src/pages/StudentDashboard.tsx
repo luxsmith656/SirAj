@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
@@ -21,7 +21,8 @@ import {
   Search,
   RefreshCw,
   BookText,
-  Flame, Award, Brain, Medal
+  Flame, Award, Brain, Medal,
+  Users
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -32,11 +33,31 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<any>(null);
+  const [classData, setClassData] = useState<any>(null);
+  const [assignedModules, setAssignedModules] = useState<any[]>([]);
   const [stats, setStats] = useState({
     avgScore: '0%',
     timeSpent: '0 hrs',
     mastery: '0%'
   });
+  const [earnedBadges, setEarnedBadges] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchBadges = async () => {
+      if (!user?.earnedBadges || user.earnedBadges.length === 0) return;
+      try {
+        const badgeList: any[] = [];
+        for (const bid of user.earnedBadges) {
+          const bdoc = await getDoc(doc(db, 'badges', bid));
+          if (bdoc.exists()) badgeList.push({ id: bdoc.id, ...bdoc.data() });
+        }
+        setEarnedBadges(badgeList);
+      } catch (e) {
+        console.error('Failed to fetch badges', e);
+      }
+    };
+    fetchBadges();
+  }, [user?.earnedBadges]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -45,9 +66,36 @@ export default function StudentDashboard() {
         const profileRef = await getDoc(doc(db, 'learnerProfiles', user.uid));
         let baseMastery = 0;
         if (profileRef.exists()) {
-          setProfile(profileRef.data());
-          baseMastery = profileRef.data().baselineScore || 0;
+          const p = profileRef.data();
+          setProfile(p);
+          baseMastery = p.baselineScore || 0;
           setStats(prev => ({ ...prev, mastery: `${baseMastery}%` }));
+        }
+
+        // Fetch class data if class-based
+        if (user.learningMode === 'class_based' && user.activeClassId) {
+          const classRef = await getDoc(doc(db, 'classes', user.activeClassId));
+          if (classRef.exists()) {
+            const data = classRef.data();
+            setClassData(data);
+            
+            // Mock assigned modules if they don't exist yet in DB or fetch them
+            if (data.assignedModuleIds && data.assignedModuleIds.length > 0) {
+               // In a real app we'd fetch from 'modules' collection
+               // For now we'll simulate a fetch
+               setAssignedModules(data.assignedModuleIds.map((id: string) => ({
+                 id,
+                 title: `Module ${id.slice(-4)}`,
+                 status: 'Assigned'
+               })));
+            } else {
+               // Default modules for class
+               setAssignedModules([
+                 { id: 'm1', title: 'Foundations of Education', status: 'In Progress' },
+                 { id: 'm2', title: 'The Teaching Profession', status: 'Not Started' }
+               ]);
+            }
+          }
         }
 
         const attemptsQ = query(collection(db, 'quizAttempts'), where('userId', '==', user.uid));
@@ -283,18 +331,74 @@ export default function StudentDashboard() {
             ))}
           </div>
 
-            {/* Quick Actions and Recommended Path */}
+            {/* Quick Actions and Recommended Path / Class Info */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-6 md:pb-0">
-            <div className="lg:col-span-2 space-y-4">
-              <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
-                <Target className="text-[#1b366a]" size={20} />
-                Recommended Path
-              </h2>
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 mb-4 shadow-sm">
-                 <h3 className="font-bold text-indigo-900 text-lg mb-2">Focus Area: {profile?.recommendedPath || 'General Foundations'}</h3>
-                 <p className="text-sm text-indigo-700 mb-4">Based on your diagnostic assessment and recent activity, mastering this module will yield the highest impact on your overall score.</p>
-                 <button onClick={() => navigate('/quest')} className="bg-[#1b366a] text-white px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-[#112244] shadow-md transition-all">Start Recommended Module</button>
-              </div>
+            <div className="lg:col-span-2 space-y-6">
+              
+              {user?.learningMode === 'class_based' ? (
+                // CLASS BASED VIEW
+                <div className="space-y-6">
+                  <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
+                    <Users className="text-[#1b366a]" size={20} />
+                    Class Information
+                  </h2>
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                      <div>
+                        <h3 className="font-bold text-xl text-slate-800">{classData?.className || 'Loading Class...'}</h3>
+                        <p className="text-sm text-slate-500 font-medium">Instructor: <span className="text-[#1b366a] font-bold">{classData?.instructorName || 'Your Instructor'}</span></p>
+                      </div>
+                      <div className="bg-blue-50 text-[#1b366a] px-4 py-2 rounded-xl border border-blue-100">
+                        <span className="text-[10px] font-bold uppercase tracking-widest block leading-none mb-1">Class Code</span>
+                        <span className="font-mono font-bold text-base">{classData?.classCode}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Assigned Modules</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {assignedModules.map(mod => (
+                          <div key={mod.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between group hover:border-[#1b366a]/20 transition-all">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-[#1b366a] shadow-sm font-bold text-xs">{mod.id[0].toUpperCase()}</div>
+                              <span className="text-sm font-bold text-slate-700">{mod.title}</span>
+                            </div>
+                            <span className="text-[9px] font-bold px-2 py-1 bg-white rounded-md text-slate-400 uppercase tracking-tighter">{mod.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // SELF REVIEW VIEW
+                <div className="space-y-6">
+                  <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
+                    <Target className="text-[#1b366a]" size={20} />
+                    Self-Review Focus
+                  </h2>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#1b366a] shadow-sm">
+                        <Target size={24} />
+                      </div>
+                      <div>
+                         <h3 className="font-bold text-indigo-900 text-lg leading-tight">{user?.selectedFocus ? user.selectedFocus.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'General Education'}</h3>
+                         <p className="text-xs text-indigo-700">Currently focusing on your selected curriculum</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white/50 backdrop-blur-sm rounded-xl p-4 border border-blue-200/50">
+                       <h4 className="text-[10px] font-bold text-indigo-900/40 uppercase tracking-widest mb-2">Weak Topics to Work On</h4>
+                       <div className="flex flex-wrap gap-2">
+                         {(profile?.weaknesses?.length > 0 ? profile.weaknesses : ['Pedagogical Theories', 'Research Methods']).map((w: string, i: number) => (
+                           <span key={i} className="px-2.5 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-bold border border-red-100">{w}</span>
+                         ))}
+                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800 mt-6">
                 <BookOpen className="text-[#1b366a]" size={20} />
@@ -373,19 +477,23 @@ export default function StudentDashboard() {
             <div className="space-y-4">
               <h2 className="text-lg font-extrabold font-headline flex items-center gap-2 text-slate-800">
                 <BarChart className="text-slate-400" size={20} />
-                Domain Progress
+                {user?.learningMode === 'class_based' ? 'Class Progress' : 'Category Progress'}
               </h2>
               <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
-                {[
-                  { label: 'General Ed', score: 82, color: 'bg-[#1b366a]', lastAccessed: '2 days ago' },
-                  { label: 'Professional Ed', score: 64, color: 'bg-indigo-500', lastAccessed: 'Today' },
-                  { label: 'Specialization', score: 71, color: 'bg-slate-800', lastAccessed: 'Yesterday' },
-                ].map((item, idx) => (
+                {(user?.learningMode === 'class_based' ? [
+                  { label: 'Weekly Tasks', score: 45, color: 'bg-emerald-500', subtitle: '4/9 tasks completed' },
+                  { label: 'Class Participation', score: 80, color: 'bg-[#1b366a]', subtitle: 'Top tier learner' },
+                  { label: 'Quiz Performance', score: 68, color: 'bg-indigo-500', subtitle: 'Above class average' },
+                ] : [
+                  { label: 'General Ed', score: 82, color: 'bg-[#1b366a]', subtitle: 'Last accessed: 2 days ago' },
+                  { label: 'Professional Ed', score: 64, color: 'bg-indigo-500', subtitle: 'Last accessed: Today' },
+                  { label: 'Specialization', score: 71, color: 'bg-slate-800', subtitle: 'Last accessed: Yesterday' },
+                ]).map((item, idx) => (
                   <div key={idx} className="space-y-2">
                     <div className="flex justify-between text-[10px] items-center mb-1.5">
                       <div className="flex flex-col">
                         <span className="font-bold uppercase tracking-widest text-slate-800">{item.label}</span>
-                        <span className="text-[9px] text-slate-400 font-medium">Last accessed: {item.lastAccessed}</span>
+                        <span className="text-[9px] text-slate-400 font-medium">{item.subtitle}</span>
                       </div>
                       <span className="font-bold text-slate-800 text-sm">{item.score}% Mastery</span>
                     </div>
@@ -423,9 +531,9 @@ export default function StudentDashboard() {
           <GraduationCap size={20} />
           <span className="text-[10px] font-bold tracking-tight">Exam</span>
         </button>
-        <button onClick={() => navigate('/admin/settings')} className="flex flex-col items-center gap-1 text-slate-400">
-          <Settings size={20} />
-          <span className="text-[10px] font-bold tracking-tight">Settings</span>
+        <button onClick={triggerSync} className="flex flex-col items-center gap-1 text-slate-400">
+          <RefreshCw size={20} className={isSyncing ? 'animate-spin text-[#1b366a]' : ''} />
+          <span className="text-[10px] font-bold tracking-tight">Sync</span>
         </button>
       </nav>
     </div>

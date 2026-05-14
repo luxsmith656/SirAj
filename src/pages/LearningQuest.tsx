@@ -4,12 +4,18 @@ import { motion, AnimatePresence } from 'motion/react';
 import { OfflineData } from '../lib/offline/offlineData';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
+
 export default function LearningQuest() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState<'hook' | 'lesson' | 'check' | 'challenge' | 'complete'>('hook');
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [challengeScore, setChallengeScore] = useState(0);
+  const [topicName, setTopicName] = useState('Professional Education');
 
   // Quick check state
   const [checkAnswer, setCheckAnswer] = useState<string | null>(null);
@@ -21,9 +27,32 @@ export default function LearningQuest() {
   useEffect(() => {
     async function loadContent() {
       try {
+        let targetCategoryId = '';
+        
+        // Try to find a category related to weaknesses
+        if (user) {
+          const profileRef = await getDoc(doc(db, 'learnerProfiles', user.uid));
+          if (profileRef.exists()) {
+            const profile = profileRef.data();
+            if (profile.weaknesses && profile.weaknesses.length > 0) {
+              const weakTopic = profile.weaknesses[0];
+              setTopicName(weakTopic);
+              // Find category matching weakness (simple string match for now)
+              const cats = await OfflineData.getCategories();
+              const matchedCat = cats.find(c => weakTopic.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(weakTopic.toLowerCase()));
+              if (matchedCat) targetCategoryId = matchedCat.id;
+            }
+          }
+        }
+
         const cats = await OfflineData.getCategories();
-        if (cats.length > 0) {
-           const qs = await OfflineData.getRandomQuestions(cats[0].id, 4);
+        if (!targetCategoryId && cats.length > 0) {
+           targetCategoryId = cats[0].id;
+           setTopicName(cats[0].name);
+        }
+
+        if (targetCategoryId) {
+           const qs = await OfflineData.getRandomQuestions(targetCategoryId, 5);
            setQuestions(qs);
         }
       } catch (err) {
@@ -33,7 +62,7 @@ export default function LearningQuest() {
       }
     }
     loadContent();
-  }, []);
+  }, [user]);
 
   const handleQuickCheck = (id: string, isCorrect: boolean) => {
     setCheckAnswer(id);
@@ -61,7 +90,7 @@ export default function LearningQuest() {
           <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-20}} className="space-y-6">
             <div className="bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-2xl">
               <h2 className="text-xl font-bold text-indigo-900 mb-2">Did you know?</h2>
-              <p className="text-indigo-800">Effective teachers don't just know their subjects; they know how to translate that knowledge into engaging learning experiences. This quest will sharpen your Professional Education mastery.</p>
+              <p className="text-indigo-800">Effective teachers don't just know their subjects; they know how to translate that knowledge into engaging learning experiences. This quest will sharpen your {topicName} mastery.</p>
             </div>
             <button onClick={() => setStep('lesson')} className="bg-[#1b366a] text-white px-6 py-3 rounded-xl font-bold flex items-center justify-between w-full shadow-md">
                <span>Start Mini-Lesson</span>

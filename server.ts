@@ -51,6 +51,40 @@ Return JSON ONLY, matching exactly this format:
     }
   });
 
+  // API route for AI explanation
+  app.post('/api/explain-answer', async (req, res) => {
+    try {
+      const { questionTitle, options, studentAnswerId, correctAnswerId } = req.body;
+      const studentOpt = options.find((o: any) => o.id === studentAnswerId);
+      const correctOpt = options.find((o: any) => o.id === correctAnswerId);
+
+      const prompt = `You are an encouraging and insightful tutor helping a student prepare for the Licensure Examination for Teachers (LET).
+The student encountered this multiple choice question:
+Question: "${questionTitle}"
+
+Options:
+${options.map((o: any) => `${o.id}: ${o.text}`).join('\n')}
+
+The correct answer is ${correctAnswerId} (${correctOpt?.text || ''}).
+The student answered ${studentAnswerId} (${studentOpt?.text || ''}).
+
+Briefly explain:
+1. Why the correct answer is right.
+2. Why the student's answer is incorrect.
+Keep the explanation under 3-4 sentences, encouraging, pedagogical, and easy to understand. Do not use markdown.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+
+      res.json({ success: true, explanation: response.text });
+    } catch (error: any) {
+      console.error('Gemini Explanation Error:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

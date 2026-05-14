@@ -25,8 +25,18 @@ export class OfflineData {
     return await db.getAll('localModules');
   }
 
-  static async getRandomQuestions(categoryId: string, count: number) {
-    const questions = await this.getQuestionsByCategory(categoryId);
+  static async getAllQuestions() {
+    const db = await initDB();
+    return await db.getAll('localQuestions');
+  }
+
+  static async getRandomQuestions(categoryId: string | null, count: number) {
+    let questions = [];
+    if (!categoryId) {
+      questions = await this.getAllQuestions();
+    } else {
+      questions = await this.getQuestionsByCategory(categoryId);
+    }
     // Shuffle and pick count
     const shuffled = questions.sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);

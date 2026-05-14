@@ -20,6 +20,7 @@ interface UserProfile {
   diagnosticCompleted?: boolean;
   streak?: number;
   lastLoginDate?: string;
+  earnedBadges?: string[];
 }
 
 interface AuthContextType {

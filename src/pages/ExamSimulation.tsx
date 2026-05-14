@@ -128,7 +128,10 @@ export default function ExamSimulation() {
         console.error('Local save failed', e);
       }
       
-      navigate('/quiz-results', { state: { score, total: questions.length } });
+      // Wait briefly before navigating to results
+      setTimeout(() => {
+        navigate('/quiz-results', { state: { score, total: questions.length, questions, answers: newAnswers } });
+      }, 100);
     }
   };
 

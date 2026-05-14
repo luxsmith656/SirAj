@@ -20,11 +20,27 @@ export default function InstructorClasses() {
     className: '',
     description: '',
     focus: 'general_education',
-    specializationName: ''
+    specializationName: '',
+    classCode: ''
   });
+  const [codeError, setCodeError] = useState('');
 
   const generateClassCode = () => {
     return 'LM-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
+  useEffect(() => {
+    if (showCreateModal && !newClass.classCode) {
+      setNewClass(prev => ({ ...prev, classCode: generateClassCode() }));
+    }
+  }, [showCreateModal]);
+
+  const validateCode = (code: string) => {
+    const regex = /^LM-[A-Z0-9]{6}$/;
+    if (!regex.test(code)) {
+      return 'Format must be LM-XXXXXX (e.g., LM-ABC123)';
+    }
+    return '';
   };
 
   const loadClasses = async () => {
@@ -46,19 +62,35 @@ export default function InstructorClasses() {
   }, [user]);
 
   const handleCreate = async () => {
-    if (!user || !newClass.className) return;
+    if (!user || !newClass.className || !newClass.classCode) return;
+    
+    const error = validateCode(newClass.classCode);
+    if (error) {
+      setCodeError(error);
+      return;
+    }
+
     try {
       setLoading(true);
+      
+      // Check for uniqueness
+      const q = query(collection(db, 'classes'), where('classCode', '==', newClass.classCode), where('status', '==', 'active'));
+      const snap = await getDocs(q);
+      if (!snap.empty) {
+        setCodeError('This class code is already in use.');
+        setLoading(false);
+        return;
+      }
+
       const classRef = doc(collection(db, 'classes'));
-      const code = generateClassCode();
       const payload = {
         classId: classRef.id,
         className: newClass.className,
         description: newClass.description,
         instructorId: user.uid,
         instructorName: user.fullName || user.email,
-        classCode: code,
-        inviteLink: `${window.location.origin}/join/${code}`,
+        classCode: newClass.classCode,
+        inviteLink: `${window.location.origin}/join/${newClass.classCode}`,
         focus: newClass.focus,
         specializationName: newClass.specializationName,
         assignedModuleIds: [],
@@ -70,7 +102,8 @@ export default function InstructorClasses() {
       };
       await setDoc(classRef, payload);
       setShowCreateModal(false);
-      setNewClass({ className: '', description: '', focus: 'general_education', specializationName: '' });
+      setNewClass({ className: '', description: '', focus: 'general_education', specializationName: '', classCode: '' });
+      setCodeError('');
       await loadClasses();
     } catch (e) {
       console.error(e);
@@ -185,6 +218,30 @@ export default function InstructorClasses() {
                   placeholder="Optional class description..."
                 ></textarea>
               </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Class Code</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={newClass.classCode}
+                    onChange={e => {
+                      const val = e.target.value.toUpperCase();
+                      setNewClass({...newClass, classCode: val});
+                      if (codeError) setCodeError('');
+                    }}
+                    className={`flex-1 bg-slate-50 border ${codeError ? 'border-red-300' : 'border-slate-200'} rounded-xl px-4 py-3 text-sm font-mono font-bold focus:bg-white focus:border-blue-300 outline-none transition-all`}
+                    placeholder="LM-ABC123"
+                  />
+                  <button 
+                    onClick={() => setNewClass({...newClass, classCode: generateClassCode()})}
+                    className="px-4 bg-slate-100 text-slate-600 rounded-xl font-bold text-xs hover:bg-slate-200 transition-colors"
+                  >
+                    Regen
+                  </button>
+                </div>
+                {codeError && <p className="text-[10px] text-red-500 font-bold mt-1 ml-1">{codeError}</p>}
+              </div>
+
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Primary Focus</label>
                 <select 

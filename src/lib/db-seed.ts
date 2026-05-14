@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 const CATEGORIES = [
@@ -894,6 +894,19 @@ export async function seedDatabase() {
         });
         console.log(`Seeded dummy profile: ${dUser.email}`);
       }
+    }
+
+    console.log('Seeding badges...');
+    const badges = [
+      { id: 'badge_pioneer', name: 'Pathfinder', description: 'Completed the diagnostic assessment and unlocked the learning path.', icon: 'target', rarity: 'Common' }
+    ];
+    for (const badge of badges) {
+      await setDoc(doc(db, 'badges', badge.id), {
+        name: badge.name,
+        description: badge.description,
+        icon: badge.icon,
+        rarity: badge.rarity
+      }, { merge: true });
     }
 
     console.log('Database seed completed successfully!');

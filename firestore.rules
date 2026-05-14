@@ -36,14 +36,19 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if isOwner(userId) || isBootstrapAdmin() || isAdmin();
-      allow update: if isOwner(userId) || isBootstrapAdmin() || isAdmin();
-      allow delete: if isBootstrapAdmin() || isAdmin() || (isSignedIn() && request.auth.token.email == existing().email);
+      allow create: if isOwner(userId) && incoming().role == "student" || isBootstrapAdmin() || isAdmin();
+      allow update: if (isOwner(userId) && !incoming().diff(existing()).affectedKeys().hasAny(["role", "email"])) || isBootstrapAdmin() || isAdmin();
+      allow delete: if isBootstrapAdmin() || isAdmin();
     }
     
     match /learnerProfiles/{userId} {
-      allow read: if isOwner(userId) || isBootstrapAdmin() || isAdmin() || isInstructor();
-      allow write: if isOwner(userId) || isBootstrapAdmin() || isAdmin();
+      allow read: if isOwner(userId) || isInstructor() || isAdmin() || isBootstrapAdmin();
+      allow write: if isOwner(userId) || isAdmin() || isBootstrapAdmin();
+    }
+    
+    match /badges/{badgeId} {
+      allow read: if true;
+      allow write: if isAdmin() || isBootstrapAdmin();
     }
     
     match /quizAttempts/{attemptId} {

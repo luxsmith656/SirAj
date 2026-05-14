@@ -1,12 +1,45 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BrainCircuit, Check, X } from 'lucide-react';
 
 export default function QuizResults() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { score = 0, total = 0 } = location.state || {};
+  const { score = 0, total = 0, questions = [], answers = {} } = location.state || {};
   const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
   const incorrect = total - score;
+
+  const [aiExplanations, setAiExplanations] = useState<Record<string, string>>({});
+  const [loadingAi, setLoadingAi] = useState<Record<string, boolean>>({});
+
+  const handleExplain = async (q: any) => {
+    if (aiExplanations[q.id]) return;
+    
+    setLoadingAi(prev => ({ ...prev, [q.id]: true }));
+    try {
+      const res = await fetch('/api/explain-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionTitle: q.stem,
+          options: q.options,
+          studentAnswerId: answers[q.id],
+          correctAnswerId: q.correctOptionId
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAiExplanations(prev => ({ ...prev, [q.id]: data.explanation }));
+      } else {
+        setAiExplanations(prev => ({ ...prev, [q.id]: 'Failed to generate explanation. Please try again later.' }));
+      }
+    } catch (err) {
+      console.error(err);
+      setAiExplanations(prev => ({ ...prev, [q.id]: 'Network error. Please try again.' }));
+    } finally {
+      setLoadingAi(prev => ({ ...prev, [q.id]: false }));
+    }
+  };
 
   return (
     <div className="bg-white text-slate-800 font-body min-h-[100dvh] flex flex-col antialiased">
@@ -50,14 +83,74 @@ export default function QuizResults() {
              <div className="space-y-4">
                 <h3 className="font-headline font-bold text-lg mb-4 text-slate-800">Historical Insights</h3>
                 
-                <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                <div className="p-5 rounded-2xl bg-white border border-slate-100 shadow-sm mb-8">
                    <div className="flex items-center gap-3 mb-2">
-                      <span className="material-symbols-outlined text-blue-600 text-sm">trending_up</span>
-                      <h4 className="font-bold text-sm text-slate-800">Domain Performance</h4>
+                       <span className="material-symbols-outlined text-blue-600 text-sm">trending_up</span>
+                       <h4 className="font-bold text-sm text-slate-800">Domain Performance</h4>
                    </div>
                    <p className="text-xs text-slate-500 font-medium leading-relaxed">Your answers have been indexed into your mastery profile. Review individual domain performance in your analytics dashboard.</p>
                 </div>
              </div>
+
+             {questions.length > 0 && (
+                <div className="mt-8 space-y-6">
+                   <h3 className="font-headline font-bold text-lg mb-4 text-slate-800">Answer Review</h3>
+                   <div className="space-y-4">
+                      {questions.map((q: any, i: number) => {
+                         const studentAns = answers[q.id];
+                         const isCorrect = studentAns === q.correctOptionId;
+                         const studentOpt = q.options?.find((o: any) => o.id === studentAns);
+                         const correctOpt = q.options?.find((o: any) => o.id === q.correctOptionId);
+
+                         return (
+                            <div key={q.id} className={`p-5 rounded-2xl border ${isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
+                               <div className="flex gap-3 mb-3">
+                                  <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-white ${isCorrect ? 'bg-emerald-500' : 'bg-red-500'}`}>
+                                     {isCorrect ? <Check size={14} /> : <X size={14} />}
+                                  </div>
+                                  <h4 className="font-bold text-slate-800 text-sm leading-snug">{i + 1}. {q.stem}</h4>
+                               </div>
+                               
+                               <div className="pl-9 space-y-3">
+                                  {!isCorrect && (
+                                     <div className="text-sm">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-0.5">Your Answer</span>
+                                        <p className="text-red-800 font-medium">{studentOpt?.text}</p>
+                                     </div>
+                                  )}
+                                  <div className="text-sm">
+                                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-0.5">Correct Answer</span>
+                                     <p className="text-emerald-800 font-bold">{correctOpt?.text}</p>
+                                  </div>
+
+                                  {!isCorrect && (
+                                     <div className="mt-4 pt-4 border-t border-red-200/50">
+                                        {aiExplanations[q.id] ? (
+                                           <div className="bg-white/60 p-4 rounded-xl">
+                                              <h5 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-indigo-600 mb-2">
+                                                <BrainCircuit size={14} /> AI Explanation
+                                              </h5>
+                                              <p className="text-indigo-900 text-xs leading-relaxed">{aiExplanations[q.id]}</p>
+                                           </div>
+                                        ) : (
+                                           <button 
+                                             onClick={() => handleExplain(q)}
+                                             disabled={loadingAi[q.id]}
+                                             className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50"
+                                           >
+                                              {loadingAi[q.id] ? <span className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /> : <BrainCircuit size={16} />}
+                                              Ask AI to Explain
+                                           </button>
+                                        )}
+                                     </div>
+                                  )}
+                               </div>
+                            </div>
+                         );
+                      })}
+                   </div>
+                </div>
+             )}
           </div>
        </div>
 

@@ -1,5 +1,22 @@
 {
   "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role and settings.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "instructor", "admin"] },
+        "learningMode": { "type": "string", "enum": ["self_paced", "class_based"] },
+        "selectedFocus": { "type": "string" },
+        "activeClassId": { "type": "string" },
+        "diagnosticCompleted": { "type": "boolean" },
+        "onboardingStep": { "type": "number" },
+        "photoURL": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
     "Category": {
       "title": "Category",
       "description": "A curriculum category or subject domain.",
@@ -7,17 +24,27 @@
       "properties": {
         "name": { "type": "string" },
         "description": { "type": "string" },
-        "parentId": { "type": "string", "description": "ID of parent category for hierarchical structure" },
-        "questionCount": { "type": "number", "default": 0 }
+        "questionCount": { "type": "number" }
       },
       "required": ["name"]
     },
-    "Question": {
-      "title": "Question",
-      "description": "A multiple choice question in the question bank.",
+    "Topic": {
+      "title": "Topic",
+      "description": "A topic within a category.",
       "type": "object",
       "properties": {
-        "stem": { "type": "string", "description": "The question text" },
+        "categoryId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["categoryId", "name"]
+    },
+    "Question": {
+      "title": "Question",
+      "description": "A multiple choice question.",
+      "type": "object",
+      "properties": {
+        "stem": { "type": "string" },
         "options": {
           "type": "array",
           "items": {
@@ -30,37 +57,74 @@
         },
         "correctOptionId": { "type": "string" },
         "categoryId": { "type": "string" },
-        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
-        "rationales": { "type": "object", "description": "Optional rationales for each option" }
+        "topicId": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] }
       },
       "required": ["stem", "options", "correctOptionId", "categoryId"]
     },
-    "Submission": {
-      "title": "Submission",
-      "description": "A user's answer to a question.",
+    "Class": {
+      "title": "Class",
+      "description": "A group of students managed by an instructor.",
+      "type": "object",
+      "properties": {
+        "className": { "type": "string" },
+        "description": { "type": "string" },
+        "classCode": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "instructorName": { "type": "string" },
+        "inviteLink": { "type": "string" },
+        "focus": { "type": "string" },
+        "specializationName": { "type": "string" },
+        "assignedModuleIds": { "type": "array", "items": { "type": "string" } },
+        "studentCount": { "type": "number" },
+        "status": { "type": "string" }
+      }
+    },
+    "LearnerProfile": {
+      "title": "Learner Profile",
+      "description": "Assessment-based baseline and progress.",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
-        "questionId": { "type": "string" },
-        "selectedOptionId": { "type": "string" },
-        "isCorrect": { "type": "boolean" },
-        "timestamp": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "questionId", "selectedOptionId", "isCorrect", "timestamp"]
+        "baselineScore": { "type": "number" },
+        "strengths": { "type": "array", "items": { "type": "string" } },
+        "weaknesses": { "type": "array", "items": { "type": "string" } },
+        "recommendedPath": { "type": "string" }
+      }
+    },
+    "QuizAttempt": {
+      "title": "Quiz Attempt",
+      "description": "Records of a student's quiz.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "score": { "type": "number" },
+        "total": { "type": "number" },
+        "completedAt": { "type": "number" },
+        "answers": { "type": "object" }
+      }
+    },
+    "Badge": {
+      "title": "Badge",
+      "description": "Gamification achievement.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "rarity": { "type": "string" }
+      }
     }
   },
   "firestore": {
-    "/categories/{categoryId}": {
-      "schema": "Category",
-      "description": "Collection of curriculum categories."
-    },
-    "/questions/{questionId}": {
-      "schema": "Question",
-      "description": "Collection of board exam questions."
-    },
-    "/submissions/{submissionId}": {
-      "schema": "Submission",
-      "description": "User answer history."
-    }
+    "/users/{userId}": { "schema": "User", "description": "Global user directory." },
+    "/categories/{categoryId}": { "schema": "Category", "description": "Curriculum categories." },
+    "/topics/{topicId}": { "schema": "Topic", "description": "Topics within categories." },
+    "/questions/{questionId}": { "schema": "Question", "description": "Question bank." },
+    "/classes/{classId}": { "schema": "Class", "description": "Instructor classes." },
+    "/learnerProfiles/{userId}": { "schema": "LearnerProfile", "description": "Adaptive data." },
+    "/quizAttempts/{attemptId}": { "schema": "QuizAttempt", "description": "Quiz results history." },
+    "/diagnosticAttempts/{attemptId}": { "schema": "QuizAttempt", "description": "Initial assessment results." },
+    "/badges/{badgeId}": { "schema": "Badge", "description": "Available achievements." }
   }
 }
