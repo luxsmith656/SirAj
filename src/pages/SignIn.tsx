@@ -93,8 +93,18 @@ export default function SignIn() {
           <div className="bg-surface-container-lowest rounded-[32px] p-8 shadow-2xl shadow-surface-dim/20 border border-outline-variant/30">
             <form className="space-y-4" onSubmit={handleAuthAction}>
                {error && (
-                 <div className="bg-error/10 text-error text-[11px] p-4 rounded-2xl font-bold uppercase tracking-wider text-center border border-error/20 animate-shake">
+                 <div className={`text-[11px] p-4 rounded-2xl font-bold uppercase tracking-wider text-center border animate-shake ${
+                   error.includes('sent') || error.includes('success') 
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-lg shadow-emerald-500/5' 
+                    : 'bg-error/10 text-error border-error/20'
+                 }`}>
                    {error}
+                 </div>
+               )}
+
+               {email.toLowerCase() === 'castanar656@gmail.com' && !error && !isSignUp && (
+                 <div className="bg-primary/5 text-primary text-[10px] p-3 rounded-xl font-bold uppercase tracking-widest text-center border border-primary/10 mb-2 animate-pulse">
+                   Admin: Click "Forgot?" to set your password via email
                  </div>
                )}
 
@@ -139,7 +149,7 @@ export default function SignIn() {
                <div className="space-y-1.5">
                   <div className="flex justify-between items-center ml-1">
                      <label className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Password</label>
-                     {!isSignUp && <button type="button" className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Forgot?</button>}
+                     {!isSignUp && <Link to="/forgot-password" className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Forgot?</Link>}
                   </div>
                   <input 
                     type="password" 

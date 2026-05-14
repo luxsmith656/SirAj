@@ -114,6 +114,20 @@
         "icon": { "type": "string" },
         "rarity": { "type": "string" }
       }
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User reported issue or request.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "resolved"] },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "subject", "description"]
     }
   },
   "firestore": {
@@ -125,6 +139,7 @@
     "/learnerProfiles/{userId}": { "schema": "LearnerProfile", "description": "Adaptive data." },
     "/quizAttempts/{attemptId}": { "schema": "QuizAttempt", "description": "Quiz results history." },
     "/diagnosticAttempts/{attemptId}": { "schema": "QuizAttempt", "description": "Initial assessment results." },
-    "/badges/{badgeId}": { "schema": "Badge", "description": "Available achievements." }
+    "/badges/{badgeId}": { "schema": "Badge", "description": "Available achievements." },
+    "/reports/{reportId}": { "schema": "Report", "description": "Support tickets." }
   }
 }

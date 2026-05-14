@@ -1,6 +1,7 @@
 import React, { ReactNode } from 'react';
 import InstructorSidebar from './InstructorSidebar';
 import Topbar from './Topbar';
+import HelpSupportButton from './HelpSupportButton';
 import { useSidebar } from '../context/SidebarContext';
 
 interface InstructorLayoutProps {
@@ -17,6 +18,7 @@ export default function InstructorLayout({ children, title }: InstructorLayoutPr
       <main className={`flex-1 flex flex-col relative min-h-screen transition-all duration-300 ${isCollapsed ? 'md:ml-[80px]' : 'md:ml-[280px]'}`}>
         <Topbar title={title} />
         {children}
+        <HelpSupportButton />
       </main>
     </div>
   );

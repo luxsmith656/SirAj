@@ -118,6 +118,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
     
+    match /system/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read, update: if isAdmin();
+    }
+    
     match /submissions/{submissionId} {
       allow create: if isSignedIn();
       allow read: if isSignedIn();

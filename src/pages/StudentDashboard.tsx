@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import HelpSupportButton from '../components/HelpSupportButton';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
@@ -346,7 +347,7 @@ export default function StudentDashboard() {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate('/exam?type=mock')}
-                  className="bg-white text-[#1b366a] px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-black/10"
+                  className="bg-white/90 hover:bg-white text-primary px-5 py-2.5 rounded-xl font-bold uppercase tracking-widest text-[11px] shadow-lg shadow-black/10 transition-colors"
                 >
                   Start Mock Exam
                 </motion.button>
@@ -639,6 +640,7 @@ export default function StudentDashboard() {
           <span className="text-[10px] font-bold tracking-tight">Sync</span>
         </button>
       </nav>
+      <HelpSupportButton />
     </div>
   );
 }

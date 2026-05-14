@@ -47,58 +47,58 @@ export default function SyncCenter() {
                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <div className="flex items-center gap-3 mb-2">
-                     <span className="material-symbols-outlined text-blue-600">cloud_done</span>
-                     <h3 className="font-headline font-bold text-slate-800">Last Sync Status</h3>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900 mb-1">Success</p>
-                  <p className="text-xs text-slate-400">2 minutes ago</p>
-               </div>
-               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <div className="flex items-center gap-3 mb-2">
-                     <span className="material-symbols-outlined text-indigo-600">data_usage</span>
-                     <h3 className="font-headline font-bold text-slate-800">Pending Payloads</h3>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900 mb-1">14</p>
-                  <p className="text-xs text-slate-400">Awaiting device connection</p>
-               </div>
-               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                  <div className="flex items-center gap-3 mb-2">
-                     <span className="material-symbols-outlined text-red-600">cloud_off</span>
-                     <h3 className="font-headline font-bold text-slate-800">Conflict Errors</h3>
-                  </div>
-                  <p className="text-2xl font-black text-slate-900 mb-1">3</p>
-                  <p className="text-xs text-red-500 font-medium">Requires manual resolution</p>
-               </div>
-            </div>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
+                   <div className="flex items-center gap-3 mb-2 text-on-surface">
+                      <span className="material-symbols-outlined text-primary">cloud_done</span>
+                      <h3 className="font-headline font-bold">Last Sync Status</h3>
+                   </div>
+                   <p className="text-2xl font-black text-on-surface mb-1">Success</p>
+                   <p className="text-xs text-on-surface-variant/40">2 minutes ago</p>
+                </div>
+                <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
+                   <div className="flex items-center gap-3 mb-2 text-on-surface">
+                      <span className="material-symbols-outlined text-indigo-500">data_usage</span>
+                      <h3 className="font-headline font-bold">Pending Payloads</h3>
+                   </div>
+                   <p className="text-2xl font-black text-on-surface mb-1">14</p>
+                   <p className="text-xs text-on-surface-variant/40">Awaiting device connection</p>
+                </div>
+                <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant">
+                   <div className="flex items-center gap-3 mb-2 text-on-surface">
+                      <span className="material-symbols-outlined text-error">cloud_off</span>
+                      <h3 className="font-headline font-bold">Conflict Errors</h3>
+                   </div>
+                   <p className="text-2xl font-black text-on-surface mb-1">3</p>
+                   <p className="text-xs text-error font-medium">Requires manual resolution</p>
+                </div>
+             </div>
 
-            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm relative overflow-hidden">
-               <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500"></div>
-               <h3 className="text-xl font-headline font-bold text-slate-800 mb-6 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
-                    <span className="material-symbols-outlined">warning</span>
-                  </div>
-                  Sync Conflicts
-               </h3>
-               
-               <div className="space-y-4">
-                  <div className="p-4 rounded-xl border border-red-100 bg-red-50/30 flex flex-col md:flex-row md:items-center gap-4">
-                     <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                           <span className="text-sm font-bold text-slate-800">Question Edit Conflict</span>
-                           <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded text-slate-600 font-mono">QID: 8492A</span>
-                        </div>
-                        <p className="text-xs text-slate-500">Modified locally on Device A while updated on Server.</p>
-                     </div>
-                     <div className="flex gap-2 shrink-0 border-t md:border-none pt-3 md:pt-0 border-red-100">
-                        <button className="px-4 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors">Keep Local</button>
-                        <button className="px-4 py-1.5 rounded-lg bg-[#1b366a] text-white text-xs font-bold shadow-sm">Use Server Data</button>
-                     </div>
-                  </div>
-               </div>
-            </div>
+             <div className="bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-error"></div>
+                <h3 className="text-xl font-headline font-bold text-on-surface mb-6 flex items-center gap-3">
+                   <div className="w-10 h-10 bg-error/10 rounded-xl flex items-center justify-center text-error">
+                     <span className="material-symbols-outlined">warning</span>
+                   </div>
+                   Sync Conflicts
+                </h3>
+                
+                <div className="space-y-4">
+                   <div className="p-4 rounded-xl border border-error/10 bg-error/5 flex flex-col md:flex-row md:items-center gap-4">
+                      <div className="flex-1">
+                         <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-bold text-on-surface">Question Edit Conflict</span>
+                            <span className="text-[10px] bg-surface-container px-2 py-0.5 rounded text-on-surface-variant/40 font-mono">QID: 8492A</span>
+                         </div>
+                         <p className="text-xs text-on-surface-variant/60">Modified locally on Device A while updated on Server.</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0 border-t md:border-none pt-3 md:pt-0 border-outline-variant/10">
+                         <button className="px-4 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant text-xs font-bold text-on-surface-variant/60 hover:text-on-surface transition-colors">Keep Local</button>
+                         <button className="px-4 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-bold shadow-sm">Use Server Data</button>
+                      </div>
+                   </div>
+                </div>
+             </div>
          </div>
 
       <Toast 

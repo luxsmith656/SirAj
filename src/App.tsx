@@ -12,6 +12,7 @@ import BulkUpload from './pages/BulkUpload';
 import SyncCenter from './pages/SyncCenter';
 import Settings from './pages/Settings';
 import SignIn from './pages/SignIn';
+import ForgotPassword from './pages/ForgotPassword';
 import Loading from './pages/Loading';
 import Onboarding from './pages/Onboarding';
 import Focus from './pages/Focus';
@@ -110,6 +111,7 @@ function AppContent() {
         <Routes>
             <Route path="/" element={<Navigate to="/sign-in" replace />} />
             <Route path="/sign-in" element={<SignIn />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/debug" element={<DevIndex />} />
             
             {/* Admin Routes */}

@@ -5,6 +5,7 @@ import { useSidebar } from '../context/SidebarContext';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { seedDatabase } from '../lib/db-seed';
+import HelpSupportButton from './HelpSupportButton';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -52,6 +53,7 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
         
         <Topbar title={title} />
         {children}
+        <HelpSupportButton />
       </main>
     </div>
   );

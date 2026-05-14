@@ -1,18 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, limit, doc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { seedDatabase } from '../lib/db-seed';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function Dashboard() {
   const [counts, setCounts] = useState({
     users: 0,
     questions: 0,
-    categories: 0
+    categories: 0,
+    recentActivity: [] as any[],
+    usageData: [] as any[]
   });
+  const [systemHealth, setSystemHealth] = useState<'Optimal' | 'Degraded' | 'Checking'>('Checking');
+  const [healthError, setHealthError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check system health
+    const checkHealth = async () => {
+      try {
+        await getDocFromServer(doc(db, 'system', 'health'));
+        setSystemHealth('Optimal');
+      } catch (e: any) {
+        setSystemHealth('Degraded');
+        setHealthError(e.message || 'Unknown error');
+      }
+    };
+    checkHealth();
+
     const unsubUsers = onSnapshot(collection(db, 'users'), (s) => {
       setCounts(prev => ({ ...prev, users: s.size }));
     });
@@ -22,7 +39,42 @@ export default function Dashboard() {
     const unsubCats = onSnapshot(collection(db, 'categories'), (s) => {
       setCounts(prev => ({ ...prev, categories: s.size }));
     });
-    return () => { unsubUsers(); unsubQs(); unsubCats(); };
+    
+    // Recent Activity
+    const activityQuery = query(collection(db, 'quizAttempts'), orderBy('completedAt', 'desc'), limit(5));
+    const unsubActivity = onSnapshot(activityQuery, (s) => {
+      const activities = s.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        text: `Quiz attempt completed with score ${doc.data().score}/${doc.data().total}`,
+        time: new Date(doc.data().completedAt).toLocaleTimeString(),
+        color: 'bg-emerald-500'
+      }));
+      setCounts(prev => ({ ...prev, recentActivity: activities }));
+    });
+    
+    // Recent Usage (last 7 days based on quiz attempts)
+    const usageQuery = query(collection(db, 'quizAttempts'), orderBy('completedAt', 'desc'), limit(50));
+    const unsubUsage = onSnapshot(usageQuery, (s) => {
+      const data: { [key: string]: number } = {};
+      const now = new Date();
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        data[d.toLocaleDateString('en-US', { weekday: 'short' })] = 0;
+      }
+      s.docs.forEach(doc => {
+        const date = new Date(doc.data().completedAt);
+        const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+        if (data.hasOwnProperty(day)) {
+          data[day]++;
+        }
+      });
+      const chartData = Object.keys(data).map(day => ({ name: day, count: data[day] }));
+      setCounts(prev => ({ ...prev, usageData: chartData }));
+    });
+      
+    return () => { unsubUsers(); unsubQs(); unsubCats(); unsubActivity(); unsubUsage(); };
   }, []);
 
   return (
@@ -96,12 +148,20 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="bg-surface-container-lowest rounded-3xl p-5 relative flex flex-col justify-between min-h-[140px] border border-outline-variant/30 shadow-sm transition-all hover:border-primary/50 group">
+            <div 
+              className="bg-surface-container-lowest rounded-3xl p-5 relative flex flex-col justify-between min-h-[140px] border border-outline-variant/30 shadow-sm transition-all hover:border-primary/50 group cursor-pointer"
+              onClick={() => {
+                if (systemHealth === 'Degraded' && healthError) {
+                  console.error('System Health Detail:', healthError);
+                  alert(`System Error Details: ${healthError}`);
+                }
+              }}
+            >
               <p className="font-body text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-[0.2em]">System Health</p>
               <div className="relative z-10 flex items-end justify-between">
-                <div className="font-headline text-4xl font-extrabold text-emerald-500 tracking-tighter">Optimal</div>
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                  <span className="material-symbols-outlined text-[24px]">verified</span>
+                <div className={`font-headline text-4xl font-extrabold ${systemHealth === 'Optimal' ? 'text-emerald-500' : 'text-error'} tracking-tighter`}>{systemHealth}</div>
+                <div className={`w-10 h-10 rounded-2xl ${systemHealth === 'Optimal' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-error/10 text-error'} flex items-center justify-center`}>
+                  <span className="material-symbols-outlined text-[24px]">{systemHealth === 'Optimal' ? 'verified' : 'warning'}</span>
                 </div>
               </div>
             </div>
@@ -112,21 +172,26 @@ export default function Dashboard() {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="font-headline text-lg font-extrabold text-on-surface tracking-tight">Active Usage</h2>
-                  <p className="text-[11px] text-on-surface-variant/40 font-bold uppercase tracking-widest">Student engagement weekly</p>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-surface-container rounded-full"></div><span className="text-[10px] font-bold uppercase text-on-surface-variant/40">Previous</span></div>
-                  <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-primary rounded-full"></div><span className="text-[10px] font-bold uppercase text-on-surface-variant/40">Current</span></div>
+                  <p className="text-[11px] text-on-surface-variant/40 font-bold uppercase tracking-widest">Student quiz attempts</p>
                 </div>
               </div>
-              <div className="h-[200px] w-full relative flex items-end gap-3 pb-6 border-b border-outline-variant/5">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1.5 group relative">
-                    <div className="w-full bg-surface-container rounded-t-lg h-[40%] transition-colors group-hover:bg-surface-container/80"></div>
-                    <div className="w-full bg-primary rounded-t-lg h-[65%] transition-colors group-hover:opacity-80"></div>
-                    <span className="text-[10px] text-on-surface-variant/40 font-bold mt-2">{day}</span>
-                  </div>
-                ))}
+              <div className="h-[200px] min-h-[200px] w-full relative overflow-hidden">
+                {counts.usageData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={counts.usageData}>
+                      <XAxis dataKey="name" fontSize={10} tickLine={false} axisLine={false} />
+                      <YAxis hide />
+                      <Tooltip cursor={{fill: 'transparent'}} />
+                      <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                        {counts.usageData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={index === counts.usageData.length - 1 ? 'var(--color-primary)' : 'var(--color-surface-container)'}/>
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-on-surface-variant/40 font-bold text-sm">No usage data</div>
+                )}
               </div>
             </div>
 
@@ -136,17 +201,12 @@ export default function Dashboard() {
                 <button className="text-primary font-bold text-[11px] uppercase tracking-widest hover:underline">View All</button>
               </div>
               <div className="space-y-5">
-                {[
-                  { text: 'Professional Education module updated', time: '2h', color: 'bg-blue-500' },
-                  { text: 'Server sync process completed', time: '5h', color: 'bg-emerald-500' },
-                  { text: 'Bulk student import successful', time: '8h', color: 'bg-purple-500' },
-                  { text: 'Database backup stored', time: '1d', color: 'bg-amber-500' },
-                ].map((act, i) => (
+                {counts.recentActivity.map((act, i) => (
                   <div key={i} className="flex gap-4 items-center">
                     <div className={`w-1.5 h-6 rounded-full ${act.color}`}></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-bold text-on-surface truncate leading-tight mb-0.5">{act.text}</p>
-                      <p className="text-[10px] text-on-surface-variant/40 font-medium tracking-tight leading-none">{act.time} ago</p>
+                      <p className="text-[10px] text-on-surface-variant/40 font-medium tracking-tight leading-none">{act.time}</p>
                     </div>
                   </div>
                 ))}
