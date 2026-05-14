@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
 import { useAuth } from '../context/AuthContext';
 import { seedDatabase } from '../lib/db-seed';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface TopbarProps {
   title?: string;
@@ -14,10 +16,21 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [openReports, setOpenReports] = useState<any[]>([]);
   const { toggle } = useSidebar();
   const { signOut, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      const q = query(collection(db, 'reports'), where('status', '==', 'open'));
+      const unsub = onSnapshot(q, (snapshot) => {
+        setOpenReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      });
+      return () => unsub();
+    }
+  }, [user]);
 
   const handleSignOut = () => {
     signOut();
@@ -74,20 +87,25 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
           className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors duration-200 relative w-10 h-10 flex items-center justify-center"
         >
           <span className="material-symbols-outlined">notifications</span>
-          <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>
+          {openReports.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>}
         </button>
 
         {notificationsOpen && (
           <div className="absolute top-12 right-0 w-80 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant py-2 z-50 transition-all">
             <div className="px-4 py-2 border-b border-outline-variant/10 font-bold text-on-surface flex justify-between items-center text-sm">
               <span>Notifications</span>
-              <button className="text-[10px] text-primary font-bold uppercase tracking-widest hover:underline">Mark all read</button>
             </div>
             <div className="p-2 space-y-1">
-              <div className="px-3 py-2 hover:bg-surface-container rounded-xl transition-colors cursor-pointer">
-                <p className="text-xs font-bold text-on-surface truncate">System sync completed</p>
-                <p className="text-[10px] text-on-surface-variant/40 font-medium">Just now</p>
-              </div>
+              {openReports.length === 0 ? (
+                <p className="text-xs text-on-surface-variant/40 px-3 py-2">No new notifications</p>
+              ) : (
+                openReports.map(report => (
+                  <Link to="/reports" key={report.id} className="block px-3 py-2 hover:bg-surface-container rounded-xl transition-colors cursor-pointer">
+                    <p className="text-xs font-bold text-on-surface truncate">New Report: {report.subject}</p>
+                    <p className="text-[10px] text-on-surface-variant/40 font-medium">By: {report.userEmail}</p>
+                  </Link>
+                ))
+              )}
             </div>
           </div>
         )}

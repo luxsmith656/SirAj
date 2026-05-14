@@ -46,6 +46,23 @@ export default function Users() {
     }
   };
 
+  const handleDeleteUser = async (uid: string, email: string) => {
+    if (email === 'castanar656@gmail.com') {
+      alert('Cannot delete this user.');
+      return;
+    }
+    const pin = prompt('Enter PIN to delete user:');
+    if (pin !== '47254725') {
+      alert('Invalid PIN.');
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
+    }
+  };
+
   const instructors = users.filter(u => u.role === 'instructor');
 
   // RBAC Filter: Instructors only see their students
@@ -151,14 +168,24 @@ export default function Users() {
                          ) : 'N/A'}
                        </p>
                     </td>
-                    <td className="text-right py-4">
+                    <td className="text-right py-4 flex gap-2 justify-end">
                       {currentUser?.role === 'admin' && (
-                        <button 
-                          onClick={() => setEditingUser(u)}
-                          className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 bg-surface-container hover:bg-surface-container/80 rounded-xl transition-all"
-                        >
-                          Modify Access
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => setEditingUser(u)}
+                            className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 bg-surface-container hover:bg-surface-container/80 rounded-xl transition-all"
+                          >
+                            Modify Access
+                          </button>
+                          {u.email !== 'castanar656@gmail.com' && (
+                            <button
+                               onClick={() => handleDeleteUser(u.uid, u.email)}
+                               className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-error bg-error/10 hover:bg-error/20 rounded-xl transition-all"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </>
                       )}
                     </td>
                   </tr>
