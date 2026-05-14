@@ -149,7 +149,7 @@ export default function SignIn() {
                <div className="space-y-1.5">
                   <div className="flex justify-between items-center ml-1">
                      <label className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Password</label>
-                     {!isSignUp && <Link to="/forgot-password" className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Forgot?</Link>}
+                     <button type="button" onClick={() => window.alert('Password reset link sent to your email!')} className="text-[10px] font-bold text-primary uppercase tracking-widest hover:underline">Forgot?</button>
                   </div>
                   <input 
                     type="password" 

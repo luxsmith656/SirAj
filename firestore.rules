@@ -124,7 +124,12 @@ service cloud.firestore {
 
     match /reports/{reportId} {
       allow create: if isSignedIn();
-      allow read, update: if isAdmin();
+      allow read, list, update, delete: if isAdmin();
+    }
+    
+    match /activityLogs/{logId} {
+      allow list, read: if isAdmin();
+      allow create: if isSignedIn();
     }
     
     match /submissions/{submissionId} {

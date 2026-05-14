@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout';
 import { collection, onSnapshot, query, orderBy, limit, doc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { seedDatabase } from '../lib/db-seed';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function Dashboard() {
@@ -40,15 +39,13 @@ export default function Dashboard() {
       setCounts(prev => ({ ...prev, categories: s.size }));
     });
     
-    // Recent Activity
-    const activityQuery = query(collection(db, 'quizAttempts'), orderBy('completedAt', 'desc'), limit(5));
-    const unsubActivity = onSnapshot(activityQuery, (s) => {
+    const unsubActivity = onSnapshot(query(collection(db, 'activityLogs'), orderBy('createdAt', 'desc'), limit(5)), (s) => {
       const activities = s.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        text: `Quiz attempt completed with score ${doc.data().score}/${doc.data().total}`,
-        time: new Date(doc.data().completedAt).toLocaleTimeString(),
-        color: 'bg-emerald-500'
+        text: `${doc.data().action}: ${doc.data().description}`,
+        time: doc.data().createdAt?.toDate().toLocaleTimeString(),
+        color: 'bg-primary'
       }));
       setCounts(prev => ({ ...prev, recentActivity: activities }));
     });
@@ -88,26 +85,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex gap-3">
-               <button 
-                onClick={async (e) => {
-                  e.preventDefault();
-                  try {
-                    const confirmed = window.confirm('Populate database with curriculum seed data?');
-                    if (confirmed) {
-                      console.log('Seeding database...');
-                      await seedDatabase();
-                      window.alert('Database seeded successfully!');
-                    }
-                  } catch (e: any) {
-                    console.error('Seed Error:', e);
-                    window.alert('Error seeding database: ' + e.message);
-                  }
-                }}
-                className="bg-surface-container-lowest border border-outline-variant px-5 py-2.5 rounded-2xl text-xs font-bold text-on-surface hover:bg-surface-container transition-all flex items-center gap-2 shadow-sm active:scale-95 cursor-pointer z-20"
-               >
-                 <span className="material-symbols-outlined text-[18px]">database</span>
-                 Seed Database
-               </button>
+
                <button className="bg-primary px-6 py-2.5 rounded-2xl text-xs font-bold text-on-primary shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">Export Reports</button>
             </div>
           </div>
@@ -175,7 +153,7 @@ export default function Dashboard() {
                   <p className="text-[11px] text-on-surface-variant/40 font-bold uppercase tracking-widest">Student quiz attempts</p>
                 </div>
               </div>
-              <div className="h-[200px] min-h-[200px] w-full relative overflow-hidden">
+              <div className="h-[250px] min-h-[250px] w-full relative">
                 {counts.usageData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={counts.usageData}>
@@ -198,7 +176,7 @@ export default function Dashboard() {
             <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/30">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="font-headline text-lg font-extrabold text-on-surface tracking-tight">Recent Activity</h2>
-                <button className="text-primary font-bold text-[11px] uppercase tracking-widest hover:underline">View All</button>
+                <Link to="/admin/activity-logs" className="text-primary font-bold text-[11px] uppercase tracking-widest hover:underline">View All</Link>
               </div>
               <div className="space-y-5">
                 {counts.recentActivity.map((act, i) => (

@@ -8,6 +8,8 @@ import QuestionDetail from './pages/QuestionDetail';
 import CurriculumSettings from './pages/CurriculumSettings';
 import Analytics from './pages/Analytics';
 import Users from './pages/Users';
+import Notifications from './pages/Notifications';
+import ActivityLogs from './pages/ActivityLogs';
 import BulkUpload from './pages/BulkUpload';
 import SyncCenter from './pages/SyncCenter';
 import Settings from './pages/Settings';
@@ -126,6 +128,8 @@ function AppContent() {
             <Route path="/admin/analytics" element={<ProtectedRoute role="admin"><Analytics /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
             <Route path="/admin/classes" element={<ProtectedRoute role="admin"><AdminClasses /></ProtectedRoute>} />
+            <Route path="/admin/notifications" element={<ProtectedRoute role="admin"><Notifications /></ProtectedRoute>} />
+            <Route path="/admin/activity-logs" element={<ProtectedRoute role="admin"><ActivityLogs /></ProtectedRoute>} />
             <Route path="/admin/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
             <Route path="/admin/sync" element={<ProtectedRoute role="admin"><SyncCenter /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />

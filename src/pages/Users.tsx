@@ -3,6 +3,7 @@ import DashboardLayout from '../components/DashboardLayout';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { logActivity } from '../lib/activityLogger';
 
 interface UserProfile {
   uid: string;
@@ -34,13 +35,17 @@ export default function Users() {
   }, []);
 
   const handleUpdateRole = async (uid: string, role: string, instructorId?: string, className?: string) => {
+    const confirmed = window.confirm(`Are you sure you want to change the role to ${role}?`);
+    if (!confirmed) return;
     try {
       await updateDoc(doc(db, 'users', uid), {
         role,
         instructorId: instructorId || null,
         className: className || null
       });
+      await logActivity(currentUser!.uid, currentUser!.email!, 'Updated User Role', `Updated user ${uid} to role ${role}`);
       setEditingUser(null);
+      alert('User role updated successfully.');
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
     }
@@ -58,6 +63,8 @@ export default function Users() {
     }
     try {
       await deleteDoc(doc(db, 'users', uid));
+      await logActivity(currentUser!.uid, currentUser!.email!, 'Deleted User', `Deleted user account: ${email}`);
+      alert('User deleted successfully.');
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
     }
@@ -173,16 +180,18 @@ export default function Users() {
                         <>
                           <button 
                             onClick={() => setEditingUser(u)}
-                            className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60 bg-surface-container hover:bg-surface-container/80 rounded-xl transition-all"
+                            className="p-2 text-on-surface-variant hover:text-primary transition-all hover:scale-110 active:scale-95"
+                            title="Modify Access"
                           >
-                            Modify Access
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
                           </button>
                           {u.email !== 'castanar656@gmail.com' && (
                             <button
                                onClick={() => handleDeleteUser(u.uid, u.email)}
-                               className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-error bg-error/10 hover:bg-error/20 rounded-xl transition-all"
+                               className="p-2 text-error hover:text-error/80 transition-all hover:scale-110 active:scale-95"
+                               title="Delete User"
                             >
-                              Delete
+                              <span className="material-symbols-outlined text-[18px]">delete</span>
                             </button>
                           )}
                         </>

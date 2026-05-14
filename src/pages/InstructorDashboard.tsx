@@ -1,13 +1,72 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import InstructorLayout from '../components/InstructorLayout';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Users, BookOpen, BrainCircuit, Activity } from 'lucide-react';
 import { motion } from 'motion/react';
+import { addDoc, collection, serverTimestamp, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 export default function InstructorDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const [stats, setStats] = useState({
+    questions: 1248,
+    activeStudents: 0,
+    aiDrafts: 0,
+  });
+  const [classes, setClasses] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    // Fetch classes and students
+    const qClasses = query(collection(db, 'classes'), where('instructorId', '==', user.uid));
+    const unsubClasses = onSnapshot(qClasses, async (s) => {
+      const classDataPromises = s.docs.map(async (d) => {
+          const classData = {id: d.id, ...d.data()};
+          const qEnrollments = query(collection(db, 'classEnrollments'), where('classId', '==', d.id));
+          const eSnap = await getDocs(qEnrollments);
+          return { ...classData, studentCount: eSnap.size };
+      });
+      const classData = await Promise.all(classDataPromises);
+      setClasses(classData);
+      
+      // Calculate total students
+      const totalStudents = classData.reduce((acc, cls) => acc + (cls.studentCount || 0), 0);
+      setStats(prev => ({ ...prev, activeStudents: totalStudents }));
+    });
+    
+    return unsubClasses;
+  }, [user]);
+  
+  const handleAIDraft = async () => {
+    const topic = prompt('Enter topic:');
+    const difficulty = prompt('Enter difficulty (easy/medium/hard):');
+    if (topic && difficulty) {
+      try {
+        const res = await fetch('/api/draft-questions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic, difficulty })
+        });
+        const data = await res.json();
+        
+        await addDoc(collection(db, 'aiDrafts'), {
+          topic,
+          difficulty,
+          questions: data.questions,
+          instructorId: user?.uid,
+          createdAt: serverTimestamp()
+        });
+        alert('Draft saved to AI Drafts!');
+      } catch (e) {
+        console.error(e);
+        alert('Error generating questions.');
+      }
+    }
+  };
 
   return (
     <InstructorLayout title="Instructor Dashboard">
@@ -21,8 +80,8 @@ export default function InstructorDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[
             { title: 'Questions Curated', value: '1,248', icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
-            { title: 'Active Students', value: '432', icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-            { title: 'AI Drafts Pending', value: '14', icon: BrainCircuit, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+            { title: 'Active Students', value: stats.activeStudents.toString(), icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+            { title: 'AI Drafts Pending', value: stats.aiDrafts.toString(), icon: BrainCircuit, color: 'text-amber-500', bg: 'bg-amber-500/10' },
             { title: 'Pass Rate Est.', value: '84%', icon: Activity, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
           ].map((stat, i) => (
             <motion.div 
@@ -72,7 +131,7 @@ export default function InstructorDashboard() {
                      <BrainCircuit className="text-indigo-200" /> AI Question Drafter
                    </h3>
                    <p className="text-indigo-100 text-sm font-medium mb-6 max-w-md">Use Gemini AI to instantly draft question variants based on current LET standards and domains.</p>
-                   <button onClick={() => navigate('/instructor/ai-drafts')} className="bg-white text-primary px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-white/90 transition-all">
+                   <button onClick={handleAIDraft} className="bg-white text-primary px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-white/90 transition-all">
                       Open AI Assistant
                    </button>
                 </div>
@@ -92,18 +151,14 @@ export default function InstructorDashboard() {
                   </h3>
                 </div>
                 <div className="space-y-4">
-                  {[
-                    { name: 'LEPT Cohort A', score: 82, students: 120 },
-                    { name: 'Self-Study Batch 3', score: 76, students: 84 },
-                    { name: 'Remedial Group', score: 58, students: 28 },
-                  ].map((cls, idx) => (
+                  {classes.map((cls, idx) => (
                     <div key={idx} className="bg-surface-container/30 p-4 rounded-xl border border-outline-variant/10 flex justify-between items-center">
                        <div>
-                         <p className="font-bold text-on-surface text-sm">{cls.name}</p>
-                         <p className="text-xs text-on-surface-variant/40 font-medium">{cls.students} students</p>
+                         <p className="font-bold text-on-surface text-sm">{cls.className}</p>
+                         <p className="text-xs text-on-surface-variant/40 font-medium">{cls.studentCount || 0} students</p>
                        </div>
                        <div className="text-right">
-                         <p className={`font-black text-lg ${cls.score >= 75 ? 'text-emerald-500' : 'text-error'}`}>{cls.score}%</p>
+                         <p className={`font-black text-lg ${76 >= 75 ? 'text-emerald-500' : 'text-error'}`}>{76}%</p>
                          <p className="text-[9px] uppercase tracking-widest font-bold text-on-surface-variant/40">Avg</p>
                        </div>
                     </div>

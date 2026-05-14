@@ -94,13 +94,14 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
           <div className="absolute top-12 right-0 w-80 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant py-2 z-50 transition-all">
             <div className="px-4 py-2 border-b border-outline-variant/10 font-bold text-on-surface flex justify-between items-center text-sm">
               <span>Notifications</span>
+              <Link to="/admin/notifications" className="text-[10px] text-primary font-bold uppercase tracking-widest hover:underline">View All</Link>
             </div>
-            <div className="p-2 space-y-1">
+            <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
               {openReports.length === 0 ? (
                 <p className="text-xs text-on-surface-variant/40 px-3 py-2">No new notifications</p>
               ) : (
                 openReports.map(report => (
-                  <Link to="/reports" key={report.id} className="block px-3 py-2 hover:bg-surface-container rounded-xl transition-colors cursor-pointer">
+                  <Link to="/admin/notifications" key={report.id} className="block px-3 py-2 hover:bg-surface-container rounded-xl transition-colors cursor-pointer">
                     <p className="text-xs font-bold text-on-surface truncate">New Report: {report.subject}</p>
                     <p className="text-[10px] text-on-surface-variant/40 font-medium">By: {report.userEmail}</p>
                   </Link>
@@ -120,10 +121,6 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
             <span className="material-symbols-outlined">{syncing ? 'sync' : 'cloud_sync'}</span>
           </button>
         )}
-
-        <button className="p-2 rounded-full text-on-surface-variant/40 hover:bg-surface-container transition-colors hidden sm:flex w-10 h-10 items-center justify-center">
-          <span className="material-symbols-outlined">help_outline</span>
-        </button>
 
         <ExtractedProfileMenu 
           open={profileOpen} 

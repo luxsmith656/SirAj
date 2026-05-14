@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import AdminLayout from '../components/AdminLayout';
+import { logActivity } from '../lib/activityLogger';
 import { useAuth } from '../context/AuthContext';
 import { useBranding, defaultSettings } from '../context/BrandingContext';
 
@@ -18,6 +19,10 @@ export default function Settings() {
     setSaveStatus('saving');
     try {
       await updateSettings({ siteName, logo, primaryColor });
+      if (user) {
+        await logActivity(user.uid, user.email || 'unknown', 'Updated System Branding', `Branding saved: Site Name: ${siteName}`);
+      }
+      alert('Settings updated successfully!');
       setSaveStatus('success');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch (error) {
