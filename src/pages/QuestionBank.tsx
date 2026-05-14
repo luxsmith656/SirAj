@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import AdminLayout from '../components/AdminLayout';
+import DashboardLayout from '../components/DashboardLayout';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import Toast from '../components/Toast';
+import { FixedSizeList as List } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
 
 interface Question {
   id: string;
@@ -25,6 +28,12 @@ export default function QuestionBank() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const getEditPath = (id?: string) => {
+    const base = user?.role === 'instructor' ? '/instructor' : '/admin';
+    return id ? `${base}/question/edit/${id}` : `${base}/question/new`;
+  };
 
   // Deletion state
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -67,7 +76,6 @@ export default function QuestionBank() {
   };
 
   const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown';
-  const getDomainCode = (name: string) => name.split(' ').map(w => w[0]).join('').substring(0, 3).toUpperCase();
 
   const filteredQuestions = questions.filter(q => {
     const matchesSearch = q.stem.toLowerCase().includes(searchTerm.toLowerCase());
@@ -75,24 +83,65 @@ export default function QuestionBank() {
     return matchesSearch && matchesCategory;
   });
 
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const q = filteredQuestions[index];
+    return (
+      <div style={style} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group flex items-center">
+        <div className="flex-1 px-4 min-w-0">
+          <p className="text-sm font-bold text-slate-700 truncate">{q.stem}</p>
+        </div>
+        <div className="w-[200px] px-4 shrink-0">
+          <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full truncate block whitespace-nowrap overflow-hidden text-ellipsis">
+            {getCategoryName(q.categoryId)}
+          </span>
+        </div>
+        <div className="w-[120px] px-4 shrink-0">
+          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+            q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-600' :
+            q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-600' :
+            'bg-red-50 text-red-600'
+          }`}>
+            {q.difficulty}
+          </span>
+        </div>
+        <div className="w-[120px] px-4 text-right shrink-0">
+          <div className="flex justify-end gap-2">
+            <button 
+              onClick={() => navigate(getEditPath(q.id))}
+              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+            >
+              <span className="material-symbols-outlined text-[18px]">edit</span>
+            </button>
+            <button 
+              onClick={() => setDeleteId(q.id)}
+              className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+            >
+              <span className="material-symbols-outlined text-[18px]">delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <AdminLayout title="Admin Panel">
-      <div className="p-8 max-w-6xl mx-auto w-full text-on-surface">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+    <DashboardLayout title="Question Bank">
+      <div className="max-w-6xl mx-auto w-full text-on-surface flex flex-col h-[calc(100vh-64px)] p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 shrink-0">
           <div>
             <h2 className="text-4xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Question Bank</h2>
             <p className="text-slate-500 font-medium">Manage board exam multiple choice questions.</p>
           </div>
           <button 
-            onClick={() => navigate('/question/new')}
+            onClick={() => navigate(getEditPath())}
             className="px-6 py-2.5 rounded-xl bg-[#1b366a] text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-blue-900/20"
           >
             <span className="material-symbols-outlined text-[18px]">add</span> Add Question
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-stretch md:items-center gap-3">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
+          <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
              <div className="flex-1 flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
                 <span className="material-symbols-outlined text-slate-400">search</span>
                 <input 
@@ -119,59 +168,34 @@ export default function QuestionBank() {
              </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/30">
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Question Stem</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Domain</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Difficulty</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredQuestions.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="p-12 text-center text-slate-400 italic">No questions found.</td>
-                  </tr>
-                )}
-                {filteredQuestions.map((q) => (
-                  <tr key={q.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
-                    <td className="p-4">
-                      <p className="text-sm font-bold text-slate-700 line-clamp-1">{q.stem}</p>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{getCategoryName(q.categoryId)}</span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                        q.difficulty === 'Easy' ? 'bg-emerald-50 text-emerald-600' :
-                        q.difficulty === 'Medium' ? 'bg-amber-50 text-amber-600' :
-                        'bg-red-50 text-red-600'
-                      }`}>
-                        {q.difficulty}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button 
-                          onClick={() => navigate(`/question/edit/${q.id}`)}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-                        <button 
-                          onClick={() => setDeleteId(q.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center bg-slate-50/30 border-b border-slate-100 shrink-0">
+              <div className="flex-1 p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Question Stem</div>
+              <div className="w-[200px] p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Domain</div>
+              <div className="w-[120px] p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Difficulty</div>
+              <div className="w-[120px] p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-right shrink-0">Actions</div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1">
+              {filteredQuestions.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 italic">No questions found.</div>
+              ) : (
+                <AutoSizer>
+                  {({ height, width }) => (
+                    <List
+                      height={height}
+                      itemCount={filteredQuestions.length}
+                      itemSize={60}
+                      width={width}
+                    >
+                      {Row}
+                    </List>
+                  )}
+                </AutoSizer>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -191,6 +215,6 @@ export default function QuestionBank() {
         onClose={() => setShowToast(false)}
         type={toastMsg.includes('failed') ? 'error' : 'success'}
       />
-    </AdminLayout>
+    </DashboardLayout>
   );
 }

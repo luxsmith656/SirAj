@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
+import { OfflineData } from '../lib/offline/offlineData';
 import { useAuth } from '../context/AuthContext';
 
 interface Question {
@@ -9,7 +8,8 @@ interface Question {
   stem: string;
   options: { id: string; text: string }[];
   correctOptionId: string;
-  categoryId: string;
+  categoryId?: string;
+  explanation?: string;
 }
 
 export default function ExamSimulation() {
@@ -28,15 +28,32 @@ export default function ExamSimulation() {
   useEffect(() => {
     const fetchQuestions = async () => {
       try {
-        const q = categoryId 
-          ? query(collection(db, 'questions'), where('categoryId', '==', categoryId))
-          : collection(db, 'questions');
+        let fetched: any[] = [];
+        const isMock = searchParams.get('type') === 'mock';
         
-        const snapshot = await getDocs(q);
-        const fetched = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Question));
+        if (categoryId) {
+          fetched = await OfflineData.getQuestionsByCategory(categoryId);
+        } else {
+          // If no category passed, get some random overall questions
+          const cats = await OfflineData.getCategories();
+          if (cats.length > 0) {
+             let limit = isMock ? 50 : 10;
+             // If mock, we try to gather from multiple cats
+             if (isMock) {
+               let allQs: Question[] = [];
+               for (const c of cats) {
+                  const items = await OfflineData.getRandomQuestions(c.id, 10);
+                  allQs = [...allQs, ...items];
+               }
+               fetched = allQs.sort(() => 0.5 - Math.random()).slice(0, limit);
+             } else {
+               fetched = await OfflineData.getRandomQuestions(cats[0].id, limit);
+             }
+          }
+        }
         setQuestions(fetched);
       } catch (error) {
-        handleFirestoreError(error, OperationType.LIST, 'questions');
+        console.error('Failed to load local questions', error);
       } finally {
         setIsLoading(false);
       }
@@ -65,32 +82,33 @@ export default function ExamSimulation() {
   const handleNext = async () => {
     if (!selectedOption || !currentQuestion) return;
 
-    const isCorrect = selectedOption === currentQuestion.correctOptionId;
     const newAnswers = { ...userAnswers, [currentQuestion.id]: selectedOption };
     setUserAnswers(newAnswers);
-
-    // Track submission in Firestore
-    try {
-      await addDoc(collection(db, 'submissions'), {
-        userId: user?.uid,
-        questionId: currentQuestion.id,
-        selectedOptionId: selectedOption,
-        isCorrect,
-        timestamp: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Failed to log submission', error);
-    }
 
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(currentIndex + 1);
       setSelectedOption(newAnswers[questions[currentIndex + 1]?.id] || null);
     } else {
-      // Calculate score and navigate to results
-      const score = Object.entries(newAnswers).reduce((acc, [qid, ans]) => {
+      // Finish Exam
+      const isCorrect = Object.entries(newAnswers).reduce((acc, [qid, ans]) => {
         const q = questions.find(qu => qu.id === qid);
         return q && ans === q.correctOptionId ? acc + 1 : acc;
       }, 0);
+      
+      const score = isCorrect;
+      
+      try {
+        await OfflineData.saveQuizAttempt({
+           userId: user?.uid,
+           categoryId,
+           score,
+           total: questions.length,
+           answers: newAnswers,
+           timeSpent: 3600 - timeRemaining,
+        });
+      } catch (e) {
+        console.error('Local save failed', e);
+      }
       
       navigate('/quiz-results', { state: { score, total: questions.length } });
     }

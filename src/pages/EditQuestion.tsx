@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import AdminLayout from '../components/AdminLayout';
+import DashboardLayout from '../components/DashboardLayout';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc, addDoc, collection, onSnapshot } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
 
 interface Option {
   id: string;
@@ -17,8 +18,11 @@ interface Category {
 export default function EditQuestion() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const isNew = !id || id === 'new';
-
+  
+  const bankPath = user?.role === 'instructor' ? '/instructor/questions' : '/admin/question/bank';
+  
   const [stem, setStem] = useState('');
   const [options, setOptions] = useState<Option[]>([
     { id: 'A', text: '' },
@@ -85,7 +89,7 @@ export default function EditQuestion() {
       } else {
         await setDoc(doc(db, 'questions', id), questionData);
       }
-      navigate('/question/bank');
+      navigate(bankPath);
     } catch (error) {
       handleFirestoreError(error, isNew ? OperationType.CREATE : OperationType.UPDATE, 'questions');
     }
@@ -100,10 +104,10 @@ export default function EditQuestion() {
   if (isLoading) return <div className="p-8 text-center">Loading...</div>;
 
   return (
-    <AdminLayout title="Scholarly Reviewer">
+    <DashboardLayout title={isNew ? 'New Question' : 'Edit Question'}>
       <div className="mt-8 p-8 max-w-5xl mx-auto w-full flex-1">
             <nav className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">
-              <span className="cursor-pointer hover:text-blue-600" onClick={() => navigate('/question/bank')}>Question Bank</span>
+              <span className="cursor-pointer hover:text-blue-600" onClick={() => navigate(bankPath)}>Question Bank</span>
               <span className="material-symbols-outlined text-sm">chevron_right</span>
               <span className="text-[#1b366a]">{isNew ? 'New Question' : 'Edit Question'}</span>
             </nav>
@@ -114,7 +118,7 @@ export default function EditQuestion() {
                   <p className="text-slate-500 text-sm font-medium">Define question stem, choices, and classification.</p>
                </div>
                <div className="flex gap-3">
-                  <button onClick={() => navigate('/question/bank')} className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">Cancel</button>
+                  <button onClick={() => navigate(bankPath)} className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">Cancel</button>
                   <button onClick={handleSave} className="px-8 py-2.5 rounded-xl text-white bg-[#1b366a] font-bold text-sm shadow-lg shadow-blue-900/20">Save Question</button>
                </div>
             </div>
@@ -202,6 +206,6 @@ export default function EditQuestion() {
                </div>
             </div>
          </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
 }

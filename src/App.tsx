@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
 import CategoryManagement from './pages/CategoryManagement';
 import QuestionBank from './pages/QuestionBank';
 import EditQuestion from './pages/EditQuestion';
@@ -17,12 +17,23 @@ import Onboarding from './pages/Onboarding';
 import Focus from './pages/Focus';
 import QuizResults from './pages/QuizResults';
 import ExamSimulation from './pages/ExamSimulation';
-import ClientDashboard from './pages/ClientDashboard';
+import StudentDashboard from './pages/StudentDashboard';
+import InstructorDashboard from './pages/InstructorDashboard';
+import DiagnosticAssessment from './pages/DiagnosticAssessment';
+import AIDrafts from './pages/AIDrafts';
+import LearningQuest from './pages/LearningQuest';
+import AdminClasses from './pages/AdminClasses';
+import InstructorClasses from './pages/InstructorClasses';
+import TextbookLibrary from './pages/TextbookLibrary';
+import ChooseLearningMode from './pages/ChooseLearningMode';
+import ChooseFocus from './pages/ChooseFocus';
+import JoinClass from './pages/JoinClass';
 import { SidebarProvider } from './context/SidebarContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { BrandingProvider, useBranding } from './context/BrandingContext';
+import { SyncProvider } from './context/SyncContext';
 
-function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 'admin' | 'instructor' | 'student' }) {
+function ProtectedRoute({ children, role, requireOnboarded = true }: { children: React.ReactNode, role?: 'admin' | 'instructor' | 'student', requireOnboarded?: boolean }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
@@ -35,14 +46,14 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 
   }
 
   // Handle onboarding for students
-  if (!user.onboarded && location.pathname !== '/onboarding' && user.role === 'student' && location.pathname !== '/sign-in') {
-    return <Navigate to="/onboarding" replace />;
+  if (requireOnboarded && !user.onboarded && location.pathname !== '/onboarding' && user.role === 'student' && location.pathname !== '/sign-in') {
+    return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }
 
   if (role && user.role !== role) {
-    if (user.role === 'admin') return <Navigate to="/dashboard" replace />;
-    if (user.role === 'instructor') return <Navigate to="/analytics" replace />;
-    return <Navigate to="/client-home" replace />;
+    if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === 'instructor') return <Navigate to="/instructor/dashboard" replace />;
+    return <Navigate to="/student/dashboard" replace />;
   }
 
   return <>{children}</>;
@@ -51,27 +62,27 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode, role?: 
 function DevIndex() {
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold font-headline">LET Mastery App Navigation</h1>
-      <p className="text-on-surface-variant font-body mb-4 shrink-0">Development index mapping all 16 designated views.</p>
+      <h1 className="text-2xl font-bold font-headline">Let Mastery Pro App Navigation</h1>
+      <p className="text-on-surface-variant font-body mb-4 shrink-0">Development index mapping early routes.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
           <h2 className="font-bold text-primary mb-2">Admin Panel</h2>
-          <Link to="/dashboard" className="text-blue-600 hover:underline">1. Dashboard</Link>
-          <Link to="/categories" className="text-blue-600 hover:underline">2. Category Management</Link>
-          <Link to="/question/edit" className="text-blue-600 hover:underline">3. Edit Question</Link>
-          <Link to="/question/detail" className="text-blue-600 hover:underline">4. Question Detail</Link>
-          <Link to="/curriculum-settings" className="text-blue-600 hover:underline">5. Curriculum Settings</Link>
-          <Link to="/analytics" className="text-blue-600 hover:underline">6. Student Analytics</Link>
-          <Link to="/users" className="text-blue-600 hover:underline">7. User & Role Management</Link>
-          <Link to="/bulk-upload" className="text-blue-600 hover:underline">8. Roster Upload</Link>
-          <Link to="/sync" className="text-blue-600 hover:underline">9. Sync Control Center</Link>
-          <Link to="/settings" className="text-blue-600 hover:underline">10. System Settings</Link>
+          <Link to="/admin/dashboard" className="text-blue-600 hover:underline">1. Dashboard</Link>
+          <Link to="/admin/categories" className="text-blue-600 hover:underline">2. Category Management</Link>
+          <Link to="/admin/question/edit" className="text-blue-600 hover:underline">3. Edit Question</Link>
+          <Link to="/admin/question/detail" className="text-blue-600 hover:underline">4. Question Detail</Link>
+          <Link to="/admin/curriculum-settings" className="text-blue-600 hover:underline">5. Curriculum Settings</Link>
+          <Link to="/admin/analytics" className="text-blue-600 hover:underline">6. Student Analytics</Link>
+          <Link to="/admin/users" className="text-blue-600 hover:underline">7. User & Role Management</Link>
+          <Link to="/admin/bulk-upload" className="text-blue-600 hover:underline">8. Roster Upload</Link>
+          <Link to="/admin/sync" className="text-blue-600 hover:underline">9. Sync Control Center</Link>
+          <Link to="/admin/settings" className="text-blue-600 hover:underline">10. System Settings</Link>
         </div>
         
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
           <h2 className="font-bold text-secondary mb-2">Client Experience</h2>
-          <Link to="/client-home" className="text-teal-600 hover:underline">11. Dashboard</Link>
+          <Link to="/student/dashboard" className="text-teal-600 hover:underline">11. Dashboard</Link>
           <Link to="/loading" className="text-teal-600 hover:underline">12. Loading Screen</Link>
           <Link to="/onboarding" className="text-teal-600 hover:underline">13. Onboarding</Link>
           <Link to="/sign-in" className="text-teal-600 hover:underline">14. Sign In</Link>
@@ -101,23 +112,43 @@ function AppContent() {
             <Route path="/debug" element={<DevIndex />} />
             
             {/* Admin Routes */}
-            <Route path="/dashboard" element={<ProtectedRoute role="admin"><Dashboard /></ProtectedRoute>} />
-            <Route path="/categories" element={<ProtectedRoute role="admin"><CategoryManagement /></ProtectedRoute>} />
-            <Route path="/question/bank" element={<ProtectedRoute role="admin"><QuestionBank /></ProtectedRoute>} />
-            <Route path="/question/new" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
-            <Route path="/question/edit/:id" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
-            <Route path="/question/detail" element={<ProtectedRoute role="admin"><QuestionDetail /></ProtectedRoute>} />
-            <Route path="/curriculum-settings" element={<ProtectedRoute role="admin"><CurriculumSettings /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-            <Route path="/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
-            <Route path="/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
-            <Route path="/sync" element={<ProtectedRoute role="admin"><SyncCenter /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
+            <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/categories" element={<ProtectedRoute role="admin"><CategoryManagement /></ProtectedRoute>} />
+            <Route path="/admin/question/bank" element={<ProtectedRoute role="admin"><QuestionBank /></ProtectedRoute>} />
+            <Route path="/admin/question/new" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
+            <Route path="/admin/question/edit/:id" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
+            <Route path="/admin/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
+            <Route path="/admin/question/detail" element={<ProtectedRoute role="admin"><QuestionDetail /></ProtectedRoute>} />
+            <Route path="/admin/curriculum-settings" element={<ProtectedRoute role="admin"><CurriculumSettings /></ProtectedRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedRoute role="admin"><Analytics /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
+            <Route path="/admin/classes" element={<ProtectedRoute role="admin"><AdminClasses /></ProtectedRoute>} />
+            <Route path="/admin/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
+            <Route path="/admin/sync" element={<ProtectedRoute role="admin"><SyncCenter /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
+
+            {/* Instructor Routes */}
+            <Route path="/instructor/dashboard" element={<ProtectedRoute role="instructor"><InstructorDashboard /></ProtectedRoute>} />
+            <Route path="/instructor/questions" element={<ProtectedRoute role="instructor"><QuestionBank /></ProtectedRoute>} />
+            <Route path="/instructor/question/new" element={<ProtectedRoute role="instructor"><EditQuestion /></ProtectedRoute>} />
+            <Route path="/instructor/question/edit/:id" element={<ProtectedRoute role="instructor"><EditQuestion /></ProtectedRoute>} />
+            <Route path="/instructor/bulk-upload" element={<ProtectedRoute role="instructor"><BulkUpload /></ProtectedRoute>} />
+            <Route path="/instructor/modules" element={<ProtectedRoute role="instructor"><CategoryManagement /></ProtectedRoute>} />
+            <Route path="/instructor/students" element={<ProtectedRoute role="instructor"><Users /></ProtectedRoute>} />
+            <Route path="/instructor/ai-drafts" element={<ProtectedRoute role="instructor"><AIDrafts /></ProtectedRoute>} />
+            <Route path="/instructor/classes" element={<ProtectedRoute role="instructor"><InstructorClasses /></ProtectedRoute>} />
 
             {/* Mobile / App Routes */}
             <Route path="/loading" element={<Loading />} />
-            <Route path="/client-home" element={<ProtectedRoute role="student"><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/student/dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />
             <Route path="/onboarding" element={<ProtectedRoute role="student"><Onboarding /></ProtectedRoute>} />
+            <Route path="/choose-learning-mode" element={<ProtectedRoute role="student"><ChooseLearningMode /></ProtectedRoute>} />
+            <Route path="/choose-focus" element={<ProtectedRoute role="student"><ChooseFocus /></ProtectedRoute>} />
+            <Route path="/join-class" element={<ProtectedRoute role="student"><JoinClass /></ProtectedRoute>} />
+            <Route path="/join/:classCodeFromUrl" element={<ProtectedRoute role="student" requireOnboarded={false}><JoinClass /></ProtectedRoute>} />
+            <Route path="/quest" element={<ProtectedRoute role="student"><LearningQuest /></ProtectedRoute>} />
+            <Route path="/library" element={<ProtectedRoute role="student"><TextbookLibrary /></ProtectedRoute>} />
+            <Route path="/diagnostic" element={<ProtectedRoute role="student"><DiagnosticAssessment /></ProtectedRoute>} />
             <Route path="/focus" element={<ProtectedRoute role="student"><Focus /></ProtectedRoute>} />
             <Route path="/quiz-results" element={<ProtectedRoute role="student"><QuizResults /></ProtectedRoute>} />
             <Route path="/exam" element={<ProtectedRoute role="student"><ExamSimulation /></ProtectedRoute>} />
@@ -132,9 +163,11 @@ export default function App() {
   return (
     <BrandingProvider>
       <AuthProvider>
-        <SidebarProvider>
-          <AppContent />
-        </SidebarProvider>
+        <SyncProvider>
+          <SidebarProvider>
+            <AppContent />
+          </SidebarProvider>
+        </SyncProvider>
       </AuthProvider>
     </BrandingProvider>
   );

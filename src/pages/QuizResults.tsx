@@ -11,7 +11,7 @@ export default function QuizResults() {
   return (
     <div className="bg-white text-slate-800 font-body min-h-[100dvh] flex flex-col antialiased">
        <header className="px-6 py-4 flex items-center justify-between bg-white border-b border-slate-100 sticky top-0 z-20">
-          <Link to="/client-home" className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 transition-colors text-slate-500">
+          <Link to="/student/dashboard" className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 hover:bg-slate-100 transition-colors text-slate-500">
              <span className="material-symbols-outlined text-[20px]">close</span>
           </Link>
           <h2 className="font-headline font-bold text-sm tracking-wide text-slate-800">Exam Results</h2>
@@ -63,7 +63,7 @@ export default function QuizResults() {
 
        <div className="fixed bottom-0 left-0 w-full bg-white/80 backdrop-blur-md p-6 border-t border-slate-100 z-30">
           <div className="max-w-md mx-auto flex gap-4">
-             <button onClick={() => navigate('/client-home')} className="flex-1 py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors uppercase tracking-widest text-[11px]">
+             <button onClick={() => navigate('/student/dashboard')} className="flex-1 py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors uppercase tracking-widest text-[11px]">
                 Home
              </button>
              <button onClick={() => navigate('/focus')} className="flex-1 py-4 rounded-2xl font-bold bg-[#1b366a] text-white shadow-lg hover:bg-[#112349] transition-all uppercase tracking-widest text-[11px]">

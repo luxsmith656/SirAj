@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import AdminLayout from '../components/AdminLayout';
+import DashboardLayout from '../components/DashboardLayout';
 import { collection, onSnapshot, query, addDoc, updateDoc, doc, deleteDoc, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
@@ -95,7 +95,7 @@ export default function CategoryManagement() {
   const rootCategories = categories.filter(c => !c.parentId);
 
   return (
-    <AdminLayout title="Admin Panel">
+    <DashboardLayout title="Admin Panel">
       <div className="pt-8 px-8 pb-12 max-w-6xl mx-auto w-full text-on-surface">
             <div className="flex items-end justify-between mb-10">
               <div>
@@ -206,6 +206,6 @@ export default function CategoryManagement() {
         onClose={() => setShowToast(false)}
         type={toastMsg.includes('failed') ? 'error' : 'success'}
       />
-    </AdminLayout>
+    </DashboardLayout>
   );
 }

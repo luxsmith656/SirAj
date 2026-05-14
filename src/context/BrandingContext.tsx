@@ -11,11 +11,12 @@ interface SiteSettings {
 interface BrandingContextType {
   settings: SiteSettings;
   updateSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
+  resetSettings: () => Promise<void>;
   isLoading: boolean;
 }
 
-const defaultSettings: SiteSettings = {
-  siteName: 'LET Mastery Pro',
+export const defaultSettings: SiteSettings = {
+  siteName: 'Let Mastery Pro',
   logo: 'school', // Material icon name or URL
   primaryColor: '#00236f',
 };
@@ -51,8 +52,8 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     const root = document.documentElement;
     root.style.setProperty('--dynamic-primary', data.primaryColor);
     
-    // Also update favicon if logo is a URL
-    if (data.logo.startsWith('http')) {
+    // Also update favicon if logo is a URL or base64
+    if (data.logo.startsWith('http') || data.logo.startsWith('data:')) {
       let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
       if (!link) {
         link = document.createElement('link');
@@ -67,8 +68,12 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     await setDoc(doc(db, 'settings', 'branding'), { ...settings, ...newSettings }, { merge: true });
   };
 
+  const resetSettings = async () => {
+    await setDoc(doc(db, 'settings', 'branding'), defaultSettings);
+  };
+
   return (
-    <BrandingContext.Provider value={{ settings, updateSettings, isLoading }}>
+    <BrandingContext.Provider value={{ settings, updateSettings, resetSettings, isLoading }}>
       {children}
     </BrandingContext.Provider>
   );

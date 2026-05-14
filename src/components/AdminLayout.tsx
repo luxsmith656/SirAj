@@ -14,12 +14,14 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children, title }: AdminLayoutProps) {
   const { isCollapsed } = useSidebar();
   const [isSeeding, setIsSeeding] = useState(false);
+  const seedingRef = React.useRef(false);
 
   useEffect(() => {
     // Shared auto-seed logic for any admin page if the platform is empty or incomplete
     const unsub = onSnapshot(collection(db, 'categories'), (snapshot) => {
       // If we have fewer than 3 categories, it's likely a fresh or broken install
-      if (snapshot.size < 3 && !isSeeding) {
+      if (snapshot.size < 3 && !seedingRef.current) {
+        seedingRef.current = true;
         setIsSeeding(true);
         console.log('Admin Platform: Data missing or incomplete. Initializing preset data...');
         seedDatabase()
@@ -27,12 +29,15 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
           .catch(err => {
             console.error('Admin Platform: Initialization failed:', err);
           })
-          .finally(() => setIsSeeding(false));
+          .finally(() => {
+            setIsSeeding(false);
+            // Don't reset seedingRef so we don't loop if it fails
+          });
       }
     });
 
     return () => unsub();
-  }, [isSeeding]);
+  }, []);
 
   return (
     <div className="bg-slate-50 text-slate-800 font-body min-h-screen flex antialiased">

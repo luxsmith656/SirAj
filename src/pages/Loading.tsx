@@ -13,7 +13,7 @@ export default function Loading() {
         if (prev >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            if (user?.role === 'admin') navigate('/dashboard');
+            if (user?.role === 'admin') navigate('/admin/dashboard');
             else navigate('/focus'); // Goes to focus choice first after login
           }, 500);
           return 100;

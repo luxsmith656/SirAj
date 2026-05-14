@@ -18,11 +18,11 @@ export default function SignIn() {
 
   useEffect(() => {
     if (user) {
-      if (user.role === 'admin') navigate('/dashboard');
-      else if (user.role === 'instructor') navigate('/analytics');
+      if (user.role === 'admin') navigate('/admin/dashboard');
+      else if (user.role === 'instructor') navigate('/instructor/dashboard');
       else {
         if (!user.onboarded) navigate('/onboarding');
-        else navigate('/client-home');
+        else navigate('/student/dashboard');
       }
     }
   }, [user, navigate]);
@@ -50,7 +50,9 @@ export default function SignIn() {
             return;
           }
           // Save for AuthContext logic
-          localStorage.setItem('pendingRegistrationData', JSON.stringify({ fullName, age }));
+          try {
+            localStorage.setItem('pendingRegistrationData', JSON.stringify({ fullName, age }));
+          } catch(e) { console.warn(e); }
           await registerWithEmail(email, password);
         } else {
         await loginWithEmail(email, password);

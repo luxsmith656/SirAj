@@ -13,6 +13,13 @@ interface UserProfile {
   age?: number;
   instructorId?: string;
   onboarded?: boolean;
+  learningMode?: 'class_based' | 'self_review';
+  classIds?: string[];
+  activeClassId?: string;
+  selectedFocus?: string;
+  diagnosticCompleted?: boolean;
+  streak?: number;
+  lastLoginDate?: string;
 }
 
 interface AuthContextType {
@@ -71,15 +78,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await deleteDoc(seedDoc.ref);
           }
 
-          const pendingDataStr = localStorage.getItem('pendingRegistrationData');
+          let pendingDataStr = null;
+          try {
+            pendingDataStr = localStorage.getItem('pendingRegistrationData');
+          } catch(e) { console.warn(e); }
+          
           let pendingData: any = {};
           if (pendingDataStr) {
             try {
               pendingData = JSON.parse(pendingDataStr);
-              localStorage.removeItem('pendingRegistrationData');
             } catch (e) {
               console.error('Failed to parse pending registration data', e);
             }
+            try {
+              localStorage.removeItem('pendingRegistrationData');
+            } catch(e) { console.warn(e); }
           }
 
           const newUser: UserProfile = {

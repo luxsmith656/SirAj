@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -8,11 +8,13 @@ import { motion, AnimatePresence } from 'motion/react';
 export default function Onboarding() {
   const { user, refreshUser, signOut } = useAuth();
   const navigate = useNavigate();
-  
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/choose-learning-mode';
+
   // Logic to determine initial step and pre-fill
   const [fullName, setFullName] = useState(user?.fullName || '');
   const [age, setAge] = useState(user?.age?.toString() || '');
-  
+
   const getInitialStep = () => {
     if (!user?.fullName) return 1;
     if (!user?.age) return 2;
@@ -23,23 +25,26 @@ export default function Onboarding() {
   const [agreed, setAgreed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Re-sync if user data changes (optional but good)
   useEffect(() => {
+    let newStep = step;
+    
     if (user?.fullName && !fullName) {
       setFullName(user.fullName);
-      // If we just got a name and we were at step 1, move forward
-      setStep(prev => prev === 1 ? 2 : prev);
+      if (newStep === 1) newStep = 2;
     }
     if (user?.age && !age) {
       setAge(user.age.toString());
-      // If we just got an age and we were at step 2, move forward
-      setStep(prev => prev === 2 ? 3 : prev);
+      if (newStep === 2) newStep = 3;
     }
-    // Also handle the case where both are present initially but step was 1
-    if (user?.fullName && user?.age && step < 3) {
-      setStep(3);
+    if (user?.fullName && user?.age && newStep < 3) {
+      newStep = 3;
     }
-  }, [user]);
+    
+    if (newStep !== step) {
+       setStep(newStep);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.fullName, user?.age]);
 
   const handleNext = () => setStep(s => s + 1);
   const handleBack = () => setStep(s => s - 1);
@@ -55,7 +60,7 @@ export default function Onboarding() {
         agreementAccepted: true
       });
       await refreshUser();
-      navigate('/client-home');
+      navigate(from, { replace: true });
     } catch (error) {
       console.error('Onboarding failed:', error);
     } finally {

@@ -127,6 +127,59 @@ export default function Dashboard() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="font-headline text-lg font-extrabold text-slate-800 tracking-tight">Pending User Approvals</h2>
+                <button className="text-[#1b366a] font-bold text-[11px] uppercase tracking-widest hover:underline">Manage</button>
+              </div>
+              <div className="space-y-4">
+                 {[
+                   { name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'Instructor' },
+                   { name: 'Maria Clara', email: 'maria@example.com', role: 'Instructor' },
+                   { name: 'Jose Rizal', email: 'jose@example.com', role: 'Admin' }
+                 ].map((pending, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+                       <div>
+                          <p className="font-bold text-sm text-slate-800">{pending.name}</p>
+                          <p className="text-xs text-slate-500">{pending.email} • <span className="font-semibold text-blue-600">{pending.role}</span></p>
+                       </div>
+                       <div className="flex gap-2">
+                          <button className="p-2 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg"><span className="material-symbols-outlined text-[18px]">check</span></button>
+                          <button className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg"><span className="material-symbols-outlined text-[18px]">close</span></button>
+                       </div>
+                    </div>
+                 ))}
+                 <button className="w-full text-center text-xs font-bold text-slate-500 uppercase tracking-widest mt-2 py-2 hover:bg-slate-50 rounded-lg">View All 12 Pending</button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="font-headline text-lg font-extrabold text-slate-800 tracking-tight">Content Approvals</h2>
+                 <button className="text-[#1b366a] font-bold text-[11px] uppercase tracking-widest hover:underline">Review AI Drafts</button>
+              </div>
+              <div className="space-y-4">
+                 {[
+                   { title: '15 Questions on Child Dev', author: 'AI Drafter', status: 'Pending Review' },
+                   { title: 'New Module: Assessment of Learning', author: 'Inst. Cruz', status: 'Pending Review' },
+                 ].map((content, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 bg-amber-50 rounded-xl border border-amber-100">
+                       <div className="flex-1 min-w-0 pr-4">
+                          <p className="font-bold text-sm text-amber-900 truncate">{content.title}</p>
+                          <p className="text-xs text-amber-700">By {content.author} • {content.status}</p>
+                       </div>
+                       <div className="flex gap-2 shrink-0">
+                          <button className="px-3 py-1.5 text-xs font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-lg">Review</button>
+                       </div>
+                    </div>
+                 ))}
+                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center text-sm font-bold text-slate-400">
+                    No other pending content
+                 </div>
+              </div>
+            </div>
+          </div>
         </div>
     </AdminLayout>
   );

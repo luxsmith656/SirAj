@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import AdminLayout from '../components/AdminLayout';
+import DashboardLayout from '../components/DashboardLayout';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
@@ -62,7 +62,7 @@ export default function Users() {
   });
 
   return (
-    <AdminLayout title="User Management">
+    <DashboardLayout title="User Management">
       <div className="p-8 max-w-6xl mx-auto w-full text-on-surface">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
           <div>
@@ -230,6 +230,6 @@ export default function Users() {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </DashboardLayout>
   );
 }

@@ -3,20 +3,20 @@ import { Link, useLocation } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
 import { useBranding } from '../context/BrandingContext';
 
-export default function Sidebar() {
+export default function InstructorSidebar() {
   const location = useLocation();
   const { isOpen, toggle, isCollapsed, toggleCollapse } = useSidebar();
   const { settings } = useBranding();
 
   const navItems = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: 'dashboard' },
-    { name: 'Curriculum', path: '/admin/categories', icon: 'menu_book' },
-    { name: 'Classes', path: '/admin/classes', icon: 'groups' },
-    { name: 'Question Bank', path: '/admin/question/bank', icon: 'quiz' },
-    { name: 'Analytics', path: '/admin/analytics', icon: 'bar_chart' },
-    { name: 'Users', path: '/admin/users', icon: 'group' },
-    { name: 'Uploads', path: '/admin/bulk-upload', icon: 'upload_file' },
-    { name: 'Settings', path: '/admin/settings', icon: 'settings' },
+    { name: 'Dashboard', path: '/instructor/dashboard', icon: 'dashboard' },
+    { name: 'Classes', path: '/instructor/classes', icon: 'groups' },
+    { name: 'Questions', path: '/instructor/questions', icon: 'quiz' },
+    { name: 'Bulk Upload', path: '/instructor/bulk-upload', icon: 'upload_file' },
+    { name: 'Modules', path: '/instructor/modules', icon: 'book' },
+    { name: 'Students', path: '/instructor/students', icon: 'person_search' },
+    { name: 'AI Drafts', path: '/instructor/ai-drafts', icon: 'smart_toy' },
+    { name: 'Analytics', path: '/instructor/analytics', icon: 'bar_chart' },
   ];
 
   const renderLogo = () => {
@@ -50,7 +50,7 @@ export default function Sidebar() {
           {!isCollapsed && (
             <div className="min-w-0">
               <div className="font-extrabold text-primary text-[20px] tracking-tight leading-tight truncate">{settings.siteName}</div>
-              <div className="text-[11px] text-slate-500 font-medium font-body mt-0.5 truncate uppercase tracking-wider">Admin Control Panel</div>
+              <div className="text-[11px] text-slate-500 font-medium font-body mt-0.5 truncate uppercase tracking-wider">Instructor Panel</div>
             </div>
           )}
           
@@ -95,13 +95,6 @@ export default function Sidebar() {
 
         {/* Bottom Actions & Collapse Toggle */}
         <div className={`mt-auto pb-8 ${isCollapsed ? 'px-2' : 'px-4'} space-y-4`}>
-          <button className={`w-full flex items-center bg-primary text-white rounded-full font-bold transition-all hover:opacity-90 hover:shadow-lg focus:outline-none ${
-            isCollapsed ? 'justify-center p-3' : 'justify-center gap-2 px-4 py-3'
-          }`}>
-            <span className="material-symbols-outlined text-sm">download</span>
-            {!isCollapsed && <span>Export Reports</span>}
-          </button>
-
           {/* Desktop Collapse Toggle */}
           <button 
             onClick={toggleCollapse}
@@ -116,4 +109,3 @@ export default function Sidebar() {
     </>
   );
 }
-

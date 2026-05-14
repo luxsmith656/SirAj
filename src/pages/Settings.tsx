@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../context/AuthContext';
-import { useBranding } from '../context/BrandingContext';
+import { useBranding, defaultSettings } from '../context/BrandingContext';
 
 export default function Settings() {
   const { user } = useAuth();
-  const { settings, updateSettings } = useBranding();
+  const { settings, updateSettings, resetSettings } = useBranding();
   const [siteName, setSiteName] = useState(settings.siteName);
   const [logo, setLogo] = useState(settings.logo);
   const [primaryColor, setPrimaryColor] = useState(settings.primaryColor);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success'>('idle');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveBranding = async () => {
     setIsSaving(true);
@@ -27,14 +28,47 @@ export default function Settings() {
     }
   };
 
+  const handleReset = async () => {
+    if (window.confirm('Reset all branding to defaults?')) {
+      await resetSettings();
+      setSiteName(defaultSettings.siteName);
+      setLogo(defaultSettings.logo);
+      setPrimaryColor(defaultSettings.primaryColor);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 1024 * 500) {
+        alert('File size too large. Please use an image under 500KB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogo(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <AdminLayout title="System Preferences">
       <div className="p-8 max-w-[1400px] mx-auto space-y-8 text-on-surface">
-          <div>
-            <h1 className="text-3xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Settings</h1>
-            <p className="text-slate-500 font-medium font-body leading-relaxed max-w-xl">
-              Configure your administrative profile and platform-wide parameters.
-            </p>
+          <div className="flex justify-between items-end">
+            <div>
+              <h1 className="text-3xl font-extrabold text-[#1b366a] font-headline tracking-tight mb-2">Settings</h1>
+              <p className="text-slate-500 font-medium font-body leading-relaxed max-w-xl">
+                Configure your administrative profile and platform-wide parameters.
+              </p>
+            </div>
+            <button 
+              onClick={handleReset}
+              className="text-[10px] font-bold text-slate-400 uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+              Reset to Defaults
+            </button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-10">
@@ -60,13 +94,30 @@ export default function Settings() {
                     </div>
                     <div className="space-y-1.5">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Logo (Icon Name or URL)</label>
-                      <input 
-                        type="text"
-                        value={logo}
-                        onChange={(e) => setLogo(e.target.value)}
-                        placeholder="e.g. school or https://logo.com/img.png"
-                        className="w-full bg-slate-50 rounded-xl px-5 py-4 text-slate-700 font-medium text-sm border border-transparent focus:bg-white focus:border-primary/20 outline-none transition-all"
-                      />
+                      <div className="relative">
+                        <input 
+                          type="text"
+                          value={logo}
+                          onChange={(e) => setLogo(e.target.value)}
+                          placeholder="e.g. school or https://logo.com/img.png"
+                          className="w-full bg-slate-50 rounded-xl px-5 py-4 pr-14 text-slate-700 font-medium text-sm border border-transparent focus:bg-white focus:border-primary/20 outline-none transition-all"
+                        />
+                        <button 
+                          onClick={() => fileInputRef.current?.click()}
+                          className="absolute right-2 top-2 bottom-2 w-10 bg-white shadow-sm border border-slate-100 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"
+                          title="Upload Image"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">upload</span>
+                        </button>
+                        <input 
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleFileUpload}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-bold ml-1 mt-1">Use a Material Icon name or a direct image URL/Upload.</p>
                     </div>
                   </div>
 
