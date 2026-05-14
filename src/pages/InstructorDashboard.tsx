@@ -131,7 +131,7 @@ export default function InstructorDashboard() {
                      <BrainCircuit className="text-indigo-200" /> AI Question Drafter
                    </h3>
                    <p className="text-indigo-100 text-sm font-medium mb-6 max-w-md">Use Gemini AI to instantly draft question variants based on current LET standards and domains.</p>
-                   <button onClick={handleAIDraft} className="bg-white text-primary px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-white/90 transition-all">
+                   <button onClick={handleAIDraft} className="bg-white text-primary px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:bg-white/90 transition-all hover:scale-[1.02] active:scale-[0.98]">
                       Open AI Assistant
                    </button>
                 </div>

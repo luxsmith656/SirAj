@@ -13,11 +13,11 @@ export default function SignIn() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { settings } = useBranding();
 
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       if (user.role === 'admin') navigate('/admin/dashboard');
       else if (user.role === 'instructor') navigate('/instructor/dashboard');
       else {
@@ -25,7 +25,15 @@ export default function SignIn() {
         else navigate('/student/dashboard');
       }
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);

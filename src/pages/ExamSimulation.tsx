@@ -155,7 +155,7 @@ export default function ExamSimulation() {
     <div className="bg-surface text-on-surface font-body min-h-[100dvh] flex flex-col antialiased relative">
        <header className="px-5 py-4 flex items-center justify-between bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-20">
           <div className="flex items-center gap-3">
-             <button onClick={() => navigate('/focus')} className="text-on-surface-variant/40 hover:text-on-surface transition-colors">
+             <button onClick={() => navigate('/focus')} className="text-on-surface-variant/40 hover:text-on-surface transition-colors hover:scale-110 active:scale-95">
                 <span className="material-symbols-outlined">close</span>
              </button>
              <div className="bg-surface-container px-3 py-1.5 rounded-xl text-xs font-bold font-mono text-on-surface-variant flex items-center gap-1.5 border border-outline-variant/30">
