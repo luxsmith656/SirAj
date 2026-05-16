@@ -1,12 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
+import { useAuth } from '../context/AuthContext';
+import { SyncManager } from '../lib/offline/SyncManager';
 import { seedDatabase } from '../lib/db-seed';
 import Toast from '../components/Toast';
+import { RefreshCw, CloudDownload, CloudAlert, Database, CheckCircle2, History } from 'lucide-react';
 
 export default function SyncCenter() {
+  const { user } = useAuth();
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  const [lastSync, setLastSync] = useState<number | null>(null);
+
+  useEffect(() => {
+    SyncManager.getLastSyncTime().then(setLastSync);
+  }, []);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await SyncManager.pullAllContent(user?.selectedFocus);
+      const time = await SyncManager.getLastSyncTime();
+      setLastSync(time);
+      setToastMsg('Sync complete! content is now available offline.');
+      setShowToast(true);
+    } catch (err: any) {
+      setToastMsg(`Sync failed: ${err.message}`);
+      setShowToast(true);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleSeed = async () => {
     setIsSeeding(true);
@@ -22,8 +48,87 @@ export default function SyncCenter() {
     }
   };
 
+  if (user?.role !== 'admin') {
+     // Student Sync View
+     return (
+        <div className="bg-slate-50 min-h-screen text-slate-800">
+           <header className="bg-white px-6 py-4 flex items-center justify-between border-b border-slate-100 shadow-sm sticky top-0 z-10">
+              <h2 className="font-headline font-bold text-lg tracking-tight">Offline Sync Manager</h2>
+              <button 
+                 onClick={handleSync}
+                 disabled={isSyncing}
+                 className="bg-[#1b366a] text-white px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-[#112349] transition-all disabled:opacity-50 shadow-lg shadow-blue-900/10"
+              >
+                 <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                 {isSyncing ? 'Syncing...' : 'Sync Now'}
+              </button>
+           </header>
+
+           <div className="p-6 max-w-md mx-auto space-y-6">
+              <div className="bg-white rounded-3xl p-8 text-center shadow-xl shadow-blue-900/5 border border-white">
+                 <div className={`w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-6 ${lastSync ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}`}>
+                    {lastSync ? <CloudDownload size={40} /> : <CloudAlert size={40} />}
+                 </div>
+                 <h1 className="text-2xl font-black font-headline mb-2 text-slate-800 tracking-tight">
+                    {lastSync ? 'You\'re Good to Go!' : 'Content Pending Sync'}
+                 </h1>
+                 <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">
+                    Download latest mock exams, modules, and review questions to keep studying even without internet.
+                 </p>
+                 
+                 <div className="grid grid-cols-1 gap-2">
+                    <div className="flex items-center justify-between px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100">
+                       <div className="flex items-center gap-3">
+                          <History size={18} className="text-blue-600" />
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Last Sync</span>
+                       </div>
+                       <span className="text-sm font-black text-slate-800">
+                          {lastSync ? new Date(lastSync).toLocaleString() : 'Never'}
+                       </span>
+                    </div>
+                    <div className="flex items-center justify-between px-5 py-4 bg-slate-50 rounded-2xl border border-slate-100">
+                       <div className="flex items-center gap-3">
+                          <Database size={18} className="text-blue-600" />
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Focus Mode</span>
+                       </div>
+                       <span className="text-sm font-black text-slate-800 uppercase">
+                          {user?.selectedFocus || 'Core'}
+                       </span>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="space-y-4">
+                 <div className="flex items-center gap-3 px-2">
+                    <CheckCircle2 size={20} className="text-emerald-500" />
+                    <h3 className="font-bold text-slate-800 text-sm">Automated Features</h3>
+                 </div>
+                 <div className="space-y-3">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-start gap-3">
+                       <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                          <RefreshCw size={16} />
+                       </div>
+                       <div>
+                          <p className="text-xs font-bold text-slate-800 mb-0.5">Auto-update</p>
+                          <p className="text-[10px] text-slate-400 font-medium">Syncs when online connection is stable.</p>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           <Toast 
+            isVisible={showToast}
+            message={toastMsg}
+            onClose={() => setShowToast(false)}
+            type={toastMsg.includes('failed') ? 'error' : 'success'}
+          />
+        </div>
+     );
+  }
+
   return (
-    <AdminLayout title="Sync Control Center">
+    <AdminLayout title="Global Sync & Data">
       <div className="p-8 max-w-5xl mx-auto py-12">
             <div className="flex justify-between items-end mb-8">
                <div>

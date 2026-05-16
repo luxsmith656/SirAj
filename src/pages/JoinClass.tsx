@@ -49,41 +49,55 @@ export default function JoinClass() {
     setJoining(true);
     setErrorMsg('');
     try {
-      // Check if already enrolled
-      const enrollmentQ = query(
-        collection(db, 'classEnrollments'), 
-        where('classId', '==', classInfo.id), 
-        where('studentId', '==', user.uid)
-      );
-      const enrollmentSnap = await getDocs(enrollmentQ);
+      const enrollmentId = `${classInfo.id}_${user.uid}`;
+      const enrollmentRef = doc(db, 'classEnrollments', enrollmentId);
       
-      if (!enrollmentSnap.empty) {
-         setErrorMsg('You are already enrolled in this class.');
-         setJoining(false);
-         return;
-      }
+      const { runTransaction, serverTimestamp } = await import('firebase/firestore');
+      
+      await runTransaction(db, async (transaction) => {
+        const enrollmentSnap = await transaction.get(enrollmentRef);
+        if (enrollmentSnap.exists()) {
+           throw new Error('You are already enrolled in this class.');
+        }
 
-      // Add enrollment
-      const enrollmentRef = doc(collection(db, 'classEnrollments'));
-      await setDoc(enrollmentRef, {
-        enrollmentId: enrollmentRef.id,
-        classId: classInfo.id,
-        studentId: user.uid,
-        instructorId: classInfo.instructorId,
-        joinedAt: Date.now(),
-        status: 'active',
-        focus: classInfo.focus,
-        diagnosticCompleted: false
-      });
+        const classRef = doc(db, 'classes', classInfo.id);
+        const classSnap = await transaction.get(classRef);
+        if (!classSnap.exists()) {
+          throw new Error('Class no longer exists.');
+        }
 
-      // Update user document
-      const currentClassIds = user.classIds || [];
-      await updateDoc(doc(db, 'users', user.uid), {
-        learningMode: 'class_based',
-        activeClassId: classInfo.id,
-        instructorId: classInfo.instructorId,
-        selectedFocus: classInfo.focus,
-        classIds: [...currentClassIds, classInfo.id]
+        const currentCount = classSnap.data().studentCount || 0;
+        
+        // Create enrollment
+        transaction.set(enrollmentRef, {
+          id: enrollmentId,
+          classId: classInfo.id,
+          studentId: user.uid,
+          instructorId: classInfo.instructorId,
+          joinedAt: serverTimestamp(),
+          status: 'active',
+          focus: classInfo.focus,
+          diagnosticCompleted: user.diagnosticCompleted || false
+        });
+
+        // Update class student count
+        transaction.update(classRef, {
+          studentCount: currentCount + 1,
+          updatedAt: serverTimestamp()
+        });
+
+        // Update user profile
+        const userRef = doc(db, 'users', user.uid);
+        const currentClassIds = user.classIds || [];
+        transaction.update(userRef, {
+          learningMode: 'class_based',
+          activeClassId: classInfo.id,
+          instructorId: classInfo.instructorId,
+          selectedFocus: classInfo.focus,
+          onboardingStep: 2,
+          classIds: currentClassIds.includes(classInfo.id) ? currentClassIds : [...currentClassIds, classInfo.id],
+          updatedAt: serverTimestamp()
+        });
       });
 
       await refreshUser();

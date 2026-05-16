@@ -79,39 +79,59 @@ export default function DiagnosticAssessment() {
       setIsSubmitting(true);
       
       const analysis = analyzeResults(newAnswers, questions);
-      const baselineScore = analysis.overallScore;
+      const scorePercent = analysis.overallScore;
 
       try {
-        const attemptRef = doc(collection(db, 'diagnosticAttempts'));
+        const attemptId = doc(collection(db, 'diagnosticAttempts')).id;
+        const attemptRef = doc(db, 'diagnosticAttempts', attemptId);
+        
         await setDoc(attemptRef, {
+          id: attemptId,
           userId: user!.uid,
-          score: baselineScore,
+          type: 'diagnostic',
+          mode: user?.learningMode || 'self_review',
+          scorePercent,
           totalQuestions: questions.length,
-          answers: newAnswers,
-          analysis,
-          completedAt: Date.now()
+          correctCount: Math.round((scorePercent / 100) * questions.length),
+          answers: Object.entries(newAnswers).map(([qid, oid]) => ({
+            questionId: qid,
+            selectedOptionId: oid,
+            correctOptionId: questions.find(q => q.id === qid)?.correctOptionId || '',
+            isCorrect: oid === questions.find(q => q.id === qid)?.correctOptionId,
+            categoryId: questions.find(q => q.id === qid)?.categoryId || '',
+            topicId: questions.find(q => q.id === qid)?.topicId || '',
+            skillIds: questions.find(q => q.id === qid)?.skillIds || [],
+            timeSpentSeconds: 0 // Simplification
+          })),
+          completedAt: serverTimestamp()
         });
 
-        // Save learner profile with detailed analysis
-        await setDoc(doc(db, 'learnerProfiles', user!.uid), {
-           userId: user!.uid,
-           baselineScore,
-           overallScore: baselineScore,
-           completedAt: Date.now(),
-           weaknesses: analysis.weakTopics,
-           strengths: analysis.strongTopics,
-           weakSkills: analysis.weakSkills,
-           strongSkills: analysis.strongSkills,
-           categoryMastery: analysis.categoryMastery,
-           topicMastery: analysis.topicMastery,
-           recommendedPath: baselineScore >= 75 ? 'Advanced Acceleration' : baselineScore >= 50 ? 'Standard Review' : 'Foundational Mastery',
-           earnedBadges: ['badge_pioneer']
-        });
+        // Clean standardized learner profile
+        const learnerProfile = {
+          userId: user!.uid,
+          learningMode: user?.learningMode || 'self_review',
+          activeClassId: user?.activeClassId || null,
+          selectedFocus: user?.selectedFocus || null,
+          currentLevel: scorePercent >= 75 ? 3 : scorePercent >= 50 ? 2 : 1,
+          masteryBySkill: analysis.skillMastery,
+          masteryByTopic: analysis.topicMastery,
+          masteryByCategory: analysis.categoryMastery,
+          weakSkills: analysis.weakSkills,
+          strongSkills: analysis.strongSkills,
+          weakTopics: analysis.weakTopics,
+          strongTopics: analysis.strongTopics,
+          recommendedModuleIds: scorePercent < 50 ? ['mod_intro_profed'] : [],
+          diagnosticAttemptId: attemptId,
+          streak: user?.streak || 0,
+          badges: user?.earnedBadges || [],
+          lastUpdatedAt: serverTimestamp()
+        };
+
+        await setDoc(doc(db, 'learnerProfiles', user!.uid), learnerProfile);
 
         await setDoc(doc(db, 'users', user!.uid), {
            diagnosticCompleted: true,
-           earnedBadges: ['badge_pioneer'],
-           updatedAt: Date.now(),
+           updatedAt: serverTimestamp(),
            onboardingStep: 3
         }, { merge: true });
 
@@ -162,6 +182,11 @@ export default function DiagnosticAssessment() {
       topicMastery[id] = Math.round((stat.correct / stat.total) * 100);
     });
 
+    const skillMastery: Record<string, number> = {};
+    Object.entries(skillStats).forEach(([id, stat]) => {
+      skillMastery[id] = Math.round((stat.correct / stat.total) * 100);
+    });
+
     const strongTopics = Object.entries(topicMastery)
       .filter(([_, score]) => score >= 70)
       .map(([id, _]) => id);
@@ -170,18 +195,19 @@ export default function DiagnosticAssessment() {
       .filter(([_, score]) => score < 70)
       .map(([id, _]) => id);
 
-    const strongSkills = Object.entries(skillStats)
-      .filter(([_, stat]) => (stat.correct / stat.total) >= 0.7)
+    const strongSkills = Object.entries(skillMastery)
+      .filter(([_, score]) => score >= 70)
       .map(([id, _]) => id);
 
-    const weakSkills = Object.entries(skillStats)
-      .filter(([_, stat]) => (stat.correct / stat.total) < 0.7)
+    const weakSkills = Object.entries(skillMastery)
+      .filter(([_, score]) => score < 70)
       .map(([id, _]) => id);
 
     return {
       overallScore: Math.round((totalCorrect / allQuestions.length) * 100),
       categoryMastery,
       topicMastery,
+      skillMastery,
       strongTopics,
       weakTopics,
       strongSkills,

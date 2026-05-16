@@ -64,9 +64,12 @@ export default function Onboarding() {
         updateData.age = parsedAge;
       }
 
-      await updateDoc(doc(db, 'users', user.uid), updateData);
+      await updateDoc(doc(db, 'users', user.uid), {
+        ...updateData,
+        onboardingStep: 1
+      });
       await refreshUser();
-      navigate(from, { replace: true });
+      navigate('/choose-learning-mode', { replace: true });
     } catch (error) {
       console.error('Onboarding failed:', error);
     } finally {

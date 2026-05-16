@@ -108,13 +108,30 @@ export default function StudentDashboard() {
     const fetchData = async () => {
       if (!user) return;
       try {
-        const profileRef = await getDoc(doc(db, 'learnerProfiles', user.uid));
-        let baseMastery = 0;
-        if (profileRef.exists()) {
-          const p = profileRef.data();
+        const profileSnap = await getDoc(doc(db, 'learnerProfiles', user.uid));
+        if (profileSnap.exists()) {
+          const p = profileSnap.data();
           setProfile(p);
-          baseMastery = p.baselineScore || 0;
-          setStats(prev => ({ ...prev, mastery: `${baseMastery}%` }));
+          
+          // Calculate stats from real attempts
+          const attemptsQ = query(
+            collection(db, 'diagnosticAttempts'), 
+            where('userId', '==', user.uid)
+          );
+          const qSnap = await getDocs(attemptsQ);
+          const allAttempts = qSnap.docs.map(d => d.data());
+          
+          if (allAttempts.length > 0) {
+            const latest = allAttempts.sort((a: any, b: any) => 
+               (b.completedAt?.toMillis?.() || 0) - (a.completedAt?.toMillis?.() || 0)
+            )[0];
+            
+            setStats({
+              avgScore: `${latest.scorePercent}%`,
+              timeSpent: '1.2 hrs', // Simplified for now
+              mastery: `${p.overallScore || latest.scorePercent}%`
+            });
+          }
         }
 
         // Fetch class data if class-based
@@ -124,51 +141,15 @@ export default function StudentDashboard() {
             const data = classRef.data();
             setClassData(data);
             
-            // Mock assigned modules if they don't exist yet in DB or fetch them
             if (data.assignedModuleIds && data.assignedModuleIds.length > 0) {
-               // In a real app we'd fetch from 'modules' collection
-               // For now we'll simulate a fetch
-               setAssignedModules(data.assignedModuleIds.map((id: string) => ({
-                 id,
-                 title: `Module ${id.slice(-4)}`,
-                 status: 'Assigned'
-               })));
-            } else {
-               // Default modules for class
-               setAssignedModules([
-                 { id: 'm1', title: 'Foundations of Education', status: 'In Progress' },
-                 { id: 'm2', title: 'The Teaching Profession', status: 'Not Started' }
-               ]);
+              const mods: any[] = [];
+              for (const mid of data.assignedModuleIds) {
+                const mDoc = await getDoc(doc(db, 'modules', mid));
+                if (mDoc.exists()) mods.push({ id: mDoc.id, ...mDoc.data(), status: 'Assigned' });
+              }
+              setAssignedModules(mods);
             }
           }
-        }
-
-        const attemptsQ = query(collection(db, 'quizAttempts'), where('userId', '==', user.uid));
-        const attemptsSnap = await getDocs(attemptsQ);
-        
-        const offlineQ = await OfflineData.getUnsyncedAttempts();
-        const allAttempts = [...attemptsSnap.docs.map(d => d.data()), ...offlineQ];
-
-        if (allAttempts.length > 0) {
-          let totalScore = 0;
-          let totalTime = 0;
-          let totalQuestions = 0;
-          
-          allAttempts.forEach(att => {
-            totalScore += att.score || 0;
-            totalQuestions += att.total || 0;
-            totalTime += att.timeSpent || 0;
-          });
-
-          const avg = totalQuestions > 0 ? Math.round((totalScore / totalQuestions) * 100) : 0;
-          // Simple mastery inflation just for demo
-          const mastery = Math.round(baseMastery + (avg * 0.2));
-
-          setStats({
-            avgScore: `${avg}%`,
-            timeSpent: `${(totalTime / 3600).toFixed(1)} hrs`,
-            mastery: `${Math.min(100, Math.max(baseMastery, mastery))}%` 
-          });
         }
       } catch (e) {
         console.error('Failed to fetch dashboard data', e);
@@ -459,9 +440,13 @@ export default function StudentDashboard() {
                     <div className="bg-surface-container-lowest/50 backdrop-blur-sm rounded-xl p-4 border border-outline-variant/30">
                        <h4 className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-2">Weak Topics to Work On</h4>
                        <div className="flex flex-wrap gap-2">
-                         {(profile?.weaknesses?.length > 0 ? profile.weaknesses : ['Pedagogical Theories', 'Research Methods']).map((w: string, i: number) => (
-                           <span key={i} className="px-2.5 py-1 bg-error-container/30 text-error rounded-lg text-[10px] font-bold border border-error/10">{w}</span>
-                         ))}
+                         {profile?.weakTopics && profile.weakTopics.length > 0 ? (
+                           profile.weakTopics.map((w: string, i: number) => (
+                             <span key={i} className="px-2.5 py-1 bg-error-container/30 text-error rounded-lg text-[10px] font-bold border border-error/10">{w}</span>
+                           ))
+                         ) : (
+                           <span className="text-[10px] font-bold text-on-surface-variant/40 italic">No weak topics identified yet.</span>
+                         )}
                        </div>
                     </div>
                   </div>

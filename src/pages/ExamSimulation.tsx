@@ -34,55 +34,67 @@ export default function ExamSimulation() {
         const { collection, getDocs, query, where, limit } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
 
-        let q;
+        let qQuery;
+        const studentFocus = user?.selectedFocus;
+        const classFocus = user?.activeClassId ? 'major' : null; // Simplified logic, real focus might be better
+        const effectiveFocus = studentFocus || classFocus;
+
         if (categoryId) {
-          q = query(
+          qQuery = query(
             collection(db, 'questions'),
             where('categoryId', '==', categoryId),
             where('isPublished', '==', true),
             where('approved', '==', true)
           );
         } else if (isMock) {
-          q = query(
+          // If mock, first try to get mock_exam questions
+          qQuery = query(
             collection(db, 'questions'),
             where('type', '==', 'mock_exam'),
             where('isPublished', '==', true),
-            where('approved', '==', true),
-            limit(50)
+            where('approved', '==', true)
           );
         } else {
-          q = query(
+          // Regular practice exam
+          qQuery = query(
             collection(db, 'questions'),
             where('isPublished', '==', true),
             where('approved', '==', true),
-            limit(20)
+            limit(100)
           );
         }
 
-        const qSnap = await getDocs(q);
+        const qSnap = await getDocs(qQuery);
+        let allPool: any[] = [];
         qSnap.forEach(snap => {
-          fetched.push({ id: snap.id, ...(snap.data() as any) });
+          const d = snap.data();
+          // Filter by focus if applicable
+          if (effectiveFocus && d.categoryId !== effectiveFocus && d.categoryId !== 'gened' && d.categoryId !== 'profed') {
+             // Skip if not in focus unless it's gened/profed (common domains)
+          }
+          allPool.push({ id: snap.id, ...d });
         });
 
-        // Backup plan for Mock Exam
-        if (isMock && fetched.length < 10) {
+        // Backup plan for Mock Exam: pull from practice if needed
+        if (isMock && allPool.length < 50) {
            const backupQ = query(
              collection(db, 'questions'),
+             where('type', '==', 'practice'),
              where('isPublished', '==', true),
              where('approved', '==', true),
-             limit(30)
+             limit(100)
            );
            const bSnap = await getDocs(backupQ);
            bSnap.forEach(snap => {
-             if (!fetched.find(f => f.id === snap.id)) {
-               fetched.push({ id: snap.id, ...(snap.data() as any) });
+             if (!allPool.find(f => f.id === snap.id)) {
+                allPool.push({ id: snap.id, ...snap.data() });
              }
            });
         }
-
+        
         // Shuffle
-        fetched.sort(() => 0.5 - Math.random());
-        const finalFetched = isMock ? fetched.slice(0, 50) : fetched.slice(0, 10);
+        allPool.sort(() => 0.5 - Math.random());
+        const finalFetched = isMock ? allPool.slice(0, 50) : allPool.slice(0, 20);
         setQuestions(finalFetched);
       } catch (error) {
         console.error('Failed to load questions', error);
@@ -117,37 +129,104 @@ export default function ExamSimulation() {
     const newAnswers = { ...userAnswers, [currentQuestion.id]: selectedOption };
     setUserAnswers(newAnswers);
 
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setSelectedOption(newAnswers[questions[currentIndex + 1]?.id] || null);
-    } else {
-      // Finish Exam
-      const isCorrect = Object.entries(newAnswers).reduce((acc, [qid, ans]) => {
+    const compileResults = async (finalAnswers: Record<string, string>) => {
+      setIsLoading(true);
+      const correctCount = Object.entries(finalAnswers).reduce((acc, [qid, ans]) => {
         const q = questions.find(qu => qu.id === qid);
         return q && ans === q.correctOptionId ? acc + 1 : acc;
       }, 0);
       
-      const score = isCorrect;
-      
+      const scorePercent = Math.round((correctCount / questions.length) * 100);
+      const isMock = searchParams.get('type') === 'mock';
+
       try {
-        await OfflineData.saveQuizAttempt({
-           userId: user?.uid,
-           categoryId,
-           score,
-           total: questions.length,
-           answers: newAnswers,
-           timeSpent: 3600 - timeRemaining,
+        const { collection, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+        const { db } = await import('../lib/firebase');
+
+        const attemptId = doc(collection(db, 'mockExamAttempts')).id;
+        const attemptRef = doc(db, 'mockExamAttempts', attemptId);
+        
+        const answerRecords = Object.entries(finalAnswers).map(([qid, oid]) => {
+           const q = questions.find(qu => qu.id === qid);
+           return {
+             questionId: qid,
+             selectedOptionId: oid,
+             correctOptionId: q?.correctOptionId || '',
+             isCorrect: oid === q?.correctOptionId,
+             categoryId: q?.categoryId || '',
+             topicId: q?.topicId || '',
+             skillIds: q?.skillIds || [],
+             timeSpentSeconds: 0 // Simplification
+           };
+        });
+
+        await setDoc(attemptRef, {
+          id: attemptId,
+          userId: user?.uid,
+          type: isMock ? 'mock_exam' : 'practice_exam',
+          mode: user?.learningMode || 'self_review',
+          scorePercent,
+          totalQuestions: questions.length,
+          correctCount,
+          answers: answerRecords,
+          completedAt: serverTimestamp()
+        });
+
+        // Update Mastery in Learner Profile
+        const profileRef = doc(db, 'learnerProfiles', user!.uid);
+        const profileSnap = await getDoc(profileRef);
+        if (profileSnap.exists()) {
+           const p = profileSnap.data();
+           // Simplified mastery update: weighted integration of this score
+           const newOverall = Math.round((p.overallScore * 0.7) + (scorePercent * 0.3));
+           await updateDoc(profileRef, {
+              overallScore: newOverall,
+              lastUpdatedAt: serverTimestamp()
+           });
+        }
+        
+        navigate('/quiz-results', { 
+           state: { 
+             attemptId, 
+             scorePercent, 
+             total: questions.length, 
+             correct: correctCount,
+             questions, 
+             answers: finalAnswers 
+           } 
         });
       } catch (e) {
-        console.error('Local save failed', e);
+        console.error('Failed to save exam results', e);
+        // Fallback with route state only
+        navigate('/quiz-results', { 
+           state: { 
+             scorePercent, 
+             total: questions.length, 
+             correct: correctCount,
+             questions, 
+             answers: finalAnswers 
+           } 
+        });
       }
-      
-      // Wait briefly before navigating to results
-      setTimeout(() => {
-        navigate('/quiz-results', { state: { score, total: questions.length, questions, answers: newAnswers } });
-      }, 100);
+    };
+
+    if (currentIndex < questions.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+      setSelectedOption(newAnswers[questions[currentIndex + 1]?.id] || null);
+    } else {
+      await compileResults(newAnswers);
     }
   };
+
+  useEffect(() => {
+    if (questions.length > 0 && timeRemaining === 0) {
+       // Auto-submit
+       const handleAutoSubmit = async () => {
+         await handleNext(); // This will trigger compileResults with whatever is in userAnswers
+       };
+       handleAutoSubmit();
+    }
+  }, [timeRemaining, questions.length]);
 
   const handlePrevious = () => {
     if (currentIndex > 0) {

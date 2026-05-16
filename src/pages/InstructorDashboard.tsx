@@ -37,8 +37,24 @@ export default function InstructorDashboard() {
       const totalStudents = classData.reduce((acc, cls) => acc + (cls.studentCount || 0), 0);
       setStats(prev => ({ ...prev, activeStudents: totalStudents }));
     });
+
+    // Fetch question count
+    const qQuestions = query(collection(db, 'questions'), where('createdBy', '==', user.uid));
+    const unsubQuestions = onSnapshot(qQuestions, (s) => {
+      setStats(prev => ({ ...prev, questions: s.size }));
+    });
+
+    // Fetch AI drafts
+    const qDrafts = query(collection(db, 'aiDrafts'), where('instructorId', '==', user.uid), where('status', '==', 'pending'));
+    const unsubDrafts = onSnapshot(qDrafts, (s) => {
+      setStats(prev => ({ ...prev, aiDrafts: s.size }));
+    });
     
-    return unsubClasses;
+    return () => {
+      unsubClasses();
+      unsubQuestions();
+      unsubDrafts();
+    };
   }, [user]);
   
   const handleAIDraft = async () => {
@@ -79,7 +95,7 @@ export default function InstructorDashboard() {
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[
-            { title: 'Questions Curated', value: '1,248', icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
+            { title: 'Questions Curated', value: stats.questions.toLocaleString(), icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
             { title: 'Active Students', value: stats.activeStudents.toString(), icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
             { title: 'AI Drafts Pending', value: stats.aiDrafts.toString(), icon: BrainCircuit, color: 'text-amber-500', bg: 'bg-amber-500/10' },
             { title: 'Pass Rate Est.', value: '84%', icon: Activity, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }

@@ -17,6 +17,9 @@ export default function Dashboard() {
   const [systemHealth, setSystemHealth] = useState<'Optimal' | 'Degraded' | 'Checking'>('Checking');
   const [healthError, setHealthError] = useState<string | null>(null);
 
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
+  const [pendingDrafts, setPendingDrafts] = useState<any[]>([]);
+
   useEffect(() => {
     // Check system health
     const checkHealth = async () => {
@@ -32,10 +35,26 @@ export default function Dashboard() {
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (s) => {
       setCounts(prev => ({ ...prev, users: s.size }));
+      // In a real app with approval, we might have a status field. 
+      // For now, we show recent users as "pending" if they have no role yet? 
+      // Or just actual instructors registered but not yet assigned to classes?
+      // Since we don't have a specific 'pending' status yet, let's just 
+      // show the most recent signups that might need review.
+      const recent = s.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter((u: any) => u.role !== 'admin')
+        .slice(0, 3);
+      setPendingUsers(recent);
     });
+
     const unsubQs = onSnapshot(collection(db, 'questions'), (s) => {
       setCounts(prev => ({ ...prev, questions: s.size }));
     });
+
+    const unsubDrafts = onSnapshot(query(collection(db, 'aiDrafts'), limit(3)), (s) => {
+       setPendingDrafts(s.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
     const unsubCats = onSnapshot(collection(db, 'categories'), (s) => {
       setCounts(prev => ({ ...prev, categories: s.size }));
     });
@@ -52,7 +71,7 @@ export default function Dashboard() {
     });
     
     // Recent Usage (last 7 days based on quiz attempts)
-    const usageQuery = query(collection(db, 'quizAttempts'), orderBy('completedAt', 'desc'), limit(50));
+    const usageQuery = query(collection(db, 'quizAttempts'), orderBy('createdAt', 'desc'), limit(50));
     const unsubUsage = onSnapshot(usageQuery, (s) => {
       const data: { [key: string]: number } = {};
       const now = new Date();
@@ -62,7 +81,8 @@ export default function Dashboard() {
         data[d.toLocaleDateString('en-US', { weekday: 'short' })] = 0;
       }
       s.docs.forEach(doc => {
-        const date = new Date(doc.data().completedAt);
+        const attempt = doc.data();
+        const date = attempt.createdAt?.toDate?.() || new Date(attempt.createdAt);
         const day = date.toLocaleDateString('en-US', { weekday: 'short' });
         if (data.hasOwnProperty(day)) {
           data[day]++;
@@ -72,7 +92,7 @@ export default function Dashboard() {
       setCounts(prev => ({ ...prev, usageData: chartData }));
     });
       
-    return () => { unsubUsers(); unsubQs(); unsubCats(); unsubActivity(); unsubUsage(); };
+    return () => { unsubUsers(); unsubQs(); unsubCats(); unsubActivity(); unsubUsage(); unsubDrafts(); };
   }, []);
 
   return (
@@ -177,8 +197,8 @@ export default function Dashboard() {
                       <YAxis hide />
                       <Tooltip cursor={{fill: 'transparent'}} />
                       <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                        {counts.usageData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={index === counts.usageData.length - 1 ? 'var(--color-primary)' : 'var(--color-surface-container)'}/>
+                        {counts.usageData.map((_entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={index === counts.usageData.length - 1 ? '#1b366a' : '#f1f5f9'}/>
                         ))}
                       </Bar>
                     </BarChart>
@@ -211,53 +231,48 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 pb-20">
             <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/30">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="font-headline text-lg font-extrabold text-on-surface tracking-tight">Pending User Approvals</h2>
-                <button className="text-primary font-bold text-[11px] uppercase tracking-widest hover:underline">Manage</button>
+                <h2 className="font-headline text-lg font-extrabold text-on-surface tracking-tight">Recent Signups</h2>
+                <Link to="/admin/users" className="text-primary font-bold text-[11px] uppercase tracking-widest hover:underline">Manage</Link>
               </div>
               <div className="space-y-4">
-                 {[
-                   { name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'Instructor' },
-                   { name: 'Maria Clara', email: 'maria@example.com', role: 'Instructor' },
-                   { name: 'Jose Rizal', email: 'jose@example.com', role: 'Admin' }
-                 ].map((pending, i) => (
-                    <div key={i} className="flex justify-between items-center p-4 bg-surface-container/20 rounded-2xl border border-outline-variant/10 hover:border-primary/20 transition-all transition-colors">
+                 {pendingUsers.length > 0 ? pendingUsers.map((pending, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 bg-surface-container/20 rounded-2xl border border-outline-variant/10 hover:border-primary/20 transition-all">
                        <div>
-                          <p className="font-bold text-sm text-on-surface">{pending.name}</p>
-                          <p className="text-xs text-on-surface-variant/60">{pending.email} • <span className="font-semibold text-primary">{pending.role}</span></p>
+                          <p className="font-bold text-sm text-on-surface">{pending.fullName || 'Anonymous'}</p>
+                          <p className="text-xs text-on-surface-variant/60">{pending.email} • <span className="font-semibold text-primary capitalize">{pending.role}</span></p>
                        </div>
                        <div className="flex gap-2">
                           <button className="p-2 text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-xl transition-colors"><span className="material-symbols-outlined text-[18px]">check</span></button>
                           <button className="p-2 text-error bg-error/10 hover:bg-error/20 rounded-xl transition-colors"><span className="material-symbols-outlined text-[18px]">close</span></button>
                        </div>
                     </div>
-                 ))}
-                 <button className="w-full text-center text-xs font-bold text-on-surface-variant/40 uppercase tracking-widest mt-2 py-3 hover:bg-surface-container/40 rounded-xl transition-all">View All 12 Pending</button>
+                 )) : (
+                    <div className="text-center py-6 text-on-surface-variant/40 text-xs italic">No new signups</div>
+                 )}
               </div>
             </div>
 
             <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/30">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="font-headline text-lg font-extrabold text-on-surface tracking-tight">Content Approvals</h2>
-                 <button className="text-primary font-bold text-[11px] uppercase tracking-widest hover:underline">Review AI Drafts</button>
+                <h2 className="font-headline text-lg font-extrabold text-on-surface tracking-tight">Pending AI Drafts</h2>
+                 <Link to="/admin/ai-drafts" className="text-primary font-bold text-[11px] uppercase tracking-widest hover:underline">Review All</Link>
               </div>
               <div className="space-y-4">
-                 {[
-                   { title: '15 Questions on Child Dev', author: 'AI Drafter', status: 'Pending Review' },
-                   { title: 'New Module: Assessment of Learning', author: 'Inst. Cruz', status: 'Pending Review' },
-                 ].map((content, i) => (
-                    <div key={i} className="flex justify-between items-center p-4 bg-tertiary-container/5 rounded-2xl border border-outline-variant/10 hover:border-tertiary/20 transition-all">
+                 {pendingDrafts.length > 0 ? pendingDrafts.map((draft, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 bg-surface-container/10 rounded-2xl border border-outline-variant/10 hover:border-primary/20 transition-all">
                        <div className="flex-1 min-w-0 pr-4">
-                          <p className="font-bold text-sm text-on-surface truncate">{content.title}</p>
-                          <p className="text-xs text-on-surface-variant/60">By {content.author} • {content.status}</p>
+                          <p className="font-bold text-sm text-on-surface truncate">{draft.topic || 'AI Generated Set'}</p>
+                          <p className="text-xs text-on-surface-variant/60">Difficulty: {draft.difficulty} • {draft.questions?.length} Questions</p>
                        </div>
                        <div className="flex gap-2 shrink-0">
-                          <button className="px-4 py-2 text-xs font-bold text-on-tertiary-container bg-tertiary-container/10 hover:bg-tertiary-container/20 rounded-xl transition-colors">Review</button>
+                          <button className="px-4 py-2 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors">Review</button>
                        </div>
                     </div>
-                 ))}
-                 <div className="p-4 bg-surface-container/30 rounded-2xl border border-outline-variant/10 flex items-center justify-center text-sm font-bold text-on-surface-variant/20 italic">
-                    No other pending content
-                 </div>
+                 )) : (
+                   <div className="p-4 bg-surface-container/30 rounded-2xl border border-outline-variant/10 flex items-center justify-center text-sm font-bold text-on-surface-variant/20 italic">
+                      No pending content
+                   </div>
+                 )}
               </div>
             </div>
           </div>

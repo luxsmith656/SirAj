@@ -67,62 +67,118 @@ export default function BulkUpload() {
         let failCount = 0;
         const errorDetails: string[] = [];
 
-        // Pre-fetch categories to map names to IDs
-        const catSnap = await getDocs(collection(db, 'categories'));
-        const categoryMap: Record<string, string> = {};
-        catSnap.forEach(s => categoryMap[s.data().name.toLowerCase()] = s.id);
+        try {
+          const { serverTimestamp } = await import('firebase/firestore');
+          
+          // Pre-fetch all mapping data
+          const catSnap = await getDocs(collection(db, 'categories'));
+          const topSnap = await getDocs(collection(db, 'topics'));
+          const skillSnap = await getDocs(collection(db, 'skills'));
+          const existingQs = await getDocs(collection(db, 'questions'));
+          
+          const categoryMap: Record<string, string> = {};
+          catSnap.forEach(s => categoryMap[s.data().title.toLowerCase()] = s.id);
+          
+          const topicMap: Record<string, string> = {};
+          topSnap.forEach(s => topicMap[s.data().title.toLowerCase()] = s.id);
 
-        for (const [index, row] of (data as any[]).entries()) {
-          try {
-            const { 
-              Stem, 
-              'Option A': optA, 
-              'Option B': optB, 
-              'Option C': optC, 
-              'Option D': optD, 
-              'Correct Option': correct, 
-              'Category Name': catName,
-              'Topic Name': topicName,
-              'Difficulty': difficulty 
-            } = row;
+          const skillMap: Record<string, string> = {};
+          skillSnap.forEach(s => skillMap[s.data().title.toLowerCase()] = s.id);
 
-            if (!Stem || !optA || !correct || !catName) {
-              throw new Error(`Row ${index + 2}: Missing required fields (Stem, Option A, Correct Option, Category Name).`);
+          const existingStems = new Set(existingQs.docs.map(d => d.data().stem.toLowerCase().trim()));
+
+          for (const [index, row] of (data as any[]).entries()) {
+            try {
+              const { 
+                Stem, 
+                'Option A': optA, 
+                'Option B': optB, 
+                'Option C': optC, 
+                'Option D': optD, 
+                'Correct Option': correct, 
+                'Explanation': explanation,
+                'Category': catName,
+                'Topic': topicName,
+                'Skills': skillsStr,
+                'Difficulty': difficulty,
+                'Type': type 
+              } = row;
+
+              const cleanStem = Stem?.trim();
+              if (!cleanStem || !optA || !correct || !catName || !topicName) {
+                throw new Error(`Row ${index + 2}: Missing required fields (Stem, Options, Correct, Category, Topic).`);
+              }
+
+              if (existingStems.has(cleanStem.toLowerCase())) {
+                throw new Error(`Row ${index + 2}: Duplicate question stem.`);
+              }
+
+              let categoryId = categoryMap[catName.toLowerCase()];
+              if (!categoryId) {
+                const newCatRef = doc(collection(db, 'categories'));
+                await setDoc(newCatRef, { title: catName, description: 'Auto-created' });
+                categoryId = newCatRef.id;
+                categoryMap[catName.toLowerCase()] = categoryId;
+              }
+
+              let topicId = topicMap[topicName.toLowerCase()];
+              if (!topicId) {
+                const newTopRef = doc(collection(db, 'topics'));
+                await setDoc(newTopRef, { title: topicName, categoryId, description: 'Auto-created' });
+                topicId = newTopRef.id;
+                topicMap[topicName.toLowerCase()] = topicId;
+              }
+
+              const skillIds: string[] = [];
+              if (skillsStr) {
+                const skillsArr = skillsStr.split(',').map((s: string) => s.trim());
+                for (const sName of skillsArr) {
+                  let sId = skillMap[sName.toLowerCase()];
+                  if (!sId) {
+                    const newSkillRef = doc(collection(db, 'skills'));
+                    await setDoc(newSkillRef, { title: sName, topicId, categoryId });
+                    sId = newSkillRef.id;
+                    skillMap[sName.toLowerCase()] = sId;
+                  }
+                  skillIds.push(sId);
+                }
+              }
+
+              const qRef = doc(collection(db, 'questions'));
+              await setDoc(qRef, {
+                stem: cleanStem,
+                options: [
+                  { id: 'A', text: optA },
+                  { id: 'B', text: optB },
+                  { id: 'C', text: optC },
+                  { id: 'D', text: optD }
+                ],
+                correctOptionId: correct.toUpperCase().trim(),
+                explanation: explanation || '',
+                categoryId,
+                topicId,
+                skillIds,
+                difficulty: difficulty || 'Average',
+                type: type || 'practice',
+                approved: true,
+                isPublished: true,
+                aiGenerated: false,
+                createdBy: user?.uid,
+                version: 1,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+              });
+              
+              existingStems.add(cleanStem.toLowerCase());
+              successCount++;
+            } catch (err: any) {
+              failCount++;
+              errorDetails.push(err.message);
+              if (errorDetails.length > 50) break;
             }
-
-            let categoryId = categoryMap[catName.toLowerCase()];
-            if (!categoryId) {
-              // Create category if it doesn't exist
-              const newCatRef = doc(collection(db, 'categories'));
-              await setDoc(newCatRef, { name: catName, description: `Auto-created during bulk upload for ${catName}` });
-              categoryId = newCatRef.id;
-              categoryMap[catName.toLowerCase()] = categoryId;
-            }
-
-            const qRef = doc(collection(db, 'questions'));
-            await setDoc(qRef, {
-              stem: Stem,
-              options: [
-                { id: 'A', text: optA },
-                { id: 'B', text: optB },
-                { id: 'C', text: optC },
-                { id: 'D', text: optD }
-              ],
-              correctOptionId: correct.toUpperCase(),
-              categoryId: categoryId,
-              topicName: topicName || '',
-              difficulty: difficulty || 'Medium',
-              createdAt: Date.now(),
-              createdBy: user?.uid,
-              status: 'active'
-            });
-            
-            successCount++;
-          } catch (err: any) {
-            failCount++;
-            errorDetails.push(err.message);
-            if (errorDetails.length > 10) break; // Limit errors
           }
+        } catch (globalErr: any) {
+          errorDetails.push('System error: ' + globalErr.message);
         }
 
         setResults({ 
@@ -137,8 +193,8 @@ export default function BulkUpload() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "Stem,Option A,Option B,Option C,Option D,Correct Option,Category Name,Topic Name,Difficulty\n" +
-      "\"What is the capital of France?\",\"Paris\",\"London\",\"Berlin\",\"Madrid\",\"A\",\"General Education\",\"Geography\",\"Easy\"";
+    const csvContent = "Stem,Option A,Option B,Option C,Option D,Correct Option,Explanation,Category,Topic,Skills,Difficulty,Type\n" +
+      "\"Who is the father of Filipino language?\",\"Manuel L. Quezon\",\"Jose Rizal\",\"Andres Bonifacio\",\"Emilio Aguinaldo\",\"A\",\"Manuel L. Quezon is the Ama ng Wikang Pambansa.\",\"General Education\",\"History\",\"General Knowledge,Language\",\"Easy\",\"practice\"";
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);

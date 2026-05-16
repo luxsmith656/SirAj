@@ -8,15 +8,21 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 
+import { useSearchParams } from 'react-router-dom';
+import { updateDoc, serverTimestamp } from 'firebase/firestore';
+
 export default function LearningQuest() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const moduleId = searchParams.get('moduleId');
+  
   const { user } = useAuth();
   const [step, setStep] = useState<'hook' | 'lesson' | 'check' | 'challenge' | 'complete'>('hook');
+  const [module, setModule] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
   const [challengeScore, setChallengeScore] = useState(0);
-  const [topicName, setTopicName] = useState('Professional Education');
-
   // Quick check state
   const [checkAnswer, setCheckAnswer] = useState<string | null>(null);
   
@@ -27,32 +33,39 @@ export default function LearningQuest() {
   useEffect(() => {
     async function loadContent() {
       try {
-        let targetCategoryId = '';
-        
-        // Try to find a category related to weaknesses
-        if (user) {
-          const profileRef = await getDoc(doc(db, 'learnerProfiles', user.uid));
-          if (profileRef.exists()) {
-            const profile = profileRef.data();
-            if (profile.weaknesses && profile.weaknesses.length > 0) {
-              const weakTopic = profile.weaknesses[0];
-              setTopicName(weakTopic);
-              // Find category matching weakness (simple string match for now)
-              const cats = await OfflineData.getCategories();
-              const matchedCat = cats.find(c => weakTopic.toLowerCase().includes(c.name.toLowerCase()) || c.name.toLowerCase().includes(weakTopic.toLowerCase()));
-              if (matchedCat) targetCategoryId = matchedCat.id;
+        let activeModule = null;
+        let mid = moduleId;
+
+        if (!mid && user) {
+          const profileSnap = await getDoc(doc(db, 'learnerProfiles', user.uid));
+          if (profileSnap.exists()) {
+             const p = profileSnap.data();
+             mid = p.nextRecommendedModuleId || (p.recommendedModuleIds && p.recommendedModuleIds[0]);
+          }
+        }
+
+        if (mid) {
+          const modSnap = await getDoc(doc(db, 'modules', mid));
+          if (modSnap.exists()) {
+            activeModule = { id: modSnap.id, ...modSnap.data() };
+            setModule(activeModule);
+            setTopicName(activeModule.title);
+            
+            // Load questions for challenge
+            if (activeModule.questionIds && activeModule.questionIds.length > 0) {
+              const qs: any[] = [];
+              for (const qid of activeModule.questionIds) {
+                const qSnap = await getDoc(doc(db, 'questions', qid));
+                if (qSnap.exists()) qs.push({ id: qSnap.id, ...qSnap.data() });
+              }
+              setQuestions(qs);
             }
           }
         }
 
-        const cats = await OfflineData.getCategories();
-        if (!targetCategoryId && cats.length > 0) {
-           targetCategoryId = cats[0].id;
-           setTopicName(cats[0].name);
-        }
-
-        if (targetCategoryId) {
-           const qs = await OfflineData.getRandomQuestions(targetCategoryId, 5);
+        if (!activeModule) {
+           // Fallback to offline categories if no module found
+           const qs = await OfflineData.getRandomQuestions('general_education', 5);
            setQuestions(qs);
         }
       } catch (err) {
@@ -62,7 +75,46 @@ export default function LearningQuest() {
       }
     }
     loadContent();
-  }, [user]);
+  }, [user, moduleId]);
+
+  const handleQuestComplete = async () => {
+    if (!user || !module) {
+      navigate('/student/dashboard');
+      return;
+    }
+
+    try {
+      // Save Progress
+      const progressRef = doc(db, 'moduleProgress', `${user.uid}_${module.id}`);
+      await setDoc(progressRef, {
+        userId: user.uid,
+        moduleId: module.id,
+        status: 'completed',
+        completedAt: serverTimestamp(),
+        lastAccessedAt: serverTimestamp()
+      }, { merge: true });
+
+      // Update Learner Profile - award mastery for this module's topic
+      const profileRef = doc(db, 'learnerProfiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+      if (profileSnap.exists()) {
+         const p = profileSnap.data();
+         const topicId = module.topicId;
+         const currentMastery = p.masteryByTopic?.[topicId] || 0;
+         const newMastery = Math.min(100, currentMastery + 10); // Simple gain
+         
+         await updateDoc(profileRef, {
+            [`masteryByTopic.${topicId}`]: newMastery,
+            lastUpdatedAt: serverTimestamp()
+         });
+      }
+
+      setStep('complete');
+    } catch (e) {
+      console.error('Failed to complete quest', e);
+      setStep('complete');
+    }
+  };
 
   const handleQuickCheck = (id: string, isCorrect: boolean) => {
     setCheckAnswer(id);
@@ -71,9 +123,9 @@ export default function LearningQuest() {
     }, 1500);
   };
 
-  const handleChallengeAction = (optId: string) => {
-    if (challengeIndex >= questions.length - 1) { // -1 because 1 was used for quick check
-       setStep('complete');
+  const handleChallengeAction = async (optId: string) => {
+    if (challengeIndex >= questions.length - 1) { 
+       await handleQuestComplete();
     } else {
        setChallengeAnswers(p => ({ ...p, [questions[challengeIndex + 1].id]: optId }));
        setChallengeIndex(c => c + 1);
@@ -102,13 +154,27 @@ export default function LearningQuest() {
         return (
           <motion.div initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-20}} className="space-y-6">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <h2 className="text-2xl font-extrabold text-[#1b366a] mb-4">Principles of Teaching</h2>
-              <p className="text-slate-600 mb-4 leading-relaxed">
-                The primary purpose of assessment is not accountability but rather to improve student learning. Constructive alignment is the key: ensuring your objectives, instructional activities, and assessments all align.
-              </p>
-              <p className="text-slate-600 leading-relaxed font-medium">
-                Keep an eye out for "distractors" in the board exam that sound highly technical but don't align with the core philosophy of learner-centered education.
-              </p>
+              <h2 className="text-2xl font-extrabold text-[#1b366a] mb-4">{module?.title || topicName}</h2>
+              {module?.lessonBlocks && module.lessonBlocks.length > 0 ? (
+                <div className="space-y-4">
+                  {module.lessonBlocks.map((block: any, idx: number) => (
+                    <div key={idx} className="text-slate-600 leading-relaxed">
+                      {block.type === 'text' && <p>{block.content}</p>}
+                      {block.type === 'heading' && <h4 className="font-bold text-slate-800 text-lg mt-4">{block.content}</h4>}
+                      {block.type === 'quote' && <blockquote className="border-l-4 border-primary/20 pl-4 py-1 italic bg-primary/5 rounded-r-lg">{block.content}</blockquote>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <p className="text-slate-600 mb-4 leading-relaxed">
+                    The primary purpose of assessment is not accountability but rather to improve student learning. Constructive alignment is the key: ensuring your objectives, instructional activities, and assessments all align.
+                  </p>
+                  <p className="text-slate-600 leading-relaxed font-medium">
+                    Keep an eye out for "distractors" in the board exam that sound highly technical but don't align with the core philosophy of learner-centered education.
+                  </p>
+                </>
+              )}
             </div>
             <button onClick={() => setStep('check')} className="bg-[#1b366a] text-white px-6 py-3 rounded-xl font-bold flex items-center justify-between w-full shadow-md">
                <span>Take Quick Check</span>

@@ -1,16 +1,32 @@
-import { collection, addDoc, getDocs, query, where, doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { db } from './firebase';
 import { CATEGORIES as SEED_CATEGORIES, TOPICS as SEED_TOPICS, SKILLS as SEED_SKILLS, INITIAL_QUESTIONS as SEED_QUESTIONS } from './seedData';
 import { handleFirestoreError, OperationType } from './firestoreUtils';
 
+// Simple hash function for stable IDs
+function generateStableId(input: string): string {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return 'q_' + Math.abs(hash).toString(36);
+}
+
 export async function seedDatabase() {
-  console.log('Starting structured database seed...');
+  console.log('Starting standardized database seed...');
   
   try {
     // 1. Seed Categories
     for (const cat of SEED_CATEGORIES) {
       try {
-        await setDoc(doc(db, 'categories', cat.id), { ...cat, questionCount: 0 }, { merge: true });
+        await setDoc(doc(db, 'categories', cat.id), { 
+          ...cat, 
+          questionCount: 0,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
         console.log(`Seeded category: ${cat.name}`);
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `categories/${cat.id}`);
@@ -20,7 +36,11 @@ export async function seedDatabase() {
     // 2. Seed Topics
     for (const topic of SEED_TOPICS) {
        try {
-         await setDoc(doc(db, 'topics', topic.id), { ...topic }, { merge: true });
+         await setDoc(doc(db, 'topics', topic.id), { 
+           ...topic,
+           createdAt: serverTimestamp(),
+           updatedAt: serverTimestamp()
+         }, { merge: true });
          console.log(`Seeded topic: ${topic.name}`);
        } catch (err) {
          handleFirestoreError(err, OperationType.WRITE, `topics/${topic.id}`);
@@ -30,33 +50,69 @@ export async function seedDatabase() {
     // 3. Seed Skills
     for (const skill of SEED_SKILLS) {
        try {
-         await setDoc(doc(db, 'skills', skill.id), { ...skill }, { merge: true });
+         await setDoc(doc(db, 'skills', skill.id), { 
+           ...skill,
+           createdAt: serverTimestamp(),
+           updatedAt: serverTimestamp()
+         }, { merge: true });
          console.log(`Seeded skill: ${skill.name}`);
        } catch (err) {
          handleFirestoreError(err, OperationType.WRITE, `skills/${skill.id}`);
        }
     }
 
-    // 4. Seed Questions
+    // 4. Seed Questions with Stable IDs
     for (const quest of SEED_QUESTIONS) {
         try {
-          const q = query(collection(db, 'questions'), where('stem', '==', quest.stem));
-          const snap = await getDocs(q);
-          if (snap.empty) {
-              await addDoc(collection(db, 'questions'), {
-                  ...quest,
-                  createdAt: serverTimestamp(),
-                  updatedAt: serverTimestamp(),
-                  createdBy: 'system-seed'
-              });
-              console.log(`Seeded question: ${quest.stem.substring(0, 30)}...`);
-          }
+          const stableId = generateStableId(quest.stem);
+          await setDoc(doc(db, 'questions', stableId), {
+            ...quest,
+            id: stableId,
+            version: 1,
+            aiGenerated: false,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            createdBy: 'system-seed'
+          }, { merge: true });
+          console.log(`Seeded question (${stableId}): ${quest.stem.substring(0, 30)}...`);
         } catch (err) {
           handleFirestoreError(err, OperationType.WRITE, 'questions');
         }
     }
 
-    console.log('Seeding completed');
+    // 5. Seed Starter Modules
+    const starterModules = [
+      {
+        id: 'mod_intro_profed',
+        title: 'Introduction to Professional Education',
+        description: 'Foundation of the teaching profession and legal bases.',
+        categoryId: 'profed',
+        topicId: 'profed_principles',
+        skillIds: [],
+        level: 1,
+        lessonBlocks: [
+          { type: 'text', content: 'The teaching profession is grounded in ethical principles and legal frameworks. In the Philippines, the Code of Ethics for Professional Teachers serves as the primary guide.' },
+          { type: 'callout', content: 'Key Concept: Teaching is both a mission and a profession.' }
+        ],
+        checkQuestionIds: [], // To be linked to seeded questions
+        challengeQuestionIds: [],
+        prerequisiteModuleIds: [],
+        isPublished: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+    ];
+
+    for (const mod of starterModules) {
+      try {
+        await setDoc(doc(db, 'modules', mod.id), mod, { merge: true });
+        console.log(`Seeded module: ${mod.title}`);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, `modules/${mod.id}`);
+      }
+    }
+
+    console.log('Standardized seeding completed');
     return true;
   } catch (error) {
     console.error('Seeding process failed:', error);

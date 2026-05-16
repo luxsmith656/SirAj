@@ -2,44 +2,22 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrainCircuit, Check, X } from 'lucide-react';
 
+import AIAssistant from '../components/AIAssistant';
+
 export default function QuizResults() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { score = 0, total = 0, questions = [], answers = {} } = location.state || {};
-  const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
-  const incorrect = total - score;
-
-  const [aiExplanations, setAiExplanations] = useState<Record<string, string>>({});
-  const [loadingAi, setLoadingAi] = useState<Record<string, boolean>>({});
-
-  const handleExplain = async (q: any) => {
-    if (aiExplanations[q.id]) return;
-    
-    setLoadingAi(prev => ({ ...prev, [q.id]: true }));
-    try {
-      const res = await fetch('/api/explain-answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questionTitle: q.stem,
-          options: q.options,
-          studentAnswerId: answers[q.id],
-          correctAnswerId: q.correctOptionId
-        })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setAiExplanations(prev => ({ ...prev, [q.id]: data.explanation }));
-      } else {
-        setAiExplanations(prev => ({ ...prev, [q.id]: 'Failed to generate explanation. Please try again later.' }));
-      }
-    } catch (err) {
-      console.error(err);
-      setAiExplanations(prev => ({ ...prev, [q.id]: 'Network error. Please try again.' }));
-    } finally {
-      setLoadingAi(prev => ({ ...prev, [q.id]: false }));
-    }
-  };
+  const { 
+    attemptId, 
+    scorePercent = 0, 
+    total = 0, 
+    correct = 0,
+    questions = [], 
+    answers = {} 
+  } = location.state || {};
+  
+  const percentage = scorePercent;
+  const incorrect = total - correct;
 
   return (
     <div className="bg-white text-slate-800 font-body min-h-[100dvh] flex flex-col antialiased">
@@ -70,7 +48,7 @@ export default function QuizResults() {
              <div className="bg-white rounded-3xl p-6 shadow-xl shadow-blue-900/10 border border-slate-100 grid grid-cols-2 gap-4 mb-8">
                 <div className="text-center p-4 bg-slate-50 rounded-2xl">
                    <span className="material-symbols-outlined text-emerald-600 block mb-2 mx-auto">check_circle</span>
-                   <span className="text-2xl font-black block text-slate-800 tabular-nums">{score}</span>
+                   <span className="text-2xl font-black block text-slate-800 tabular-nums">{correct}</span>
                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Correct</span>
                 </div>
                 <div className="text-center p-4 bg-slate-50 rounded-2xl">
@@ -123,27 +101,12 @@ export default function QuizResults() {
                                      <p className="text-emerald-800 font-bold">{correctOpt?.text}</p>
                                   </div>
 
-                                  {!isCorrect && (
-                                     <div className="mt-4 pt-4 border-t border-red-200/50">
-                                        {aiExplanations[q.id] ? (
-                                           <div className="bg-white/60 p-4 rounded-xl">
-                                              <h5 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-indigo-600 mb-2">
-                                                <BrainCircuit size={14} /> AI Explanation
-                                              </h5>
-                                              <p className="text-indigo-900 text-xs leading-relaxed">{aiExplanations[q.id]}</p>
-                                           </div>
-                                        ) : (
-                                           <button 
-                                             onClick={() => handleExplain(q)}
-                                             disabled={loadingAi[q.id]}
-                                             className="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50"
-                                           >
-                                              {loadingAi[q.id] ? <span className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /> : <BrainCircuit size={16} />}
-                                              Ask AI to Explain
-                                           </button>
-                                        )}
-                                     </div>
-                                  )}
+                                  <AIAssistant 
+                                    questionTitle={q.stem}
+                                    options={q.options}
+                                    studentAnswerId={studentAns}
+                                    correctAnswerId={q.correctOptionId}
+                                  />
                                </div>
                             </div>
                          );

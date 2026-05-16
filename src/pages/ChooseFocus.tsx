@@ -15,6 +15,7 @@ export default function ChooseFocus() {
       await updateDoc(doc(db, 'users', user.uid), {
         learningMode: 'self_review',
         selectedFocus: focus,
+        onboardingStep: 2
       });
       await refreshUser();
       navigate('/diagnostic');

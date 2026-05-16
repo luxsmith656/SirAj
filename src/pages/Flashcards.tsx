@@ -36,14 +36,37 @@ export default function Flashcards() {
   useEffect(() => {
     const fetchCards = async () => {
       try {
-        const q = query(
+        if (!user) return;
+        
+        let focusCategoryId = '';
+        let focusTopicId = '';
+        
+        // 1. Get focus from user profile
+        if (user.selectedFocus) {
+           const cats = await getDocs(collection(db, 'categories'));
+           const matched = cats.docs.find(d => d.id === user.selectedFocus || d.data().title.toLowerCase().includes(user.selectedFocus.replace('_', ' ')));
+           if (matched) focusCategoryId = matched.id;
+        }
+
+        // 2. Fetch questions - prioritize weak topics if available
+        let q = query(
           collection(db, 'questions'), 
           where('isPublished', '==', true),
-          where('approved', '==', true),
-          limit(20)
+          where('approved', '==', true)
         );
+
+        if (focusCategoryId) {
+          q = query(q, where('categoryId', '==', focusCategoryId));
+        }
+
         const snap = await getDocs(q);
         const fetchedCards: Flashcard[] = [];
+        
+        // Sort by weak topics if we have profile data
+        const profileSnap = await getDoc(doc(db, 'learnerProfiles', user.uid));
+        const profile = profileSnap.exists() ? profileSnap.data() : null;
+        const topicMastery = profile?.masteryByTopic || {};
+
         for (const d of snap.docs) {
           const data = d.data();
           const correctOption = data.options?.find((o: any) => o.id === data.correctOptionId);
@@ -52,13 +75,16 @@ export default function Flashcards() {
             stem: data.stem,
             correctAnswer: correctOption?.text || 'N/A',
             explanation: data.explanation || 'Review this concept to master the topic.',
-            categoryName: data.categoryName
-          });
+            categoryName: data.categoryName,
+            topicId: data.topicId,
+            mastery: topicMastery[data.topicId] || 0
+          } as any);
         }
         
-        // Shuffle
-        fetchedCards.sort(() => 0.5 - Math.random());
-        setCards(fetchedCards);
+        // Sort: Weakest first (mastery ascending)
+        fetchedCards.sort((a: any, b: any) => a.mastery - b.mastery);
+        
+        setCards(fetchedCards.slice(0, 20)); // Limit to 20 per session
         setLoading(false);
       } catch (e) {
         console.error('Failed to fetch flashcards', e);
@@ -66,11 +92,27 @@ export default function Flashcards() {
       }
     };
     fetchCards();
-  }, []);
+  }, [user]);
 
   const handleNext = async (mastered: boolean) => {
-    if (mastered) {
+    const currentCard = cards[currentIndex] as any;
+    
+    if (mastered && user && currentCard.topicId) {
       setSessionXP(prev => prev + 15);
+      // Update mastery in background
+      try {
+        const profileRef = doc(db, 'learnerProfiles', user.uid);
+        const pSnap = await getDoc(profileRef);
+        if (pSnap.exists()) {
+           const pData = pSnap.data();
+           const curr = pData.masteryByTopic?.[currentCard.topicId] || 0;
+           const newM = Math.min(100, curr + 2); // Small bump for flashcard mastering
+           await updateDoc(profileRef, {
+             [`masteryByTopic.${currentCard.topicId}`]: newM,
+             lastUpdatedAt: serverTimestamp()
+           });
+        }
+      } catch (e) { console.error(e); }
     } else {
       setSessionXP(prev => prev + 5);
     }
@@ -87,20 +129,14 @@ export default function Flashcards() {
     if (!user) return;
     try {
       const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const userData = userSnap.data();
-        const currentXP = userData.xp || 0;
-        const newXP = currentXP + sessionXP;
-        const currentLevel = Math.floor(currentXP / 1000) + 1;
-        const newLevel = Math.floor(newXP / 1000) + 1;
-        const updates: any = { xp: newXP };
-        if (newLevel > currentLevel) updates.level = newLevel;
-        await updateDoc(userRef, updates);
-      }
-      navigate('/student-dashboard');
+      const { updateDoc, increment } = await import('firebase/firestore');
+      await updateDoc(userRef, {
+        xp: increment(sessionXP),
+        updatedAt: serverTimestamp()
+      });
+      navigate('/student/dashboard');
     } catch (e) {
-      navigate('/student-dashboard');
+      navigate('/student/dashboard');
     }
   };
 
