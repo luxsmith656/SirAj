@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout';
 import { collection, onSnapshot, query, orderBy, limit, doc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { seedDatabase } from '../lib/db-seed';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function Dashboard() {
@@ -85,9 +86,24 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex gap-3">
-
-               <button className="bg-primary px-6 py-2.5 rounded-2xl text-xs font-bold text-on-primary shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">Export Reports</button>
-            </div>
+                <button 
+                  onClick={async () => {
+                    const confirmed = window.confirm('Are you sure you want to seed the database? This might take a while.');
+                    if (confirmed) {
+                       try {
+                         await seedDatabase();
+                         alert('Seeding successful!');
+                       } catch (e: any) {
+                         alert('Seeding failed: ' + e.message);
+                       }
+                    }
+                  }}
+                  className="bg-primary/5 px-6 py-2.5 rounded-2xl text-xs font-bold text-primary shadow-sm hover:bg-primary/10 transition-all"
+                >
+                  Seed Initial Content
+                </button>
+                <button className="bg-primary px-6 py-2.5 rounded-2xl text-xs font-bold text-on-primary shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all">Export Reports</button>
+             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-2">

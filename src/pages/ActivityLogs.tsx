@@ -10,9 +10,9 @@ export default function ActivityLogs() {
   useEffect(() => {
     let q = query(collection(db, 'activityLogs'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snapshot) => {
-        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        let data = snapshot.docs.map(doc => ({ id: doc.id, ...(doc.data() as any) }));
         if (filter !== 'all') {
-            data = data.filter(log => log.action === filter);
+            data = data.filter((log: any) => log.action === filter);
         }
         setLogs(data);
     });

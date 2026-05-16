@@ -31,53 +31,67 @@ export default function ExamSimulation() {
         let fetched: any[] = [];
         const isMock = searchParams.get('type') === 'mock';
         
+        const { collection, getDocs, query, where, limit } = await import('firebase/firestore');
+        const { db } = await import('../lib/firebase');
+
+        let q;
         if (categoryId) {
-          fetched = await OfflineData.getQuestionsByCategory(categoryId);
+          q = query(
+            collection(db, 'questions'),
+            where('categoryId', '==', categoryId),
+            where('isPublished', '==', true),
+            where('approved', '==', true)
+          );
+        } else if (isMock) {
+          q = query(
+            collection(db, 'questions'),
+            where('type', '==', 'mock_exam'),
+            where('isPublished', '==', true),
+            where('approved', '==', true),
+            limit(50)
+          );
         } else {
-          // If no category passed, get some random overall questions
-          const cats = await OfflineData.getCategories();
-          if (cats.length > 0) {
-             let limit = isMock ? 50 : 10;
-             // If mock, we try to gather from multiple cats
-             if (isMock) {
-               let allQs: Question[] = [];
-               for (const c of cats) {
-                  const items = await OfflineData.getRandomQuestions(c.id, 10);
-                  allQs = [...allQs, ...items];
-               }
-               fetched = allQs.sort(() => 0.5 - Math.random()).slice(0, limit);
-             } else {
-               fetched = await OfflineData.getRandomQuestions(cats[0].id, limit);
-             }
-          }
-        }
-        
-        if (fetched.length === 0) {
-          // Fallback to firestore directly
-          const { collection, getDocs, query, where } = await import('firebase/firestore');
-          const { db } = await import('../lib/firebase');
-          let firestoreQuestions: Question[] = [];
-          
-          if (categoryId) {
-             const qSnap = await getDocs(query(collection(db, 'questions'), where('categoryId', '==', categoryId)));
-             qSnap.forEach(d => firestoreQuestions.push({ id: d.id, ...d.data() } as Question));
-          } else {
-             const qSnap = await getDocs(collection(db, 'questions'));
-             qSnap.forEach(d => firestoreQuestions.push({ id: d.id, ...d.data() } as Question));
-             firestoreQuestions = firestoreQuestions.sort(() => 0.5 - Math.random()).slice(0, isMock ? 50 : 10);
-          }
-          fetched = firestoreQuestions;
+          q = query(
+            collection(db, 'questions'),
+            where('isPublished', '==', true),
+            where('approved', '==', true),
+            limit(20)
+          );
         }
 
-        setQuestions(fetched);
+        const qSnap = await getDocs(q);
+        qSnap.forEach(snap => {
+          fetched.push({ id: snap.id, ...(snap.data() as any) });
+        });
+
+        // Backup plan for Mock Exam
+        if (isMock && fetched.length < 10) {
+           const backupQ = query(
+             collection(db, 'questions'),
+             where('isPublished', '==', true),
+             where('approved', '==', true),
+             limit(30)
+           );
+           const bSnap = await getDocs(backupQ);
+           bSnap.forEach(snap => {
+             if (!fetched.find(f => f.id === snap.id)) {
+               fetched.push({ id: snap.id, ...(snap.data() as any) });
+             }
+           });
+        }
+
+        // Shuffle
+        fetched.sort(() => 0.5 - Math.random());
+        const finalFetched = isMock ? fetched.slice(0, 50) : fetched.slice(0, 10);
+        setQuestions(finalFetched);
       } catch (error) {
-        console.error('Failed to load local questions', error);
+        console.error('Failed to load questions', error);
       } finally {
         setIsLoading(false);
       }
     };
     fetchQuestions();
-  }, [categoryId]);
+  }, [categoryId, searchParams]);
 
   useEffect(() => {
     if (questions.length > 0) {
@@ -142,11 +156,20 @@ export default function ExamSimulation() {
     }
   };
 
-  if (isLoading) return <div className="p-12 text-center">Loading questions...</div>;
+  if (isLoading) return (
+    <div className="p-12 text-center bg-surface min-h-screen flex flex-col items-center justify-center">
+       <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+       <p className="text-on-surface-variant font-bold">Synchronizing exam content...</p>
+    </div>
+  );
+
   if (questions.length === 0) return (
-    <div className="p-12 text-center max-w-md mx-auto">
+    <div className="p-12 text-center max-w-md mx-auto min-h-screen flex flex-col items-center justify-center">
+      <div className="w-16 h-16 bg-surface-container rounded-2xl flex items-center justify-center mb-6 text-on-surface-variant/20">
+         <span className="material-symbols-outlined text-4xl">extension_off</span>
+      </div>
       <h2 className="text-xl font-bold mb-4">No questions found</h2>
-      <p className="text-slate-500 mb-6">There are no questions in this category yet.</p>
+      <p className="text-slate-500 mb-6">There are no published questions in this category. Content is synced periodically from the main server.</p>
       <button onClick={() => navigate('/focus')} className="bg-[#1b366a] text-white px-6 py-2 rounded-xl font-bold">Go Back</button>
     </div>
   );

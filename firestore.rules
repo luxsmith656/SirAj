@@ -24,11 +24,22 @@ service cloud.firestore {
              getUserData().get('role', 'student') == role;
     }
     
-    function isAdmin() { return hasRole('admin') || isBootstrapAdmin(); }
-    function isInstructor() { return hasRole('instructor') || isAdmin(); }
-    
     function isBootstrapAdmin() {
-      return isSignedIn() && request.auth.token.email == 'castanar656@gmail.com';
+      return isSignedIn() && 
+             (request.auth.token.get('email', '').lower() == 'castanar656@gmail.com' ||
+              request.auth.token.email == 'castanar656@gmail.com');
+    }
+    
+    function isAdmin() { 
+      return isBootstrapAdmin() || 
+             (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'student') == 'admin');
+    }
+    
+    function isInstructor() { 
+       return isAdmin() || 
+              (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'student') == 'instructor'); 
     }
     
     function incoming() { return request.resource.data; }
@@ -67,23 +78,28 @@ service cloud.firestore {
     }
     
     match /categories/{categoryId} {
-      allow read: if isSignedIn();
-      allow write: if isInstructor();
+      allow read: if isSignedIn() && (resource.data.isPublished == true || isInstructor() || isAdmin());
+      allow write: if isAdmin() || isBootstrapAdmin();
     }
     
     match /topics/{topicId} {
-      allow read: if isSignedIn();
-      allow write: if isInstructor();
+      allow read: if isSignedIn() && (resource.data.isPublished == true || isInstructor() || isAdmin());
+      allow write: if isAdmin() || isBootstrapAdmin();
     }
     
     match /modules/{moduleId} {
-      allow read: if isSignedIn();
-      allow write: if isInstructor();
+      allow read: if isSignedIn() && (resource.data.isPublished == true || isInstructor() || isAdmin());
+      allow write: if isInstructor() || isAdmin() || isBootstrapAdmin();
     }
     
     match /questions/{questionId} {
+      allow read: if isSignedIn() && (resource.data.isPublished == true && resource.data.approved == true || isInstructor() || isAdmin());
+      allow write: if isInstructor() || isAdmin() || isBootstrapAdmin();
+    }
+
+    match /skills/{skillId} {
       allow read: if isSignedIn();
-      allow write: if isInstructor();
+      allow write: if isAdmin() || isBootstrapAdmin();
     }
     
     match /classes/{classId} {

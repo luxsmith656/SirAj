@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, limit, getDocs, doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { collection, query, limit, getDocs, doc, getDoc, updateDoc, arrayUnion, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -36,7 +36,12 @@ export default function Flashcards() {
   useEffect(() => {
     const fetchCards = async () => {
       try {
-        const q = query(collection(db, 'questions'), limit(20));
+        const q = query(
+          collection(db, 'questions'), 
+          where('isPublished', '==', true),
+          where('approved', '==', true),
+          limit(20)
+        );
         const snap = await getDocs(q);
         const fetchedCards: Flashcard[] = [];
         for (const d of snap.docs) {
@@ -50,6 +55,9 @@ export default function Flashcards() {
             categoryName: data.categoryName
           });
         }
+        
+        // Shuffle
+        fetchedCards.sort(() => 0.5 - Math.random());
         setCards(fetchedCards);
         setLoading(false);
       } catch (e) {

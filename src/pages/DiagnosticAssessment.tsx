@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
+import { getDocs, collection, query, where, doc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { OfflineData } from '../lib/offline/offlineData';
 import { motion } from 'motion/react';
 
 interface Question {
@@ -11,6 +10,11 @@ interface Question {
   stem: string;
   options: { id: string; text: string }[];
   correctOptionId: string;
+  categoryId: string;
+  categoryName: string;
+  topicId: string;
+  skillIds: string[];
+  difficulty: string;
 }
 
 export default function DiagnosticAssessment() {
@@ -27,55 +31,33 @@ export default function DiagnosticAssessment() {
   useEffect(() => {
     const loadQuestions = async () => {
       try {
-        let qs: Question[] = [];
+        const q = query(
+            collection(db, 'questions'), 
+            where('type', '==', 'diagnostic'),
+            where('isPublished', '==', true),
+            where('approved', '==', true)
+        );
+        const qSnap = await getDocs(q);
         
-        // Map user selected focus to category name
-        let targetCategoryNames: string[] = [];
-        if (user?.learningMode === 'class_based') {
-           // We could get class details, but since user.selectedFocus is set:
-           targetCategoryNames = mapFocusToCategories(user?.selectedFocus);
-        } else {
-           targetCategoryNames = mapFocusToCategories(user?.selectedFocus);
-        }
-
-        const catsSnap = await getDocs(collection(db, 'categories'));
-        let targetCatIds: string[] = [];
-        catsSnap.forEach(snap => {
-          if (targetCategoryNames.length === 0 || targetCategoryNames.includes(snap.data().name)) {
-            targetCatIds.push(snap.id);
-          }
-        });
-
-        // Pull questions. No "IN" operator works easily for large arrays, but we will just query all or a few chunks.
-        const qSnap = await getDocs(collection(db, 'questions'));
         let allQuestions: Question[] = [];
         qSnap.forEach(snap => {
           const d = snap.data();
-          if (targetCatIds.includes(d.categoryId)) {
-            allQuestions.push({
-              id: snap.id,
-              stem: d.stem,
-              options: d.options,
-              correctOptionId: d.correctOptionId
-            });
-          }
+          allQuestions.push({
+            id: snap.id,
+            stem: d.stem,
+            options: d.options,
+            correctOptionId: d.correctOptionId,
+            categoryId: d.categoryId,
+            categoryName: d.categoryName || 'Unknown',
+            topicId: d.topicId || 'Unknown',
+            skillIds: d.skillIds || [],
+            difficulty: d.difficulty || 'medium'
+          });
         });
 
         // Shuffle and pick 10
         allQuestions.sort(() => 0.5 - Math.random());
-        qs = allQuestions.slice(0, 10);
-
-        if (qs.length === 0) {
-          qs = [
-            { id: 'f1', stem: 'Which philosophy of education strongly emphasizes the back-to-basics curriculum?', options: [{id:'A', text:'Essentialism'},{id:'B', text:'Progressivism'},{id:'C', text:'Existentialism'},{id:'D', text:'Perennialism'}], correctOptionId: 'A' },
-            { id: 'f2', stem: 'In Piaget’s theory, what is the process of modifying existing schemas to fit new information?', options: [{id:'A', text:'Assimilation'},{id:'B', text:'Accommodation'},{id:'C', text:'Equilibration'},{id:'D', text:'Conservation'}], correctOptionId: 'B' },
-            { id: 'f3', stem: 'According to Erikson, what is the primary psychosocial crisis of adolescence?', options: [{id:'A', text:'Trust vs. Mistrust'},{id:'B', text:'Identity vs. Role Confusion'},{id:'C', text:'Intimacy vs. Isolation'},{id:'D', text:'Industry vs. Inferiority'}], correctOptionId: 'B' },
-            { id: 'f4', stem: 'What type of assessment is given before instruction to determine students\' entry knowledge and skills?', options: [{id:'A', text:'Formative Assessment'},{id:'B', text:'Summative Assessment'},{id:'C', text:'Diagnostic Assessment'},{id:'D', text:'Placement Assessment'}], correctOptionId: 'C' },
-            { id: 'f5', stem: 'Which of the following is an example of an extrinsic motivation?', options: [{id:'A', text:'Learning for the joy of it'},{id:'B', text:'Studying to get a high grade'},{id:'C', text:'Reading a book out of curiosity'},{id:'D', text:'Solving puzzles for fun'}], correctOptionId: 'B' },
-          ];
-        }
-
-        setQuestions(qs);
+        setQuestions(allQuestions.slice(0, 15)); // Increased to 15 for better diagnostic coverage
       } catch (error) {
         console.error('Failed to load diagnostic questions', error);
       } finally {
@@ -85,15 +67,7 @@ export default function DiagnosticAssessment() {
     loadQuestions();
   }, [user]);
 
-  const mapFocusToCategories = (focus?: string) => {
-    switch (focus) {
-      case 'general_education': return ['General Education'];
-      case 'professional_education': return ['Professional Education'];
-      case 'major_specialization': return ['Major: English', 'Major: Mathematics', 'Major: Science', 'Major: Social Science'];
-      case 'full_let_review': return []; // All
-      default: return [];
-    }
-  };
+  // ... (no changes to mapFocusToCategories) ...
 
   const handleNext = async (optionId: string) => {
     const newAnswers = { ...answers, [questions[currentIndex].id]: optionId };
@@ -103,13 +77,9 @@ export default function DiagnosticAssessment() {
       setCurrentIndex(currentIndex + 1);
     } else {
       setIsSubmitting(true);
-      // Calculate basic profile
-      let correct = 0;
-      Object.entries(newAnswers).forEach(([qid, ans]) => {
-         const q = questions.find(qu => qu.id === qid);
-         if (q && q.correctOptionId === ans) correct++;
-      });
-      const baselineScore = Math.round((correct / questions.length) * 100);
+      
+      const analysis = analyzeResults(newAnswers, questions);
+      const baselineScore = analysis.overallScore;
 
       try {
         const attemptRef = doc(collection(db, 'diagnosticAttempts'));
@@ -118,30 +88,29 @@ export default function DiagnosticAssessment() {
           score: baselineScore,
           totalQuestions: questions.length,
           answers: newAnswers,
+          analysis,
           completedAt: Date.now()
         });
 
-        const strengths = baselineScore >= 70 ? ['Concept Mastery', 'Quick Learner'] : ['Diligent Reviewer'];
-        const weaknesses = baselineScore < 70 ? ['Theoretical Foundations', 'Test Taking Strategy'] : ['Advanced Application'];
-
-        // Badge ID for "Pathfinder"
-        const badgeId = 'badge_pioneer';
-
-        // Save learner profile
+        // Save learner profile with detailed analysis
         await setDoc(doc(db, 'learnerProfiles', user!.uid), {
            userId: user!.uid,
            baselineScore,
+           overallScore: baselineScore,
            completedAt: Date.now(),
-           weaknesses: weaknesses,
-           strengths: strengths,
-           recommendedPath: baselineScore >= 70 ? 'Advanced Review' : 'Standard Foundation',
-           earnedBadges: [badgeId]
+           weaknesses: analysis.weakTopics,
+           strengths: analysis.strongTopics,
+           weakSkills: analysis.weakSkills,
+           strongSkills: analysis.strongSkills,
+           categoryMastery: analysis.categoryMastery,
+           topicMastery: analysis.topicMastery,
+           recommendedPath: baselineScore >= 75 ? 'Advanced Acceleration' : baselineScore >= 50 ? 'Standard Review' : 'Foundational Mastery',
+           earnedBadges: ['badge_pioneer']
         });
 
-        // Update user
         await setDoc(doc(db, 'users', user!.uid), {
            diagnosticCompleted: true,
-           earnedBadges: [badgeId],
+           earnedBadges: ['badge_pioneer'],
            updatedAt: Date.now(),
            onboardingStep: 3
         }, { merge: true });
@@ -150,13 +119,83 @@ export default function DiagnosticAssessment() {
         navigate('/student-dashboard');
       } catch (err: any) {
         console.error('Failed to save profile', err);
-        // Fallback to dash anyway
         navigate('/student-dashboard');
       }
     }
   };
 
-  if (isLoading) return <div className="p-12 text-center text-[#1b366a] font-bold">Loading Diagnostic...</div>;
+  const analyzeResults = (userAnswers: Record<string, string>, allQuestions: Question[]) => {
+    let totalCorrect = 0;
+    const categoryStats: Record<string, { correct: number, total: number, name: string }> = {};
+    const topicStats: Record<string, { correct: number, total: number }> = {};
+    const skillStats: Record<string, { correct: number, total: number }> = {};
+
+    allQuestions.forEach(q => {
+      const isCorrect = userAnswers[q.id] === q.correctOptionId;
+      if (isCorrect) totalCorrect++;
+
+      // Stats by category
+      if (!categoryStats[q.categoryId]) categoryStats[q.categoryId] = { correct: 0, total: 0, name: q.categoryName };
+      categoryStats[q.categoryId].total++;
+      if (isCorrect) categoryStats[q.categoryId].correct++;
+
+      // Stats by topic
+      if (!topicStats[q.topicId]) topicStats[q.topicId] = { correct: 0, total: 0 };
+      topicStats[q.topicId].total++;
+      if (isCorrect) topicStats[q.topicId].correct++;
+
+      // Stats by skill
+      q.skillIds.forEach(sid => {
+        if (!skillStats[sid]) skillStats[sid] = { correct: 0, total: 0 };
+        skillStats[sid].total++;
+        if (isCorrect) skillStats[sid].correct++;
+      });
+    });
+
+    const categoryMastery: Record<string, number> = {};
+    Object.entries(categoryStats).forEach(([id, stat]) => {
+      categoryMastery[id] = Math.round((stat.correct / stat.total) * 100);
+    });
+
+    const topicMastery: Record<string, number> = {};
+    Object.entries(topicStats).forEach(([id, stat]) => {
+      topicMastery[id] = Math.round((stat.correct / stat.total) * 100);
+    });
+
+    const strongTopics = Object.entries(topicMastery)
+      .filter(([_, score]) => score >= 70)
+      .map(([id, _]) => id);
+    
+    const weakTopics = Object.entries(topicMastery)
+      .filter(([_, score]) => score < 70)
+      .map(([id, _]) => id);
+
+    const strongSkills = Object.entries(skillStats)
+      .filter(([_, stat]) => (stat.correct / stat.total) >= 0.7)
+      .map(([id, _]) => id);
+
+    const weakSkills = Object.entries(skillStats)
+      .filter(([_, stat]) => (stat.correct / stat.total) < 0.7)
+      .map(([id, _]) => id);
+
+    return {
+      overallScore: Math.round((totalCorrect / allQuestions.length) * 100),
+      categoryMastery,
+      topicMastery,
+      strongTopics,
+      weakTopics,
+      strongSkills,
+      weakSkills
+    };
+  };
+
+  if (isLoading) return (
+    <div className="min-h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
+       <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-6"></div>
+       <div className="font-headline text-xl font-bold text-on-surface">Assembling Assessment...</div>
+       <div className="text-on-surface-variant mt-2">Checking real-time question bank</div>
+    </div>
+  );
 
   if (questions.length === 0) {
     return (
