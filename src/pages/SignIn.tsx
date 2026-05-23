@@ -46,11 +46,41 @@ export default function SignIn() {
     }
   };
 
+  const handleDemoLogin = async (demoEmail: string) => {
+    setError('');
+    setIsLoading(true);
+    const demoPass = 'letmastery123';
+    
+    // Set state for visual feedback
+    setEmail(demoEmail);
+    setPassword(demoPass);
+
+    try {
+      try {
+        await loginWithEmail(demoEmail, demoPass);
+      } catch (loginErr: any) {
+        if (loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential') {
+          const role = demoEmail.split('@')[0];
+          const display = role.charAt(0).toUpperCase() + role.slice(1);
+          localStorage.setItem('pendingRegistrationData', JSON.stringify({ fullName: `Demo ${display}`, age: '25' }));
+          await registerWithEmail(demoEmail, demoPass);
+        } else {
+          throw loginErr;
+        }
+      }
+    } catch (err: any) {
+      console.error('Demo Auth error:', err.code, err.message);
+      setError(`Demo login failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    try {
+      try {
         if (isSignUp) {
           if (!fullName || !age) {
             setError('Please fill in Name and Age');
@@ -63,12 +93,25 @@ export default function SignIn() {
           } catch(e) { console.warn(e); }
           await registerWithEmail(email, password);
         } else {
-        await loginWithEmail(email, password);
-      }
-    } catch (err: any) {
+          try {
+            await loginWithEmail(email, password);
+          } catch (loginErr: any) {
+            // Auto-fallback for demo accounts even if not clicking the demo button
+            const demoEmails = ['student@letmastery.com', 'instructor@letmastery.com', 'admin@letmastery.com'];
+            if ((loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential') && demoEmails.includes(email.toLowerCase())) {
+              const role = email.split('@')[0];
+              const display = role.charAt(0).toUpperCase() + role.slice(1);
+              localStorage.setItem('pendingRegistrationData', JSON.stringify({ fullName: `Demo ${display}`, age: '25' }));
+              await registerWithEmail(email, password);
+            } else {
+              throw loginErr;
+            }
+          }
+        }
+      } catch (err: any) {
       console.error('Auth error:', err.code, err.message);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
-        setError('Invalid email or password.');
+        setError(isSignUp ? 'Registration failed. Try a different email.' : 'Invalid email or password. Please sign up if you don\'t have an account.');
       } else if (err.code === 'auth/email-already-in-use') {
         setError('This email is already registered.');
       } else if (err.code === 'auth/operation-not-allowed') {
@@ -196,6 +239,25 @@ export default function SignIn() {
               <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
               Continue with Google
             </button>
+
+            <div className="mt-8 pt-8 border-t border-outline-variant/10">
+               <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] text-center mb-4">Quick Demo Access</p>
+               <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: 'Student', email: 'student@letmastery.com', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
+                    { label: 'Instructor', email: 'instructor@letmastery.com', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+                    { label: 'Admin', email: 'admin@letmastery.com', color: 'bg-primary/10 text-primary border-primary/20' }
+                  ].map((role) => (
+                    <button
+                      key={role.label}
+                      onClick={() => handleDemoLogin(role.email)}
+                      className={`py-3 px-1 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${role.color}`}
+                    >
+                      {role.label}
+                    </button>
+                  ))}
+               </div>
+            </div>
             
             <button 
               onClick={() => setIsSignUp(!isSignUp)}

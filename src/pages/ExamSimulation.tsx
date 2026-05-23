@@ -9,6 +9,8 @@ interface Question {
   options: { id: string; text: string }[];
   correctOptionId: string;
   categoryId?: string;
+  topicId?: string;
+  skillIds?: string[];
   explanation?: string;
 }
 
@@ -65,14 +67,15 @@ export default function ExamSimulation() {
         }
 
         const qSnap = await getDocs(qQuery);
-        let allPool: any[] = [];
+        let allPool: Question[] = [];
         qSnap.forEach(snap => {
-          const d = snap.data();
+          const d = snap.data() as any;
           // Filter by focus if applicable
           if (effectiveFocus && d.categoryId !== effectiveFocus && d.categoryId !== 'gened' && d.categoryId !== 'profed') {
              // Skip if not in focus unless it's gened/profed (common domains)
+             return;
           }
-          allPool.push({ id: snap.id, ...d });
+          allPool.push({ id: snap.id, ...d } as Question);
         });
 
         // Backup plan for Mock Exam: pull from practice if needed
@@ -86,8 +89,9 @@ export default function ExamSimulation() {
            );
            const bSnap = await getDocs(backupQ);
            bSnap.forEach(snap => {
+             const data = snap.data() as any;
              if (!allPool.find(f => f.id === snap.id)) {
-                allPool.push({ id: snap.id, ...snap.data() });
+                allPool.push({ id: snap.id, ...data } as Question);
              }
            });
         }
@@ -140,7 +144,7 @@ export default function ExamSimulation() {
       const isMock = searchParams.get('type') === 'mock';
 
       try {
-        const { collection, doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+        const { collection, doc, setDoc, serverTimestamp, getDoc, updateDoc } = await import('firebase/firestore');
         const { db } = await import('../lib/firebase');
 
         const attemptId = doc(collection(db, 'mockExamAttempts')).id;

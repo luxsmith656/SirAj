@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { BrainCircuit, Loader2, Save, X, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { collection, addDoc, onSnapshot, doc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useAuth } from '../context/AuthContext';
 import Toast from '../components/Toast';
 
 export default function AIDrafts() {
+  const { user } = useAuth();
   const [topic, setTopic] = useState('');
   const [difficulty, setDifficulty] = useState('Average');
   const [isGenerating, setIsGenerating] = useState(false);

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { OfflineData } from '../lib/offline/offlineData';
 import { ChevronRight, ArrowLeft } from 'lucide-react';
 
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,6 +19,7 @@ export default function LearningQuest() {
   const { user } = useAuth();
   const [step, setStep] = useState<'hook' | 'lesson' | 'check' | 'challenge' | 'complete'>('hook');
   const [module, setModule] = useState<any>(null);
+  const [topicName, setTopicName] = useState('Learning Quest');
   const [questions, setQuestions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   

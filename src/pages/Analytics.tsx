@@ -47,6 +47,11 @@ interface ConceptStat {
   accuracy: number;
 }
 
+interface UserStatusStat {
+  name: string;
+  value: number;
+}
+
 export default function Analytics() {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<MetricData>({ studentCount: 0, avgPassingScore: 0 });

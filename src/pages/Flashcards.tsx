@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, limit, getDocs, doc, getDoc, updateDoc, arrayUnion, where } from 'firebase/firestore';
+import { collection, query, limit, getDocs, doc, getDoc, updateDoc, arrayUnion, where, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -129,7 +129,6 @@ export default function Flashcards() {
     if (!user) return;
     try {
       const userRef = doc(db, 'users', user.uid);
-      const { updateDoc, increment } = await import('firebase/firestore');
       await updateDoc(userRef, {
         xp: increment(sessionXP),
         updatedAt: serverTimestamp()

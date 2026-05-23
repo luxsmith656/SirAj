@@ -113,6 +113,52 @@ export async function seedDatabase() {
     }
 
     console.log('Standardized seeding completed');
+
+    // 6. Seed Demo Accounts
+    const demoAccounts = [
+      {
+        uid: 'demo-student',
+        email: 'student@letmastery.com',
+        role: 'student',
+        fullName: 'Demo Student',
+        onboarded: true,
+        diagnosticCompleted: true,
+        streak: 5,
+        xp: 1250,
+        level: 2,
+        earnedBadges: ['badge_pioneer']
+      },
+      {
+        uid: 'demo-instructor',
+        email: 'instructor@letmastery.com',
+        role: 'instructor',
+        fullName: 'Dr. Jane Teacher',
+        onboarded: true,
+        diagnosticCompleted: false
+      },
+      {
+        uid: 'demo-admin',
+        email: 'admin@letmastery.com',
+        role: 'admin',
+        fullName: 'System Administrator',
+        onboarded: true,
+        diagnosticCompleted: false
+      }
+    ];
+
+    for (const acct of demoAccounts) {
+      try {
+        await setDoc(doc(db, 'users', acct.uid), {
+          ...acct,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        console.log(`Seeded demo account: ${acct.email}`);
+      } catch (err) {
+         console.error(`Failed to seed demo account ${acct.email}`, err);
+      }
+    }
+
     return true;
   } catch (error) {
     console.error('Seeding process failed:', error);
