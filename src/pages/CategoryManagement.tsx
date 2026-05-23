@@ -37,32 +37,42 @@ export default function CategoryManagement() {
     return () => unsubscribe();
   }, []);
 
-  const handleAddCategory = async () => {
-    try {
-      await addDoc(collection(db, 'categories'), {
-        name: 'New Category',
-        description: '',
-        questionCount: 0
-      });
-      setToastMsg('New domain added');
-      setShowToast(true);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'categories');
-    }
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleAddCategory = () => {
+    setSelectedCategory(null);
+    setEditName('');
+    setEditDesc('');
+    setIsCreating(true);
   };
 
   const handleSave = async () => {
-    if (!selectedCategory) return;
     try {
-      await updateDoc(doc(db, 'categories', selectedCategory.id), {
-        name: editName,
-        description: editDesc
-      });
-      setIsEditing(false);
-      setToastMsg('Domain updated successfully');
-      setShowToast(true);
+      if (isCreating) {
+        if (!editName.trim()) {
+           setToastMsg('Domain name is required');
+           setShowToast(true);
+           return;
+        }
+        await addDoc(collection(db, 'categories'), {
+          name: editName,
+          description: editDesc,
+          questionCount: 0
+        });
+        setIsCreating(false);
+        setToastMsg('New domain added successfully');
+        setShowToast(true);
+      } else if (selectedCategory) {
+        await updateDoc(doc(db, 'categories', selectedCategory.id), {
+          name: editName,
+          description: editDesc
+        });
+        setIsEditing(false);
+        setToastMsg('Domain updated successfully');
+        setShowToast(true);
+      }
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `categories/${selectedCategory.id}`);
+      handleFirestoreError(error, isCreating ? OperationType.CREATE : OperationType.UPDATE, isCreating ? 'categories' : `categories/${selectedCategory?.id}`);
     }
   };
 
@@ -90,6 +100,7 @@ export default function CategoryManagement() {
     setEditName(cat.name);
     setEditDesc(cat.description || '');
     setIsEditing(true);
+    setIsCreating(false);
   };
 
   const rootCategories = categories.filter(c => !c.parentId);
@@ -130,25 +141,27 @@ export default function CategoryManagement() {
                
                <div className="lg:col-span-12 xl:col-span-5">
                   <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-sm border border-outline-variant sticky top-24">
-                     {selectedCategory ? (
+                     {selectedCategory || isCreating ? (
                         <div className="space-y-6">
                            <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                                    <span className="material-symbols-outlined text-3xl">edit_note</span>
+                                    <span className="material-symbols-outlined text-3xl">{isCreating ? 'add_box' : 'edit_note'}</span>
                                  </div>
                                  <div className="min-w-0">
-                                    <h4 className="font-headline font-bold text-lg text-on-surface truncate">Edit Domain</h4>
-                                    <p className="text-xs font-bold text-on-surface-variant/40 uppercase tracking-widest">ID: {selectedCategory.id.substring(0, 8)}</p>
+                                    <h4 className="font-headline font-bold text-lg text-on-surface truncate">{isCreating ? 'Create Domain' : 'Edit Domain'}</h4>
+                                    {selectedCategory && <p className="text-xs font-bold text-on-surface-variant/40 uppercase tracking-widest">ID: {selectedCategory.id.substring(0, 8)}</p>}
                                  </div>
                               </div>
-                              <button 
-                                onClick={() => setShowDeleteModal(true)}
-                                className="w-10 h-10 rounded-xl bg-error/10 text-error flex items-center justify-center hover:bg-error/20 transition-colors"
-                                title="Delete Domain"
-                              >
-                                 <span className="material-symbols-outlined">delete</span>
-                              </button>
+                              {selectedCategory && (
+                                <button 
+                                  onClick={() => setShowDeleteModal(true)}
+                                  className="w-10 h-10 rounded-xl bg-error/10 text-error flex items-center justify-center hover:bg-error/20 transition-colors"
+                                  title="Delete Domain"
+                                >
+                                   <span className="material-symbols-outlined">delete</span>
+                                </button>
+                              )}
                            </div>
                            
                            <div className="space-y-4">
@@ -159,6 +172,7 @@ export default function CategoryManagement() {
                                    className="w-full bg-surface-container border border-transparent rounded-xl px-4 py-3 font-medium text-sm text-on-surface focus:bg-surface-container-lowest focus:border-primary/20 outline-none transition-all" 
                                    value={editName}
                                    onChange={(e) => setEditName(e.target.value)}
+                                   placeholder="e.g. General Education"
                                  />
                               </div>
                               <div className="space-y-1.5">
@@ -168,13 +182,14 @@ export default function CategoryManagement() {
                                    rows={4} 
                                    value={editDesc}
                                    onChange={(e) => setEditDesc(e.target.value)}
+                                   placeholder="Optional description..."
                                  />
                               </div>
                               
                               <div className="flex gap-3 pt-4">
-                                 <button onClick={handleSave} className="flex-1 px-6 py-3 rounded-xl bg-primary text-on-primary font-bold text-sm shadow-lg shadow-primary/20">Save Changes</button>
-                                 <button onClick={() => setSelectedCategory(null)} className="px-6 py-3 rounded-xl bg-surface-container text-on-surface-variant font-bold text-sm hover:bg-surface-container/80 transition-colors">Close</button>
-                              </div>
+                                 <button onClick={handleSave} className="flex-1 px-6 py-3 rounded-xl bg-primary text-on-primary font-bold text-sm shadow-lg shadow-primary/20">{isCreating ? 'Create Domain' : 'Save Changes'}</button>
+                                 <button onClick={() => { setSelectedCategory(null); setIsCreating(false); }} className="px-6 py-3 rounded-xl bg-surface-container text-on-surface-variant font-bold text-sm hover:bg-surface-container/80 transition-colors">Cancel</button>
+                               </div>
                            </div>
                         </div>
                      ) : (
