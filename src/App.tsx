@@ -21,6 +21,7 @@ import Focus from './pages/Focus';
 import QuizResults from './pages/QuizResults';
 import ExamSimulation from './pages/ExamSimulation';
 import StudentDashboard from './pages/StudentDashboard';
+import StudentCourses from './pages/StudentCourses';
 import InstructorDashboard from './pages/InstructorDashboard';
 import DiagnosticAssessment from './pages/DiagnosticAssessment';
 import AIDrafts from './pages/AIDrafts';
@@ -148,6 +149,7 @@ function AppContent() {
             {/* Mobile / App Routes */}
             <Route path="/loading" element={<Loading />} />
             <Route path="/student/dashboard" element={<ProtectedRoute role="student"><StudentDashboard /></ProtectedRoute>} />
+            <Route path="/student/courses" element={<ProtectedRoute role="student"><StudentCourses /></ProtectedRoute>} />
             <Route path="/onboarding" element={<ProtectedRoute role="student"><Onboarding /></ProtectedRoute>} />
             <Route path="/choose-learning-mode" element={<ProtectedRoute role="student"><ChooseLearningMode /></ProtectedRoute>} />
             <Route path="/choose-focus" element={<ProtectedRoute role="student"><ChooseFocus /></ProtectedRoute>} />

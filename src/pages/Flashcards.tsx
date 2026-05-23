@@ -153,7 +153,7 @@ export default function Flashcards() {
       <div className="h-screen bg-surface flex flex-col items-center justify-center p-6 text-center">
         <Brain size={48} className="text-on-surface-variant/20 mb-4" />
         <h2 className="text-lg font-extrabold text-on-surface mb-2">Deck Empty</h2>
-        <button onClick={() => navigate('/student-dashboard')} className="bg-primary text-on-primary px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20">Return Home</button>
+        <button onClick={() => navigate('/student/dashboard')} className="bg-primary text-on-primary px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-primary/20">Return Home</button>
       </div>
     );
   }
@@ -164,7 +164,7 @@ export default function Flashcards() {
   return (
     <div className="h-screen bg-surface flex flex-col overflow-hidden select-none transition-colors duration-300">
       <header className="px-5 py-3 bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between shrink-0">
-        <button onClick={() => navigate('/student-dashboard')} className="p-2 -ml-2 text-on-surface-variant"><ChevronLeft size={20} /></button>
+        <button onClick={() => navigate('/student/dashboard')} className="p-2 -ml-2 text-on-surface-variant"><ChevronLeft size={20} /></button>
         <div className="text-center">
           <h1 className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-[0.2em] mb-0.5">Quick Review</h1>
           <div className="h-1 w-20 bg-surface-container rounded-full overflow-hidden mx-auto">
@@ -190,7 +190,7 @@ export default function Flashcards() {
            >
              <ChevronLeft size={32} className="text-on-surface-variant/30 group-hover:text-primary transition-colors" />
            </motion.div>
-           <span className="text-[9px] font-bold uppercase vertical-text mt-2 whitespace-nowrap text-on-surface-variant/40 tracking-tighter group-hover:text-primary transition-colors">Click to Skip</span>
+           <span className="text-[9px] font-bold uppercase vertical-text mt-2 whitespace-nowrap text-on-surface-variant/40 tracking-tighter group-hover:text-primary transition-colors">Needs Review</span>
         </div>
         
         <div 
@@ -204,7 +204,7 @@ export default function Flashcards() {
            >
              <ChevronRight size={32} className="text-emerald-500/30 group-hover:text-emerald-500 transition-colors" />
            </motion.div>
-           <span className="text-[9px] font-bold uppercase vertical-text mt-2 whitespace-nowrap text-emerald-600/40 tracking-tighter group-hover:text-emerald-500 transition-colors">Click to Master</span>
+           <span className="text-[9px] font-bold uppercase vertical-text mt-2 whitespace-nowrap text-emerald-600/40 tracking-tighter group-hover:text-emerald-500 transition-colors">Got It</span>
         </div>
 
         <div className="w-full max-w-sm h-full max-h-[480px] relative perspective-1000">

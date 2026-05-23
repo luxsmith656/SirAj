@@ -136,10 +136,10 @@ export default function DiagnosticAssessment() {
         }, { merge: true });
 
         await refreshUser();
-        navigate('/student-dashboard');
+        navigate('/student/dashboard');
       } catch (err: any) {
         console.error('Failed to save profile', err);
-        navigate('/student-dashboard');
+        navigate('/student/dashboard');
       }
     }
   };
