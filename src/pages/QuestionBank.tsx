@@ -160,7 +160,7 @@ export default function QuestionBank() {
                    onChange={(e) => setSelectedCategory(e.target.value)}
                    className="bg-transparent border-none outline-none text-xs font-bold uppercase tracking-widest text-primary w-full appearance-none"
                 >
-                   <option value="all">All Domains</option>
+                   <option value="all">All Subjects</option>
                    {categories.map(cat => (
                      <option key={cat.id} value={cat.id}>{cat.name}</option>
                    ))}
@@ -172,7 +172,7 @@ export default function QuestionBank() {
             {/* Header */}
             <div className="flex items-center bg-surface-container/20 border-b border-outline-variant shrink-0">
               <div className="flex-1 p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Question Stem</div>
-              <div className="w-[200px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Domain</div>
+              <div className="w-[200px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Subject</div>
               <div className="w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Difficulty</div>
               <div className="w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest text-right shrink-0">Actions</div>
             </div>

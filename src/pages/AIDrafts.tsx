@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { BrainCircuit, Loader2, Save, X, Trash2 } from 'lucide-react';
+import { BrainCircuit, Loader2, Save, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { collection, addDoc, onSnapshot, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -9,7 +9,7 @@ import Toast from '../components/Toast';
 
 export default function AIDrafts() {
   const { user } = useAuth();
-  const [topic, setTopic] = useState('');
+  const [topicPrompt, setTopicPrompt] = useState('');
   const [difficulty, setDifficulty] = useState('Average');
   const [isGenerating, setIsGenerating] = useState(false);
   const [drafts, setDrafts] = useState<any[]>([]);
@@ -18,6 +18,12 @@ export default function AIDrafts() {
 
   const [categories, setCategories] = useState<any[]>([]);
   const [topics, setTopics] = useState<any[]>([]);
+
+  // Pre-generation selections
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedTopicId, setSelectedTopicId] = useState('');
+
+  // Post-generation mapping override
   const [selectedMapping, setSelectedMapping] = useState<Record<string, { categoryId: string, topicId: string }>>({});
 
   useEffect(() => {
@@ -40,13 +46,25 @@ export default function AIDrafts() {
   }, []);
 
   const handleGenerate = async () => {
-    if (!topic) return;
+    if (!topicPrompt || !selectedCategoryId || !selectedTopicId) {
+       setToastMsg('Please select a curriculum, topic, and enter a subtopic prompt.');
+       setShowToast(true);
+       return;
+    }
+
+    const catName = categories.find(c => c.id === selectedCategoryId)?.title || categories.find(c => c.id === selectedCategoryId)?.name || '';
+    const topName = topics.find(t => t.id === selectedTopicId)?.title || '';
+
     setIsGenerating(true);
     try {
       const res = await fetch('/api/draft-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, difficulty, count: 5 })
+        body: JSON.stringify({ 
+           topic: `${catName} - ${topName}: ${topicPrompt}`, 
+           difficulty, 
+           count: 5 
+        })
       });
       const data = await res.json();
       if (data.success) {
@@ -54,10 +72,12 @@ export default function AIDrafts() {
         for (const q of data.questions) {
           await addDoc(collection(db, 'aiDrafts'), {
             ...q,
-            draftTopic: topic,
+            draftTopic: topicPrompt,
             difficulty,
             status: 'pending',
             instructorId: user?.uid,
+            preAssignedCategoryId: selectedCategoryId,
+            preAssignedTopicId: selectedTopicId,
             createdAt: serverTimestamp()
           });
         }
@@ -71,19 +91,22 @@ export default function AIDrafts() {
       setShowToast(true);
     } finally {
       setIsGenerating(false);
+      setTopicPrompt('');
     }
   };
 
   const approveDraft = async (draftId: string) => {
-    const mapping = selectedMapping[draftId];
-    if (!mapping?.categoryId || !mapping?.topicId) {
-      setToastMsg('Please select a category and topic first.');
+    const draft = drafts.find(d => d.id === draftId);
+    if (!draft) return;
+
+    const catId = selectedMapping[draftId]?.categoryId || draft.preAssignedCategoryId;
+    const topId = selectedMapping[draftId]?.topicId || draft.preAssignedTopicId;
+
+    if (!catId || !topId) {
+      setToastMsg('Please select a category and topic for this draft first.');
       setShowToast(true);
       return;
     }
-
-    const draft = drafts.find(d => d.id === draftId);
-    if (!draft) return;
 
     try {
        const { updateDoc, serverTimestamp } = await import('firebase/firestore');
@@ -92,8 +115,8 @@ export default function AIDrafts() {
           options: draft.options,
           correctOptionId: draft.correctOptionId,
           explanation: draft.explanation,
-          categoryId: mapping.categoryId,
-          topicId: mapping.topicId,
+          categoryId: catId,
+          topicId: topId,
           difficulty: draft.difficulty,
           approved: true,
           isPublished: true,
@@ -108,8 +131,8 @@ export default function AIDrafts() {
          status: 'approved',
          reviewedAt: serverTimestamp(),
          reviewedBy: user?.uid,
-         assignedCategoryId: mapping.categoryId,
-         assignedTopicId: mapping.topicId
+         assignedCategoryId: catId,
+         assignedTopicId: topId
        });
 
        setToastMsg('Question approved and saved to bank!');
@@ -138,111 +161,146 @@ export default function AIDrafts() {
   return (
     <DashboardLayout title="AI Question Drafter">
       <div className="p-8 max-w-6xl mx-auto w-full">
-        {/* ... (keep header and generator form) */}
         <div className="mb-10">
            <h2 className="text-3xl font-extrabold font-headline text-primary flex items-center gap-3">
              <BrainCircuit /> AI Question Drafter
            </h2>
-           <p className="text-on-surface-variant/60 mt-2">Generate high-quality board exam questions instantly using AI.</p>
+           <p className="text-on-surface-variant/60 mt-2">Generate high-quality board exam questions instantly using AI, referenced against your exact curriculum.</p>
         </div>
 
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant p-8 mb-8">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pb-6 border-b border-outline-variant/20">
               <div>
-                 <label className="block text-sm font-bold text-on-surface mb-2">Topic / Standard</label>
-                 <input 
-                   type="text" 
-                   value={topic}
-                   onChange={r => setTopic(r.target.value)}
-                   placeholder="e.g. Principles of Teaching, Child Development..."
-                   className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-on-surface-variant/30"
-                 />
-              </div>
-              <div>
-                 <label className="block text-sm font-bold text-on-surface mb-2">Difficulty</label>
+                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">1. Select Curriculum Subject</label>
                  <select 
-                   value={difficulty}
-                   onChange={e => setDifficulty(e.target.value)}
-                   className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                   value={selectedCategoryId}
+                   onChange={e => { setSelectedCategoryId(e.target.value); setSelectedTopicId(''); }}
+                   className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 transition-all font-medium"
                  >
-                   <option>Easy</option>
-                   <option>Average</option>
-                   <option>Difficult</option>
-                   <option>Bloom's Taxonomy: Analysis/Evaluation</option>
+                   <option value="">-- Choose Subject --</option>
+                   {categories.map(c => <option key={c.id} value={c.id}>{c.title || c.name}</option>)}
+                 </select>
+              </div>
+              <div className={`${!selectedCategoryId ? 'opacity-50 pointer-events-none' : ''}`}>
+                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">2. Select Topic Area</label>
+                 <select 
+                   value={selectedTopicId}
+                   onChange={e => setSelectedTopicId(e.target.value)}
+                   className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 transition-all font-medium"
+                 >
+                   <option value="">-- Choose Topic --</option>
+                   {topics.filter(t => t.categoryId === selectedCategoryId).map(t => (
+                     <option key={t.id} value={t.id}>{t.title}</option>
+                   ))}
                  </select>
               </div>
            </div>
-           <div className="mt-6 flex justify-end">
-              <button 
-                onClick={handleGenerate} 
-                disabled={isGenerating || !topic}
-                className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2 transition-all hover:opacity-90"
-              >
-                 {isGenerating ? <><Loader2 className="animate-spin" /> Gathering Intel...</> : 'Generate 5 Questions'}
-              </button>
+
+           <div className={`transition-opacity duration-300 ${!selectedTopicId ? 'opacity-50 pointer-events-none' : ''}`}>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">3. Subtopic or Specific Standard</label>
+                   <input 
+                     type="text" 
+                     value={topicPrompt}
+                     onChange={r => setTopicPrompt(r.target.value)}
+                     placeholder="e.g. Cognitive Development stages, K-12 Act..."
+                     className="w-full bg-surface-container border border-outline-variant/50 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-on-surface-variant/40 font-medium"
+                   />
+                </div>
+                <div>
+                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">4. Difficulty Level</label>
+                   <select 
+                     value={difficulty}
+                     onChange={e => setDifficulty(e.target.value)}
+                     className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 transition-all font-medium"
+                   >
+                     <option>Easy</option>
+                     <option>Average</option>
+                     <option>Difficult</option>
+                     <option>Bloom's Taxonomy: Analysis/Evaluation</option>
+                   </select>
+                </div>
+             </div>
+             <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={handleGenerate} 
+                  disabled={isGenerating || !topicPrompt || !selectedTopicId}
+                  className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2 transition-all hover:opacity-90 active:scale-95"
+                >
+                   {isGenerating ? <><Loader2 className="animate-spin" /> Gathering Intel...</> : 'Generate 5 Questions'}
+                </button>
+             </div>
            </div>
         </div>
 
         {drafts.length > 0 && (
           <div className="space-y-6">
              <h3 className="text-xl font-bold text-on-surface">Pending Review ({drafts.length})</h3>
-             {drafts.map((draft, i) => (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  key={draft.id} 
-                  className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-6 relative overflow-hidden group"
-                >
-                  <div className="absolute top-0 right-0 p-4 opacity-100 flex gap-2">
-                     <button onClick={() => rejectDraft(draft.id)} className="p-2 bg-error/10 text-error rounded-lg hover:bg-error/20 transition-colors" title="Discard"><Trash2 size={18} /></button>
-                     <button onClick={() => approveDraft(draft.id)} className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500/20 transition-colors flex items-center gap-1 font-bold text-sm" title="Approve"><Save size={18}/> Approve</button>
-                  </div>
-                  <div className="mb-4 flex gap-4">
-                     <div className="flex-1">
-                        <label className="block text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-1">Target Category</label>
-                        <select 
-                          value={selectedMapping[draft.id]?.categoryId || ''}
-                          onChange={(e) => setSelectedMapping({
-                            ...selectedMapping,
-                            [draft.id]: { ...selectedMapping[draft.id], categoryId: e.target.value, topicId: '' }
-                          })}
-                          className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-2 text-xs font-bold text-on-surface focus:outline-none"
-                        >
-                          <option value="">Select Category</option>
-                          {categories.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                        </select>
-                     </div>
-                     <div className="flex-1">
-                        <label className="block text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-1">Target Topic</label>
-                        <select 
-                          value={selectedMapping[draft.id]?.topicId || ''}
-                          disabled={!selectedMapping[draft.id]?.categoryId}
-                          onChange={(e) => setSelectedMapping({
-                            ...selectedMapping,
-                            [draft.id]: { ...selectedMapping[draft.id], topicId: e.target.value }
-                          })}
-                          className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-2 text-xs font-bold text-on-surface focus:outline-none disabled:opacity-30"
-                        >
-                          <option value="">Select Topic</option>
-                          {topics.filter(t => t.categoryId === selectedMapping[draft.id]?.categoryId).map(t => (
-                            <option key={t.id} value={t.id}>{t.title}</option>
-                          ))}
-                        </select>
-                     </div>
-                  </div>
-                  <h4 className="font-bold text-lg text-on-surface mb-4 pr-32">{draft.stem}</h4>
-                  <div className="space-y-2 mb-4">
-                     {draft.options?.map((opt: any) => (
-                       <div key={opt.id} className={`p-3 rounded-xl text-sm ${opt.id === draft.correctOptionId ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold' : 'bg-surface-container text-on-surface-variant border border-outline-variant/10'}`}>
-                         <span className="inline-block w-6 font-bold">{opt.id}.</span> {opt.text}
+             {drafts.map((draft, i) => {
+                const currentCat = selectedMapping[draft.id]?.categoryId || draft.preAssignedCategoryId;
+                const currentTop = selectedMapping[draft.id]?.topicId || draft.preAssignedTopicId;
+
+                return (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    key={draft.id} 
+                    className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm p-6 relative overflow-hidden group"
+                  >
+                    <div className="absolute top-0 right-0 p-4 opacity-100 flex gap-2">
+                       <button onClick={() => rejectDraft(draft.id)} className="p-2 bg-error/10 text-error rounded-lg hover:bg-error/20 transition-colors" title="Discard"><Trash2 size={18} /></button>
+                       <button onClick={() => approveDraft(draft.id)} className="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg hover:bg-emerald-500/20 transition-colors flex items-center gap-1 font-bold text-sm" title="Approve"><Save size={18}/> Approve</button>
+                    </div>
+                    
+                    <div className="mb-4 flex gap-4 opacity-60 hover:opacity-100 transition-opacity">
+                       <div className="flex-1">
+                          <label className="block text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-1">Target Category</label>
+                          <select 
+                            value={currentCat || ''}
+                            onChange={(e) => setSelectedMapping({
+                              ...selectedMapping,
+                              [draft.id]: { ...selectedMapping[draft.id], categoryId: e.target.value, topicId: '' }
+                            })}
+                            className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-2 text-xs font-bold text-on-surface focus:outline-none"
+                          >
+                            <option value="">Select Category</option>
+                            {categories.map(c => <option key={c.id} value={c.id}>{c.title || c.name}</option>)}
+                          </select>
                        </div>
-                     ))}
-                  </div>
-                  <div className="text-sm bg-primary/5 border border-primary/10 text-on-surface-variant p-4 rounded-xl">
-                    <strong>Explanation:</strong> {draft.explanation}
-                  </div>
-                </motion.div>
-             ))}
+                       <div className="flex-1">
+                          <label className="block text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-1">Target Topic</label>
+                          <select 
+                            value={currentTop || ''}
+                            disabled={!currentCat}
+                            onChange={(e) => setSelectedMapping({
+                              ...selectedMapping,
+                              [draft.id]: { categoryId: currentCat, topicId: e.target.value }
+                            })}
+                            className="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-3 py-2 text-xs font-bold text-on-surface focus:outline-none disabled:opacity-30"
+                          >
+                            <option value="">Select Topic</option>
+                            {topics.filter(t => t.categoryId === currentCat).map(t => (
+                              <option key={t.id} value={t.id}>{t.title}</option>
+                            ))}
+                          </select>
+                       </div>
+                    </div>
+
+                    <h4 className="font-bold text-lg text-on-surface mb-4 pr-32">{draft.stem}</h4>
+                    <div className="space-y-2 mb-4">
+                       {draft.options?.map((opt: any) => (
+                         <div key={opt.id} className={`p-3 rounded-xl text-sm ${opt.id === draft.correctOptionId ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold' : 'bg-surface-container text-on-surface-variant border border-outline-variant/10'}`}>
+                           <span className="inline-block w-6 font-bold">{opt.id}.</span> {opt.text}
+                         </div>
+                       ))}
+                    </div>
+                    <div className="text-sm bg-primary/5 border border-primary/10 text-on-surface-variant p-4 rounded-xl">
+                      <strong>Explanation:</strong> {draft.explanation}
+                    </div>
+                  </motion.div>
+                );
+             })}
           </div>
         )}
 

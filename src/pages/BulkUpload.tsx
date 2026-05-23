@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import InstructorLayout from '../components/InstructorLayout';
 import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../context/AuthContext';
 import Papa from 'papaparse';
-import { collection, doc, setDoc, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { motion } from 'motion/react';
 import { 
@@ -24,9 +24,19 @@ export default function BulkUpload() {
   const [results, setResults] = useState<{ success: number; failed: number; errors: string[] } | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
 
   const Layout = user?.role === 'admin' ? AdminLayout : InstructorLayout;
   const layoutTitle = "Bulk Content Import";
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'categories'), (snapshot) => {
+      setCategories(snapshot.docs.map(d => ({ id: d.id, name: d.data().title || d.data().name })));
+    });
+    return () => unsub();
+  }, []);
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -42,6 +52,10 @@ export default function BulkUpload() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
+    if (!selectedCategoryId) {
+       alert("Please select a Curriculum first.");
+       return;
+    }
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setFile(e.dataTransfer.files[0]);
     }
@@ -54,7 +68,7 @@ export default function BulkUpload() {
   };
 
   const processUpload = async () => {
-    if (!file) return;
+    if (!file || !selectedCategoryId) return;
     setUploading(true);
     setResults(null);
 
@@ -70,14 +84,9 @@ export default function BulkUpload() {
         try {
           const { serverTimestamp } = await import('firebase/firestore');
           
-          // Pre-fetch all mapping data
-          const catSnap = await getDocs(collection(db, 'categories'));
           const topSnap = await getDocs(collection(db, 'topics'));
           const skillSnap = await getDocs(collection(db, 'skills'));
           const existingQs = await getDocs(collection(db, 'questions'));
-          
-          const categoryMap: Record<string, string> = {};
-          catSnap.forEach(s => categoryMap[s.data().title.toLowerCase()] = s.id);
           
           const topicMap: Record<string, string> = {};
           topSnap.forEach(s => topicMap[s.data().title.toLowerCase()] = s.id);
@@ -86,6 +95,7 @@ export default function BulkUpload() {
           skillSnap.forEach(s => skillMap[s.data().title.toLowerCase()] = s.id);
 
           const existingStems = new Set(existingQs.docs.map(d => d.data().stem.toLowerCase().trim()));
+          const categoryId = selectedCategoryId;
 
           for (const [index, row] of (data as any[]).entries()) {
             try {
@@ -97,7 +107,6 @@ export default function BulkUpload() {
                 'Option D': optD, 
                 'Correct Option': correct, 
                 'Explanation': explanation,
-                'Category': catName,
                 'Topic': topicName,
                 'Skills': skillsStr,
                 'Difficulty': difficulty,
@@ -105,20 +114,13 @@ export default function BulkUpload() {
               } = row;
 
               const cleanStem = Stem?.trim();
-              if (!cleanStem || !optA || !correct || !catName || !topicName) {
-                throw new Error(`Row ${index + 2}: Missing required fields (Stem, Options, Correct, Category, Topic).`);
+              // Note: Category column is ignored.
+              if (!cleanStem || !optA || !correct || !topicName) {
+                throw new Error(`Row ${index + 2}: Missing required fields (Stem, Options, Correct, Topic).`);
               }
 
               if (existingStems.has(cleanStem.toLowerCase())) {
                 throw new Error(`Row ${index + 2}: Duplicate question stem.`);
-              }
-
-              let categoryId = categoryMap[catName.toLowerCase()];
-              if (!categoryId) {
-                const newCatRef = doc(collection(db, 'categories'));
-                await setDoc(newCatRef, { title: catName, description: 'Auto-created' });
-                categoryId = newCatRef.id;
-                categoryMap[catName.toLowerCase()] = categoryId;
               }
 
               let topicId = topicMap[topicName.toLowerCase()];
@@ -193,8 +195,8 @@ export default function BulkUpload() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "Stem,Option A,Option B,Option C,Option D,Correct Option,Explanation,Category,Topic,Skills,Difficulty,Type\n" +
-      "\"Who is the father of Filipino language?\",\"Manuel L. Quezon\",\"Jose Rizal\",\"Andres Bonifacio\",\"Emilio Aguinaldo\",\"A\",\"Manuel L. Quezon is the Ama ng Wikang Pambansa.\",\"General Education\",\"History\",\"General Knowledge,Language\",\"Easy\",\"practice\"";
+    const csvContent = "Stem,Option A,Option B,Option C,Option D,Correct Option,Explanation,Topic,Skills,Difficulty,Type\n" +
+      "\"Who is the father of Filipino language?\",\"Manuel L. Quezon\",\"Jose Rizal\",\"Andres Bonifacio\",\"Emilio Aguinaldo\",\"A\",\"Manuel L. Quezon is the Ama ng Wikang Pambansa.\",\"History\",\"General Knowledge,Language\",\"Easy\",\"practice\"";
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -214,61 +216,78 @@ export default function BulkUpload() {
           <h1 className="text-2xl font-black font-headline tracking-tight">Bulk Content Import</h1>
         </div>
         
-        <p className="text-on-surface-variant/60 font-medium mb-10">Upload your curriculum data using our standard CSV format. This will instantly populate the global question bank.</p>
+        <p className="text-on-surface-variant/60 font-medium mb-10">Select a Curriculum Subject first, then upload your questions.</p>
 
         {!results ? (
           <div className="space-y-6">
             <div className="bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant shadow-sm">
-              <div className="flex justify-between items-center mb-6 border-b border-outline-variant/10 pb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                    <FileText size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-headline font-bold text-lg text-on-surface">Question Bank CSV</h3>
-                    <p className="text-xs text-on-surface-variant/40 font-medium italic">Supports board exam question structures</p>
-                  </div>
-                </div>
-                <button 
-                  onClick={downloadTemplate}
-                  className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-primary/5 px-3 py-2 rounded-lg transition-all"
-                >
-                  <Download size={16} /> Template
-                </button>
+              <div className="mb-6 flex flex-col gap-2">
+                 <label className="text-sm font-bold text-on-surface uppercase tracking-wider">Select Curriculum Subject</label>
+                 <select 
+                    value={selectedCategoryId}
+                    onChange={e => setSelectedCategoryId(e.target.value)}
+                    className="p-3 bg-surface-container/30 border border-outline-variant/30 rounded-xl focus:border-primary/50 outline-none w-full appearance-none transition-all"
+                 >
+                    <option value="" disabled>-- Select Curriculum --</option>
+                    {categories.map(c => (
+                       <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                 </select>
               </div>
 
-              <div 
-                onDragEnter={handleDrag}
-                onDragLeave={handleDrag}
-                onDragOver={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer group ${
-                  dragActive ? 'border-primary bg-primary/5' : 'border-outline-variant bg-surface-container/20 hover:bg-surface-container/40 hover:border-primary/50'
-                }`}
-              >
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  accept=".csv" 
-                  className="hidden" 
-                />
-                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${dragActive ? 'bg-primary text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant/40 shadow-sm border border-outline-variant/50'}`}>
-                  {uploading ? <Loader2 size={32} className="animate-spin" /> : <CloudUpload size={32} />}
-                </div>
-                
-                {file ? (
-                  <div className="text-center">
-                    <p className="font-bold text-on-surface text-lg mb-1">{file.name}</p>
-                    <p className="text-xs text-on-surface-variant/40">{(file.size / 1024).toFixed(1)} KB • Click to change</p>
+              <div className={`transition-all duration-300 ${!selectedCategoryId ? 'opacity-40 pointer-events-none' : ''}`}>
+                <div className="flex justify-between items-center mb-6 border-b border-outline-variant/10 pb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                      <FileText size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-headline font-bold text-lg text-on-surface">Question Bank CSV</h3>
+                      <p className="text-xs text-on-surface-variant/40 font-medium italic">Category column is no longer needed.</p>
+                    </div>
                   </div>
-                ) : (
-                  <>
-                    <h4 className="font-bold font-headline text-lg mb-1 text-on-surface">Drag and drop file here</h4>
-                    <p className="text-sm text-on-surface-variant/40 font-medium">or <span className="text-primary font-bold">browse files</span></p>
-                  </>
-                )}
+                  <button 
+                    onClick={downloadTemplate}
+                    disabled={!selectedCategoryId}
+                    className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-primary/5 px-3 py-2 rounded-lg transition-all"
+                  >
+                    <Download size={16} /> Template
+                  </button>
+                </div>
+
+                <div 
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => selectedCategoryId && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer group ${
+                    dragActive ? 'border-primary bg-primary/5' : 'border-outline-variant bg-surface-container/20 hover:bg-surface-container/40 hover:border-primary/50'
+                  }`}
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept=".csv" 
+                    className="hidden" 
+                  />
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${dragActive ? 'bg-primary text-on-primary' : 'bg-surface-container-lowest text-on-surface-variant/40 shadow-sm border border-outline-variant/50'}`}>
+                    {uploading ? <Loader2 size={32} className="animate-spin" /> : <CloudUpload size={32} />}
+                  </div>
+                  
+                  {file ? (
+                    <div className="text-center">
+                      <p className="font-bold text-on-surface text-lg mb-1">{file.name}</p>
+                      <p className="text-xs text-on-surface-variant/40">{(file.size / 1024).toFixed(1)} KB • Click to change</p>
+                    </div>
+                  ) : (
+                    <>
+                      <h4 className="font-bold font-headline text-lg mb-1 text-on-surface">Drag and drop file here</h4>
+                      <p className="text-sm text-on-surface-variant/40 font-medium">or <span className="text-primary font-bold">browse files</span></p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -279,7 +298,7 @@ export default function BulkUpload() {
               <div className="space-y-1">
                 <h4 className="font-bold text-primary text-sm">Validation Guard</h4>
                 <p className="text-xs text-on-surface-variant/70 leading-relaxed font-medium">
-                  Categories will be auto-created if they don't exist. Each row must have a unique stem to avoid duplicates. Correct options must be 'A', 'B', 'C', or 'D'.
+                  The chosen curriculum will be applied to all imported questions. Topics will be auto-created for this curriculum if they don't exist. Each row must have a unique stem.
                 </p>
               </div>
             </div>
@@ -294,7 +313,7 @@ export default function BulkUpload() {
               </button>
               <button 
                 onClick={processUpload}
-                disabled={uploading || !file}
+                disabled={uploading || !file || !selectedCategoryId}
                 className="px-8 py-3 rounded-xl text-on-primary bg-primary shadow-lg shadow-primary/20 font-bold text-sm disabled:opacity-50 flex items-center gap-2"
               >
                 {uploading ? <Loader2 size={18} className="animate-spin" /> : 'Start Import Process'}
