@@ -271,12 +271,6 @@ export default function QuestionBank() {
           </div>
           <div className="flex gap-2">
             <button 
-              onClick={() => setIsSeedingModalOpen(true)}
-              className="px-6 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20"
-            >
-              Seed 5k to Cloud
-            </button>
-            <button 
               onClick={() => navigate(getEditPath())}
               className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20"
             >
@@ -393,33 +387,6 @@ export default function QuestionBank() {
         icon="delete_forever"
       />
       
-      <ConfirmModal
-        isOpen={isSeedingModalOpen}
-        onClose={() => setIsSeedingModalOpen(false)}
-        onConfirm={async () => {
-          setIsSeeding(true);
-          try {
-            const { seedCloudDatabase } = await import('../lib/offline/seeder');
-            await seedCloudDatabase();
-            setToastMsg('Successfully seeded cloud database!');
-            setShowToast(true);
-          } catch(e) {
-            console.error(e);
-            setToastMsg('Failed to seed database.');
-            setShowToast(true);
-          } finally {
-            setIsSeeding(false);
-            setIsSeedingModalOpen(false);
-          }
-        }}
-        title="Seed Database"
-        message="Generate and seed thousands of questions and modules into the database? This may take a minute and consume Firebase quota."
-        isProcessing={isSeeding}
-        confirmText="Start Seeding"
-        confirmColor="bg-amber-500 text-white shadow-amber-500/20"
-        icon="database"
-      />
-
       <Toast 
         isVisible={showToast}
         message={toastMsg}

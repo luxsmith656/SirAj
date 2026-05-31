@@ -437,6 +437,8 @@ export default function InstructorModules() {
   const [pendingPartDeleteIndex, setPendingPartDeleteIndex] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [selectedTrackId, setSelectedTrackId] = useState<string>('');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
 
   const handlePublish = async (scope: 'public' | 'classes', classIds: string[]) => {
     try {
@@ -585,85 +587,97 @@ export default function InstructorModules() {
     return () => unsubscribe();
   }, [selectedModuleId]);
 
+  const persistDraft = async (currentDraft: BuilderModule) => {
+    setAutoSaveStatus('saving');
+    try {
+      const payload = {
+        title: currentDraft.title.trim(),
+        description: currentDraft.description.trim(),
+        subjectId: currentDraft.subjectId,
+        categoryId: currentDraft.subjectId,
+        topicId: currentDraft.topicId,
+        level: currentDraft.level,
+        duration: currentDraft.duration,
+        isPublished: currentDraft.isPublished,
+        publishScope: currentDraft.publishScope,
+        classIds: currentDraft.publishScope === 'classes' ? currentDraft.classIds : [],
+        dueAt: currentDraft.dueAt || '',
+        antiCheatEnabled: currentDraft.antiCheatEnabled,
+        recordFirstAttemptOnly: currentDraft.recordFirstAttemptOnly,
+        isTemplate: !!currentDraft.isTemplate,
+        templateSourceId: currentDraft.templateSourceId || '',
+        prerequisiteModuleIds: currentDraft.prerequisiteModuleIds,
+        competencies: currentDraft.competencies,
+        rubric: currentDraft.rubric,
+        unlockRules: currentDraft.unlockRules,
+        examBlueprint: {
+          ...currentDraft.examBlueprint,
+          questionCount: currentDraft.finalExam.length || currentDraft.examBlueprint.questionCount,
+        },
+        certificateEnabled: currentDraft.certificateEnabled,
+        certificateTemplateId: currentDraft.certificateTemplateId || '',
+        certificateRequirementNote: currentDraft.certificateRequirementNote || '',
+        sourceDocument: currentDraft.sourceDocument || null,
+        sourceDocumentId: currentDraft.sourceDocumentId || currentDraft.sourceDocument?.sourceDocumentId || '',
+        sourceDocumentName: currentDraft.sourceDocumentName || currentDraft.sourceDocument?.fileName || '',
+        sourceConfidence: currentDraft.sourceConfidence || currentDraft.sourceDocument?.confidence || '',
+        sourceReviewRequired: !!(currentDraft.sourceReviewRequired || currentDraft.sourceDocument?.reviewRequired),
+        attemptPolicy: currentDraft.attemptPolicy,
+        flowItems: currentDraft.flowItems,
+        updatedBy: user?.uid || '',
+        updatedByEmail: user?.email || '',
+        editHighlights: currentDraft.editHighlights || {},
+        parts: currentDraft.parts,
+        finalExam: currentDraft.finalExam,
+        lessonBlocks: currentDraft.parts.flatMap((part) => part.lessonBlocks),
+        resources: currentDraft.flowItems.map((item) => ({ id: item.id, type: item.type === 'lesson' ? 'textbook' : item.type, title: item.title, meta: item.type === 'exam' ? `${currentDraft.finalExam.length} items` : 'Studio sequence' })),
+        updatedAt: serverTimestamp(),
+      };
+
+      const moduleRef = doc(db, 'modules', selectedModuleId);
+      
+      // Versioning
+      const previous = await getDoc(moduleRef);
+      if (previous.exists() && versions.length === 0) {
+        await addDoc(collection(db, 'contentVersions'), {
+          contentType: 'module',
+          contentId: selectedModuleId,
+          title: previous.data().title || currentDraft.title,
+          snapshot: previous.data(),
+          changedBy: user?.uid || '',
+          changedByEmail: user?.email || '',
+          changedByName: user?.fullName || user?.email || 'Instructor',
+          versionedAt: serverTimestamp(),
+        });
+      }
+
+      await updateDoc(moduleRef, payload);
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus('saved'), 3000); // Reset after 3 seconds or keep it
+    } catch (err) {
+      console.error('Error saving:', err);
+      setAutoSaveStatus('error');
+    }
+  };
+
   // 3. Debounced Auto-save
   useEffect(() => {
     if (!selectedModuleId || journeyModules.some((m) => m.id === selectedModuleId)) return;
-    if (!isLocalChangeRef.current) return;
     
-    isLocalChangeRef.current = false;
-    setAutoSaveStatus('saving');
-
+    // Auto-save timer
     const timer = setTimeout(async () => {
-      try {
-        const payload = {
-          title: draft.title.trim(),
-          description: draft.description.trim(),
-          subjectId: draft.subjectId,
-          categoryId: draft.subjectId,
-          topicId: draft.topicId,
-          level: draft.level,
-          duration: draft.duration,
-          isPublished: draft.isPublished,
-          publishScope: draft.publishScope,
-          classIds: draft.publishScope === 'classes' ? draft.classIds : [],
-          dueAt: draft.dueAt || '',
-          antiCheatEnabled: draft.antiCheatEnabled,
-          recordFirstAttemptOnly: draft.recordFirstAttemptOnly,
-          isTemplate: !!draft.isTemplate,
-          templateSourceId: draft.templateSourceId || '',
-          prerequisiteModuleIds: draft.prerequisiteModuleIds,
-          competencies: draft.competencies,
-          rubric: draft.rubric,
-          unlockRules: draft.unlockRules,
-          examBlueprint: {
-            ...draft.examBlueprint,
-            questionCount: draft.finalExam.length || draft.examBlueprint.questionCount,
-          },
-          certificateEnabled: draft.certificateEnabled,
-          certificateTemplateId: draft.certificateTemplateId || '',
-          certificateRequirementNote: draft.certificateRequirementNote || '',
-          sourceDocument: draft.sourceDocument || null,
-          sourceDocumentId: draft.sourceDocumentId || draft.sourceDocument?.sourceDocumentId || '',
-          sourceDocumentName: draft.sourceDocumentName || draft.sourceDocument?.fileName || '',
-          sourceConfidence: draft.sourceConfidence || draft.sourceDocument?.confidence || '',
-          sourceReviewRequired: !!(draft.sourceReviewRequired || draft.sourceDocument?.reviewRequired),
-          attemptPolicy: draft.attemptPolicy,
-          flowItems: draft.flowItems,
-          updatedBy: user?.uid || '',
-          updatedByEmail: user?.email || '',
-          editHighlights: draft.editHighlights || {},
-          parts: draft.parts,
-          finalExam: draft.finalExam,
-          lessonBlocks: draft.parts.flatMap((part) => part.lessonBlocks),
-          resources: draft.flowItems.map((item) => ({ id: item.id, type: item.type === 'lesson' ? 'textbook' : item.type, title: item.title, meta: item.type === 'exam' ? `${draft.finalExam.length} items` : 'Studio sequence' })),
-          updatedAt: serverTimestamp(),
-        };
-
-        const moduleRef = doc(db, 'modules', selectedModuleId);
-        
-        const previous = await getDoc(moduleRef);
-        if (previous.exists() && versions.length === 0) {
-          await addDoc(collection(db, 'contentVersions'), {
-            contentType: 'module',
-            contentId: selectedModuleId,
-            title: previous.data().title || draft.title,
-            snapshot: previous.data(),
-            changedBy: user?.uid || '',
-            changedByEmail: user?.email || '',
-            changedByName: user?.fullName || user?.email || 'Instructor',
-            versionedAt: serverTimestamp(),
-          });
-        }
-
-        await updateDoc(moduleRef, payload);
-        setAutoSaveStatus('saved');
-      } catch (err) {
-        console.error('Error auto-saving:', err);
-        setAutoSaveStatus('error');
-      }
+      if (!isLocalChangeRef.current) return;
+      isLocalChangeRef.current = false;
+      await persistDraft(draft);
     }, 10000);
 
-    return () => clearTimeout(timer);
+    // Save on unmount or moduleId change
+    return () => {
+      clearTimeout(timer);
+      if (isLocalChangeRef.current) {
+        persistDraft(draft);
+      }
+    };
   }, [draft, selectedModuleId, user]);
 
   const restoreVersion = async (version: any) => {
@@ -738,6 +752,10 @@ export default function InstructorModules() {
   const filteredModules = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return modules.filter((module) => {
+      // New: Filter by track and subject
+      if (selectedTrackId && module.subjectId !== selectedTrackId) return false;
+      if (selectedSubjectId && module.topicId !== selectedSubjectId) return false;
+
       if (moduleFilter === 'published' && !module.isPublished) return false;
       if (moduleFilter === 'published_public' && (!module.isPublished || module.publishScope !== 'public')) return false;
       if (moduleFilter === 'published_class' && (!module.isPublished || module.publishScope !== 'classes')) return false;
@@ -752,7 +770,7 @@ export default function InstructorModules() {
         topic?.title.toLowerCase().includes(term)
       );
     });
-  }, [modules, searchTerm, moduleFilter]);
+  }, [modules, searchTerm, moduleFilter, selectedTrackId, selectedSubjectId]);
 
 
   const updatePart = (patch: Partial<JourneyModulePart>, highlightField?: string) => {
@@ -1395,6 +1413,27 @@ export default function InstructorModules() {
                       <Plus size={18} />
                     </button>
                   </div>
+                </div>
+
+                <div className="flex flex-col gap-2 mb-4">
+                  <select 
+                    value={selectedTrackId} 
+                    onChange={e => { setSelectedTrackId(e.target.value); setSelectedSubjectId(''); }} 
+                    className="bg-surface-container border border-outline-variant/30 rounded-xl py-2 px-3 text-xs font-bold outline-none text-on-surface"
+                  >
+                    <option value="">All Tracks</option>
+                    {journeySubjects.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
+                  </select>
+                  {selectedTrackId && (
+                    <select 
+                      value={selectedSubjectId} 
+                      onChange={e => setSelectedSubjectId(e.target.value)} 
+                      className="bg-surface-container border border-outline-variant/30 rounded-xl py-2 px-3 text-xs font-bold outline-none text-on-surface"
+                    >
+                      <option value="">All Subjects in Track</option>
+                      {journeySubjects.find(s => s.id === selectedTrackId)?.topics.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                    </select>
+                  )}
                 </div>
 
                 <div className="relative mb-4">
@@ -2577,7 +2616,7 @@ function ModuleStudentPreview({
   const [dragFlowIndex, setDragFlowIndex] = useState<number | null>(null);
   const [activeFlowItemId, setActiveFlowItemId] = useState(draft.flowItems[0]?.id || '');
   const [device, setDevice] = useState<SimulatorDevice>('laptop');
-  const [showSimulator, setShowSimulator] = useState(true);
+  const [showSimulator, setShowSimulator] = useState(false);
   const [isFocusOpen, setIsFocusOpen] = useState(false);
   const appliedTourSteps = useRef(new Set<number>());
 
