@@ -652,8 +652,9 @@ export default function InstructorModules() {
       }
 
       await updateDoc(moduleRef, payload);
+      setDraft(prev => ({ ...prev, ...payload } as BuilderModule));
       setAutoSaveStatus('saved');
-      setTimeout(() => setAutoSaveStatus('saved'), 3000); // Reset after 3 seconds or keep it
+      setTimeout(() => setAutoSaveStatus('saved'), 3000); 
     } catch (err) {
       console.error('Error saving:', err);
       setAutoSaveStatus('error');

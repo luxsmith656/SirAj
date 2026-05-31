@@ -237,14 +237,6 @@ export default function StudentLayout({ children, title }: { children: ReactNode
             >
               {isToolbarExpanded ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
-            <button 
-                onClick={() => navigate('/profile')} 
-                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors flex items-center justify-center w-8 h-8 md:w-9 md:h-9 shrink-0"
-                title="Profile & Settings"
-            >
-                <Settings size={16} />
-            </button>
-
             {/* Notification Bell (Always Visible) */}
             <button 
               onClick={() => navigate('/notifications')} 
@@ -256,6 +248,14 @@ export default function StudentLayout({ children, title }: { children: ReactNode
                  </span>
                )}
                <Bell size={18} />
+            </button>
+
+            <button 
+                onClick={() => navigate('/profile')} 
+                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors flex items-center justify-center w-8 h-8 md:w-9 md:h-9 shrink-0"
+                title="Profile & Settings"
+            >
+                <Settings size={16} />
             </button>
 
             {/* Mobile-only Logout button (Always Visible) */}
