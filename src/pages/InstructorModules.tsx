@@ -39,9 +39,12 @@ import {
   Cloud,
   CloudOff,
   Users,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, setDoc, where } from 'firebase/firestore';
 import DashboardLayout from '../components/DashboardLayout';
+import PublishModal from '../components/PublishModal';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -433,6 +436,26 @@ export default function InstructorModules() {
   const [deleteTarget, setDeleteTarget] = useState<'module' | 'part' | null>(null);
   const [pendingPartDeleteIndex, setPendingPartDeleteIndex] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+
+  const handlePublish = async (scope: 'public' | 'classes', classIds: string[]) => {
+    try {
+      await updateDoc(doc(db, 'modules', selectedModuleId), {
+        isPublished: true,
+        publishScope: scope,
+        classIds: scope === 'classes' ? classIds : [],
+        updatedAt: serverTimestamp(),
+      });
+      setIsPublishModalOpen(false);
+      setToastMsg('Module published successfully!');
+      setShowToast(true);
+      setDraft(prev => ({ ...prev, isPublished: true, publishScope: scope, classIds: classIds }));
+    } catch (err) {
+      console.error('Error publishing:', err);
+      setToastMsg('Error publishing module.');
+      setShowToast(true);
+    }
+  };
 
   // Collaborative & Google Docs States
   const [studioLayoutMode, setStudioLayoutMode] = useState<'docs' | 'multistep'>('docs');
@@ -440,9 +463,53 @@ export default function InstructorModules() {
   const [activeEditors, setActiveEditors] = useState<any[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [versions, setVersions] = useState<any[]>([]);
+  const [past, setPast] = useState<BuilderModule[]>([]);
+  const [future, setFuture] = useState<BuilderModule[]>([]);
   const isLocalChangeRef = useRef(false);
 
-  // 1. Presence tracking
+  // Undo/Redo Logic
+  const undo = () => {
+    if (past.length === 0) return;
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, past.length - 1);
+    setFuture([draft, ...future]);
+    setDraft(previous);
+    setPast(newPast);
+    isLocalChangeRef.current = true;
+  };
+
+  const redo = () => {
+    if (future.length === 0) return;
+    const next = future[0];
+    const newFuture = future.slice(1);
+    setPast([...past, draft]);
+    setDraft(next);
+    setFuture(newFuture);
+    isLocalChangeRef.current = true;
+  };
+
+  // Modify updateDraft to manage undo/redo history
+  const updateDraft = (field: keyof BuilderModule, value: any, keyPath?: string) => {
+    isLocalChangeRef.current = true;
+    setPast((prev) => [...prev, draft]);
+    setFuture([]); // Clear future on new change
+    setDraft((current) => {
+      const nextHighlights = { ...(current.editHighlights || {}) };
+      if (keyPath && user) {
+        nextHighlights[keyPath] = {
+          updatedBy: user.uid,
+          name: user.fullName || user.email || 'Instructor',
+          email: user.email || '',
+          updatedAt: Date.now(),
+        };
+      }
+      if (field === 'subjectId') {
+        const nextSubject = journeySubjects.find((subject) => subject.id === value) || journeySubjects[0];
+        return { ...current, subjectId: nextSubject.id, topicId: nextSubject.topics[0].id, editHighlights: nextHighlights };
+      }
+      return { ...current, [field]: value, editHighlights: nextHighlights };
+    });
+  };
   useEffect(() => {
     if (!user || !selectedModuleId) return;
 
@@ -594,7 +661,7 @@ export default function InstructorModules() {
         console.error('Error auto-saving:', err);
         setAutoSaveStatus('error');
       }
-    }, 1500);
+    }, 10000);
 
     return () => clearTimeout(timer);
   }, [draft, selectedModuleId, user]);
@@ -687,25 +754,6 @@ export default function InstructorModules() {
     });
   }, [modules, searchTerm, moduleFilter]);
 
-  const updateDraft = (field: keyof BuilderModule, value: any, keyPath?: string) => {
-    isLocalChangeRef.current = true;
-    setDraft((current) => {
-      const nextHighlights = { ...(current.editHighlights || {}) };
-      if (keyPath && user) {
-        nextHighlights[keyPath] = {
-          updatedBy: user.uid,
-          name: user.fullName || user.email || 'Instructor',
-          email: user.email || '',
-          updatedAt: Date.now(),
-        };
-      }
-      if (field === 'subjectId') {
-        const nextSubject = journeySubjects.find((subject) => subject.id === value) || journeySubjects[0];
-        return { ...current, subjectId: nextSubject.id, topicId: nextSubject.topics[0].id, editHighlights: nextHighlights };
-      }
-      return { ...current, [field]: value, editHighlights: nextHighlights };
-    });
-  };
 
   const updatePart = (patch: Partial<JourneyModulePart>, highlightField?: string) => {
     isLocalChangeRef.current = true;
@@ -1282,6 +1330,12 @@ export default function InstructorModules() {
 
   return (
     <DashboardLayout title="Instructor Studio">
+      <PublishModal 
+        isOpen={isPublishModalOpen} 
+        onClose={() => setIsPublishModalOpen(false)} 
+        onPublish={handlePublish}
+        module={draft}
+      />
       <div className="p-4 md:p-8 max-w-[1600px] mx-auto w-full text-on-surface space-y-6">
         <section data-tour="studio-overview" className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 md:p-6 shadow-sm">
           <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5">
@@ -1531,6 +1585,32 @@ export default function InstructorModules() {
                       {versions.length}
                     </span>
                   )}
+                </button>
+
+                {/* UNDO/REDO */}
+                <div className="flex gap-1">
+                  <button onClick={undo} disabled={past.length === 0} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-lowest text-on-surface-variant disabled:opacity-30" title="Undo">
+                    <Undo2 size={16} />
+                  </button>
+                  <button onClick={redo} disabled={future.length === 0} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-lowest text-on-surface-variant disabled:opacity-30" title="Redo">
+                    <Redo2 size={16} />
+                  </button>
+                </div>
+
+                {/* SAVE STATUS */}
+                <div className="flex items-center gap-1 text-[11px] font-bold text-on-surface-variant">
+                  {autoSaveStatus === 'saved' && <><Check size={12} className="text-emerald-500" /> Saved</>}
+                  {autoSaveStatus === 'saving' && <><Clock size={12} className="animate-spin text-amber-500" /> Saving...</>}
+                  {autoSaveStatus === 'error' && <><X size={12} className="text-error" /> Error</>}
+                </div>
+
+                {/* PUBLISH */}
+                <button
+                  onClick={() => setIsPublishModalOpen(true)}
+                  className="bg-primary text-on-primary font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 hover:shadow-lg transition-all"
+                >
+                  <Sparkles size={14} />
+                  Publish
                 </button>
 
                 {/* ORIGINAL TOOLBAR ATTEMPTS AND ACTIONS */}

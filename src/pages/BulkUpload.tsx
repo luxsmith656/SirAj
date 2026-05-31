@@ -3,7 +3,7 @@ import InstructorLayout from '../components/InstructorLayout';
 import AdminLayout from '../components/AdminLayout';
 import { useAuth } from '../context/AuthContext';
 import Papa from 'papaparse';
-import { collection, doc, setDoc, getDocs, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, doc, setDoc, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { motion } from 'motion/react';
 import { 
@@ -16,6 +16,7 @@ import {
   FileText,
   AlertCircle
 } from 'lucide-react';
+import { journeySubjects } from '../lib/learningJourney';
 
 export default function BulkUpload() {
   const { user } = useAuth();
@@ -26,16 +27,14 @@ export default function BulkUpload() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedTrackId, setSelectedTrackId] = useState<string>('');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
 
   const Layout = user?.role === 'admin' ? AdminLayout : InstructorLayout;
   const layoutTitle = "Bulk Content Import";
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'categories'), (snapshot) => {
-      setCategories(snapshot.docs.map(d => ({ id: d.id, name: d.data().title || d.data().name })));
-    });
-    return () => unsub();
+    setCategories(journeySubjects.map(s => ({ id: s.id, name: s.title })));
   }, []);
 
   const handleDrag = (e: React.DragEvent) => {
@@ -48,12 +47,18 @@ export default function BulkUpload() {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (!selectedCategoryId) {
-       alert("Please select a Curriculum first.");
+    if (!selectedSubjectId) {
+       alert("Please select a Track and Subject first.");
        return;
     }
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -61,14 +66,8 @@ export default function BulkUpload() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
-
   const processUpload = async () => {
-    if (!file || !selectedCategoryId) return;
+    if (!file || !selectedSubjectId) return;
     setUploading(true);
     setResults(null);
 
@@ -94,32 +93,66 @@ export default function BulkUpload() {
           const skillMap: Record<string, string> = {};
           skillSnap.forEach(s => skillMap[s.data().title.toLowerCase()] = s.id);
 
-          const existingStems = new Set(existingQs.docs.map(d => d.data().stem.toLowerCase().trim()));
-          const categoryId = selectedCategoryId;
+          const existingStems = new Set(existingQs.docs.map(d => String(d.data().stem || '').toLowerCase().trim()).filter(Boolean));
+          const importedStems = new Set<string>();
+          const categoryId = selectedSubjectId; 
+          const getCell = (rowValue: Record<string, any>, ...names: string[]) => {
+            for (const name of names) {
+              const value = rowValue[name];
+              if (value != null && String(value).trim()) return String(value).trim();
+            }
+            return '';
+          };
+          const normalizeDifficulty = (value: string) => {
+            const normalized = value.trim().toLowerCase();
+            if (!normalized || normalized === 'average' || normalized === 'normal') return 'medium';
+            if (['easy', 'medium', 'hard'].includes(normalized)) return normalized;
+            return '';
+          };
 
           for (const [index, row] of (data as any[]).entries()) {
             try {
-              const { 
-                Stem, 
-                'Option A': optA, 
-                'Option B': optB, 
-                'Option C': optC, 
-                'Option D': optD, 
-                'Correct Option': correct, 
-                'Explanation': explanation,
-                'Topic': topicName,
-                'Skills': skillsStr,
-                'Difficulty': difficulty,
-                'Type': type 
-              } = row;
-
-              const cleanStem = Stem?.trim();
-              // Note: Category column is ignored.
-              if (!cleanStem || !optA || !correct || !topicName) {
-                throw new Error(`Row ${index + 2}: Missing required fields (Stem, Options, Correct, Topic).`);
+              const cleanStem = getCell(row, 'Stem', 'Question Stem', 'Question');
+              const optA = getCell(row, 'Option A', 'A');
+              const optB = getCell(row, 'Option B', 'B');
+              const optC = getCell(row, 'Option C', 'C');
+              const optD = getCell(row, 'Option D', 'D');
+              const correct = getCell(row, 'Correct Option', 'Correct Answer', 'Answer').toUpperCase();
+              const explanation = getCell(row, 'Explanation', 'Rationalization', 'Rationale');
+              const topicName = getCell(row, 'Topic');
+              const skillsStr = getCell(row, 'Skills', 'Skill Tags');
+              const difficulty = normalizeDifficulty(getCell(row, 'Difficulty'));
+              const type = getCell(row, 'Type', 'Exam Type') || 'practice';
+              const competencyId = getCell(row, 'Competency', 'Competency ID');
+              const specialization = getCell(row, 'Specialization', 'Major');
+              const questionFamilyId = getCell(row, 'Question Family', 'Family ID');
+              const sourceNote = getCell(row, 'Source Note', 'Source');
+              const wrongChoiceExplanations = {
+                A: getCell(row, 'Wrong A', 'Option A Explanation'),
+                B: getCell(row, 'Wrong B', 'Option B Explanation'),
+                C: getCell(row, 'Wrong C', 'Option C Explanation'),
+                D: getCell(row, 'Wrong D', 'Option D Explanation'),
+              };
+              
+              if (!cleanStem || !optA || !optB || !optC || !optD || !correct || !topicName || !explanation) {
+                throw new Error(`Row ${index + 2}: Missing required fields (Stem, all options A-D, Correct Option, Explanation, Topic).`);
               }
 
-              if (existingStems.has(cleanStem.toLowerCase())) {
+              if (!['A', 'B', 'C', 'D'].includes(correct)) {
+                throw new Error(`Row ${index + 2}: Correct Option must be A, B, C, or D.`);
+              }
+
+              if (!difficulty) {
+                throw new Error(`Row ${index + 2}: Difficulty must be Easy, Medium, Hard, or Average.`);
+              }
+
+              const optionValues = [optA, optB, optC, optD].map((option) => option.toLowerCase());
+              if (new Set(optionValues).size !== optionValues.length) {
+                throw new Error(`Row ${index + 2}: Options must not be duplicated.`);
+              }
+
+              const stemKey = cleanStem.toLowerCase();
+              if (existingStems.has(stemKey) || importedStems.has(stemKey)) {
                 throw new Error(`Row ${index + 2}: Duplicate question stem.`);
               }
 
@@ -155,23 +188,33 @@ export default function BulkUpload() {
                   { id: 'C', text: optC },
                   { id: 'D', text: optD }
                 ],
-                correctOptionId: correct.toUpperCase().trim(),
-                explanation: explanation || '',
+                correctOptionId: correct,
+                explanation,
+                rationalization: explanation,
+                wrongChoiceExplanations,
                 categoryId,
                 topicId,
                 skillIds,
-                difficulty: difficulty || 'Average',
-                type: type || 'practice',
-                approved: true,
-                isPublished: true,
+                competencyId,
+                specialization,
+                questionFamilyId,
+                familyId: questionFamilyId,
+                sourceNote,
+                difficulty,
+                type,
+                status: 'draft',
+                approvalStatus: 'for_review',
+                approved: false,
+                isPublished: false,
                 aiGenerated: false,
                 createdBy: user?.uid,
+                author: user?.fullName || user?.email || 'Instructor',
                 version: 1,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
               });
               
-              existingStems.add(cleanStem.toLowerCase());
+              importedStems.add(stemKey);
               successCount++;
             } catch (err: any) {
               failCount++;
@@ -195,13 +238,15 @@ export default function BulkUpload() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "Stem,Option A,Option B,Option C,Option D,Correct Option,Explanation,Topic,Skills,Difficulty,Type\n" +
-      "\"Who is the father of Filipino language?\",\"Manuel L. Quezon\",\"Jose Rizal\",\"Andres Bonifacio\",\"Emilio Aguinaldo\",\"A\",\"Manuel L. Quezon is the Ama ng Wikang Pambansa.\",\"History\",\"General Knowledge,Language\",\"Easy\",\"practice\"";
+    const track = journeySubjects.find(s => s.id === selectedTrackId);
+    const subject = track?.topics.find(t => t.id === selectedSubjectId);
+    const csvContent = "Track,Subject,Stem,Option A,Option B,Option C,Option D,Correct Option,Explanation,Wrong A,Wrong B,Wrong C,Wrong D,Topic,Skills,Competency,Specialization,Question Family,Exam Type,Difficulty,Source Note\n" +
+      `"${track?.title || ''}","${subject?.title || ''}","Who is known as the father of the Filipino language?","Manuel L. Quezon","Jose Rizal","Andres Bonifacio","Emilio Aguinaldo","A","Manuel L. Quezon is recognized as Ama ng Wikang Pambansa.","Correct choice, not wrong.","Rizal influenced nationalism but was not given this title.","Bonifacio led the Katipunan, not language policy.","Aguinaldo was the first president, not this title.","History","General Knowledge,Language","GENED-HIS-01","General Education","filipino-language-title","practice","Easy","LET reviewer import sample"`;
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", "let_mastery_questions_template.csv");
+    link.setAttribute("download", `let_mastery_template_${track?.title || 'generic'}_${subject?.title || 'generic'}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -221,21 +266,40 @@ export default function BulkUpload() {
         {!results ? (
           <div className="space-y-6">
             <div className="bg-surface-container-lowest rounded-3xl p-8 border border-outline-variant shadow-sm">
-              <div className="mb-6 flex flex-col gap-2">
-                 <label className="text-sm font-bold text-on-surface uppercase tracking-wider">Select Curriculum Subject</label>
-                 <select 
-                    value={selectedCategoryId}
-                    onChange={e => setSelectedCategoryId(e.target.value)}
-                    className="p-3 bg-surface-container/30 border border-outline-variant/30 rounded-xl focus:border-primary/50 outline-none w-full appearance-none transition-all"
-                 >
-                    <option value="" disabled>-- Select Curriculum --</option>
-                    {categories.map(c => (
-                       <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                 </select>
+              <div className="mb-6 flex flex-col md:flex-row gap-4">
+                 <div className="flex-1">
+                   <label className="text-sm font-bold text-on-surface uppercase tracking-wider mb-2 block">1. Select Track</label>
+                   <select 
+                      value={selectedTrackId}
+                      onChange={e => {
+                        setSelectedTrackId(e.target.value);
+                        setSelectedSubjectId('');
+                      }}
+                      className="p-3 bg-surface-container/30 border border-outline-variant/30 rounded-xl focus:border-primary/50 outline-none w-full transition-all"
+                   >
+                      <option value="" disabled>-- Select Track --</option>
+                      {categories.map(c => (
+                         <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                   </select>
+                 </div>
+                 <div className="flex-1">
+                   <label className="text-sm font-bold text-on-surface uppercase tracking-wider mb-2 block">2. Select Subject</label>
+                   <select 
+                      value={selectedSubjectId}
+                      onChange={e => setSelectedSubjectId(e.target.value)}
+                      disabled={!selectedTrackId}
+                      className="p-3 bg-surface-container/30 border border-outline-variant/30 rounded-xl focus:border-primary/50 outline-none w-full transition-all disabled:opacity-50"
+                   >
+                      <option value="" disabled>-- Select Subject --</option>
+                      {journeySubjects.find(s => s.id === selectedTrackId)?.topics.map(t => (
+                         <option key={t.id} value={t.id}>{t.title}</option>
+                      ))}
+                   </select>
+                 </div>
               </div>
 
-              <div className={`transition-all duration-300 ${!selectedCategoryId ? 'opacity-40 pointer-events-none' : ''}`}>
+              <div className={`transition-all duration-300 ${!selectedSubjectId ? 'opacity-40 pointer-events-none' : ''}`}>
                 <div className="flex justify-between items-center mb-6 border-b border-outline-variant/10 pb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
@@ -243,12 +307,12 @@ export default function BulkUpload() {
                     </div>
                     <div>
                       <h3 className="font-headline font-bold text-lg text-on-surface">Question Bank CSV</h3>
-                      <p className="text-xs text-on-surface-variant/40 font-medium italic">Category column is no longer needed.</p>
+                      <p className="text-xs text-on-surface-variant/40 font-medium italic">Imported questions enter draft review, not live exams.</p>
                     </div>
                   </div>
                   <button 
                     onClick={downloadTemplate}
-                    disabled={!selectedCategoryId}
+                    disabled={!selectedSubjectId}
                     className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-primary/5 px-3 py-2 rounded-lg transition-all"
                   >
                     <Download size={16} /> Template
@@ -260,7 +324,7 @@ export default function BulkUpload() {
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
-                  onClick={() => selectedCategoryId && fileInputRef.current?.click()}
+                  onClick={() => selectedSubjectId && fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center transition-all cursor-pointer group ${
                     dragActive ? 'border-primary bg-primary/5' : 'border-outline-variant bg-surface-container/20 hover:bg-surface-container/40 hover:border-primary/50'
                   }`}
@@ -279,7 +343,7 @@ export default function BulkUpload() {
                   {file ? (
                     <div className="text-center">
                       <p className="font-bold text-on-surface text-lg mb-1">{file.name}</p>
-                      <p className="text-xs text-on-surface-variant/40">{(file.size / 1024).toFixed(1)} KB • Click to change</p>
+                      <p className="text-xs text-on-surface-variant/40">{(file.size / 1024).toFixed(1)} KB - Click to change</p>
                     </div>
                   ) : (
                     <>
@@ -298,7 +362,7 @@ export default function BulkUpload() {
               <div className="space-y-1">
                 <h4 className="font-bold text-primary text-sm">Validation Guard</h4>
                 <p className="text-xs text-on-surface-variant/70 leading-relaxed font-medium">
-                  The chosen curriculum will be applied to all imported questions. Topics will be auto-created for this curriculum if they don't exist. Each row must have a unique stem.
+                  The chosen curriculum will be applied to all imported questions. Rows are validated for complete options, valid answers, rationalizations, difficulty, and duplicate stems. Successful imports stay as draft/for-review questions until approved.
                 </p>
               </div>
             </div>
@@ -313,7 +377,7 @@ export default function BulkUpload() {
               </button>
               <button 
                 onClick={processUpload}
-                disabled={uploading || !file || !selectedCategoryId}
+                disabled={uploading || !file || !selectedSubjectId}
                 className="px-8 py-3 rounded-xl text-on-primary bg-primary shadow-lg shadow-primary/20 font-bold text-sm disabled:opacity-50 flex items-center gap-2"
               >
                 {uploading ? <Loader2 size={18} className="animate-spin" /> : 'Start Import Process'}
@@ -331,7 +395,7 @@ export default function BulkUpload() {
             </div>
             
             <h2 className="text-3xl font-black font-headline text-on-surface mb-2">Import Finished</h2>
-            <p className="text-on-surface-variant/60 font-medium mb-10">We processed your file and updated the curriculum data banks.</p>
+            <p className="text-on-surface-variant/60 font-medium mb-10">We processed your file and saved valid rows as draft questions for review.</p>
             
             <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto mb-10">
                <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
