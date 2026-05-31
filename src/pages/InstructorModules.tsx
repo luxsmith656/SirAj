@@ -662,14 +662,14 @@ export default function InstructorModules() {
 
   // 3. Debounced Auto-save
   useEffect(() => {
-    if (!selectedModuleId || journeyModules.some((m) => m.id === selectedModuleId)) return;
+    if (!selectedModuleId) return;
     
     // Auto-save timer
     const timer = setTimeout(async () => {
       if (!isLocalChangeRef.current) return;
       isLocalChangeRef.current = false;
       await persistDraft(draft);
-    }, 10000);
+    }, 500);
 
     // Save on unmount or moduleId change
     return () => {

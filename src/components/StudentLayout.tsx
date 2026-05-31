@@ -222,13 +222,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
                 <WifiOff size={16} />
               </button>
 
-              <button 
-                onClick={() => navigate('/profile')} 
-                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors hidden md:flex items-center justify-center w-8 h-8 md:w-9 md:h-9 shrink-0"
-                title="Profile & Settings"
-              >
-                <Settings size={16} />
-              </button>
+
             </div>
 
             {/* Collapse / Uncollapse Button */}
@@ -242,6 +236,13 @@ export default function StudentLayout({ children, title }: { children: ReactNode
               title={isToolbarExpanded ? "Collapse settings toolbar" : "Expand settings toolbar"}
             >
               {isToolbarExpanded ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
+            <button 
+                onClick={() => navigate('/profile')} 
+                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors flex items-center justify-center w-8 h-8 md:w-9 md:h-9 shrink-0"
+                title="Profile & Settings"
+            >
+                <Settings size={16} />
             </button>
 
             {/* Notification Bell (Always Visible) */}
