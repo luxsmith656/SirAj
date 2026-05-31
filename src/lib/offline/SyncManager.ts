@@ -1,6 +1,7 @@
 import { initDB } from './db';
 import { collection, getDocs, setDoc, doc, query, where, Timestamp } from 'firebase/firestore';
 import { db as firestore } from '../firebase';
+import { seedLocalDatabase } from './seeder';
 
 export class SyncManager {
   static async pullCategories() {
@@ -73,16 +74,21 @@ export class SyncManager {
   }
 
   static async pullAllContent(selectedFocus?: string) {
-    await Promise.all([
-      this.pullCategories(),
-      this.pullTopics(),
-      this.pullSkills(),
-      this.pullQuestions(selectedFocus),
-      this.pullModules(selectedFocus)
-    ]);
-    
-    // Also push unsynced attempts
-    await this.pushAttempts();
+    if (navigator.onLine) {
+        await Promise.all([
+          this.pullCategories(),
+          this.pullTopics(),
+          this.pullSkills(),
+          this.pullQuestions(selectedFocus),
+          this.pullModules(selectedFocus)
+        ]);
+        
+        // Also push unsynced attempts
+        await this.pushAttempts();
+    }
+
+    // Seed mock data if we have an empty fresh local DB irrespective of internet
+    await seedLocalDatabase();
 
     const db = await initDB();
     await db.put('contentVersion', { id: 'lastSync', timestamp: Date.now(), focus: selectedFocus || 'all' });

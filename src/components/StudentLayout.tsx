@@ -1,29 +1,76 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useBranding } from '../context/BrandingContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSync } from '../context/SyncContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Library, 
   BookOpen, 
-  CheckSquare, 
+  CalendarDays, 
   BarChart, 
+  AlertTriangle,
   LogOut, 
   Settings, 
   Bell, 
   Search,
-  BookText,
-  Target
+  Target,
+  WifiOff,
+  UserPlus,
+  Wifi,
+  Download
 } from 'lucide-react';
 import HelpSupportButton from './HelpSupportButton';
+import { useNotifications } from '../hooks/useNotifications';
 
 export default function StudentLayout({ children, title }: { children: ReactNode, title?: string }) {
   const { user, signOut } = useAuth();
   const { settings } = useBranding();
   const { theme, toggleTheme } = useTheme();
+  const { unreadCount } = useNotifications();
+  const { isSyncing, lastSync, triggerSync } = useSync();
+  const [lowBandwidth, setLowBandwidth] = useState(() => localStorage.getItem('let-mastery-low-bandwidth') === '1');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('let-mastery-low-bandwidth', lowBandwidth ? '1' : '0');
+    window.dispatchEvent(new Event('let-mastery-low-bandwidth'));
+  }, [lowBandwidth]);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+      }
+    } else {
+      alert("Installation is not supported or the app is already installed.");
+    }
+  };
 
   const handleSignOut = () => {
     signOut();
@@ -32,9 +79,12 @@ export default function StudentLayout({ children, title }: { children: ReactNode
 
   const navItems = [
     { name: 'Dashboard', path: '/student/dashboard', icon: LayoutDashboard },
-    { name: 'My Courses', path: '/student/courses', icon: Library },
-    { name: 'Flashcards', path: '/flashcards', icon: BookOpen },
-    { name: 'Assessments', path: '/exam?type=mock', icon: CheckSquare },
+    { name: 'LET Reviewers', path: '/student/courses', icon: Library },
+    { name: 'Planner', path: '/student/todo', icon: CalendarDays },
+    { name: 'Mistake Bank', path: '/mistake-bank', icon: AlertTriangle },
+    { name: 'Reviewer Notes', path: '/flashcards', icon: BookOpen },
+    { name: 'Practice Mode', path: '/practice', icon: Target },
+    { name: 'Exam Simulator', path: '/exam', target: '/exam?type=mock', icon: Target },
     { name: 'Performance', path: '/quiz-results', icon: BarChart },
   ];
 
@@ -66,7 +116,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
             return (
               <button 
                 key={item.name}
-                onClick={() => navigate(item.path)} 
+                onClick={() => navigate(item.target || item.path)} 
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${isActive ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
               >
                 <item.icon size={18} />
@@ -99,10 +149,10 @@ export default function StudentLayout({ children, title }: { children: ReactNode
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="px-6 py-4 flex items-center justify-between bg-surface-container-lowest md:bg-surface/80 md:backdrop-blur-md border-b border-outline-variant sticky top-0 z-30">
+        <header className="px-3 md:px-6 py-4 flex items-center justify-between bg-surface-container-lowest md:bg-surface/80 md:backdrop-blur-md border-b border-outline-variant sticky top-0 z-30">
           <div className="md:hidden flex items-center gap-2">
              {renderLogo()}
-             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tighter truncate max-w-[200px]">{settings.siteName}</h1>
+             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tighter truncate max-w-[112px] sm:max-w-[200px]">{settings.siteName}</h1>
           </div>
           <div className="hidden md:flex items-center flex-1 ml-4 justify-between">
             <div className="flex items-center gap-2">
@@ -113,18 +163,60 @@ export default function StudentLayout({ children, title }: { children: ReactNode
                <input type="text" placeholder="Search courses, modules, lessons..." className="bg-transparent border-none outline-none text-xs w-full text-on-surface font-medium placeholder:text-on-surface-variant/40" />
             </div>
           </div>
-          <div className="flex items-center gap-2 ml-4">
+          <div className="flex items-center gap-1 sm:gap-2 ml-2 md:ml-4">
+            {/* Sync / Online Status indicator */}
+            <div className="hidden lg:flex items-center gap-2 mr-2 bg-surface-container px-3 py-1.5 rounded-full text-xs font-bold text-on-surface-variant cursor-pointer" onClick={isOnline ? triggerSync : undefined}>
+               {isOnline ? (
+                  isSyncing ? (
+                     <><span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span> Syncing...</>
+                  ) : (
+                     <><Wifi size={14} className="text-primary" /> Synced</>
+                  )
+               ) : (
+                  <><WifiOff size={14} className="text-error" /> Offline</>
+               )}
+            </div>
+
+            {deferredPrompt && (
+              <button 
+                onClick={handleInstallClick}
+                className="hidden md:flex items-center gap-2 bg-tertiary text-on-tertiary px-3 py-1.5 rounded-full text-xs font-bold hover:bg-tertiary/90 transition-colors"
+              >
+                <Download size={14} /> Install App
+              </button>
+            )}
+
             <button 
               onClick={toggleTheme}
-              className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-10 h-10 flex items-center justify-center"
+              className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-9 h-9 md:w-10 md:h-10 flex items-center justify-center"
+              title="Toggle theme"
             >
               <span className="material-symbols-outlined text-[20px]">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
             </button>
-            <button onClick={() => alert('No new notifications')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative">
-               <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full pointer-events-none"></span>
+            <button
+              onClick={() => navigate('/join-class')}
+              className="p-2 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-full transition-colors w-9 h-9 md:w-10 md:h-10 flex items-center justify-center"
+              title="Join class"
+              aria-label="Join class"
+            >
+              <UserPlus size={20} />
+            </button>
+            <button
+              onClick={() => setLowBandwidth((value) => !value)}
+              className={`p-2 rounded-full transition-colors w-9 h-9 md:w-10 md:h-10 flex items-center justify-center ${lowBandwidth ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
+              title="Low-bandwidth mode"
+            >
+              <WifiOff size={20} />
+            </button>
+            <button onClick={() => navigate('/notifications')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center">
+               {unreadCount > 0 && (
+                 <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-error rounded-full text-[9px] leading-4 text-white font-black pointer-events-none text-center">
+                   {unreadCount > 9 ? '9+' : unreadCount}
+                 </span>
+               )}
                <Bell size={20} />
             </button>
-            <button onClick={() => navigate('/settings')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors hidden md:block">
+            <button onClick={() => navigate('/profile')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors hidden md:block">
               <Settings size={20} />
             </button>
             <button 
@@ -147,7 +239,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
         {navItems.slice(0, 4).map(item => {
            const isActive = location.pathname.startsWith(item.path);
            return (
-              <button key={item.name} onClick={() => navigate(item.path)} className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-on-surface-variant/40'}`}>
+              <button key={item.name} onClick={() => navigate(item.target || item.path)} className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-on-surface-variant/40'}`}>
                 <item.icon size={20} />
                 <span className="text-[10px] font-bold tracking-tight">{item.name}</span>
               </button>
