@@ -42,6 +42,44 @@ const CURRICULUM = {
   }
 };
 
+function generateLectureText(lesson: string, topic: string) {
+  return `# Comprehensive Guide to ${lesson}\n\n## 1. Introduction and Core Concepts\nThe study of **${lesson}** is foundational to mastering **${topic}**. It involves understanding the complex mechanics and theories that form the backbone of this subject area.\n\nIn this module, we will explore the theoretical frameworks, practical applications, and historical context of ${lesson}. \n\n## 2. Key Principles\n1. **Principle of Consistency**: Ensuring that applications of ${lesson} remain stable across different scenarios.\n2. **Principle of Adaptation**: The ability to bend theoretical rules to fit practical constraints in ${topic}.\n3. **Principle of Analytical Rigor**: The necessity of evaluating inputs and outputs critically.\n\n## 3. Deep Dive into Applications\nWhen applying the concepts of ${lesson}, professionals must consider various edge cases. For instance, in a practical environment, the variables are rarely static. The dynamic nature of ${topic} means that memorizing facts is insufficient; one must synthesize information dynamically.\n\n> **Important Note:** Always double-check your initial assumptions when evaluating problems related to ${lesson}. Many common pitfalls occur due to overlooking foundational details.\n\n### 3.1 Advanced Methodologies\n- **Taxonomy of Skills**: Breaking down ${lesson} into discrete, observable behaviors and cognitive steps.\n- **Heuristic Evaluation**: Using rules of thumb to solve complex problems when standard algorithms are too slow.\n- **Iterative Refinement**: Building mastery through repeated, varied practice across different contexts.\n\n## 4. Conclusion and Summary\nMastering ${lesson} requires patience and deliberate practice. As you prepare for the licensure examination, focus not just on recalling the definitions provided here, but on understanding *why* they matter within the broader scope of ${topic}.\n\n*Review these notes regularly and test your knowledge using the practice drills.*`;
+}
+
+function generateQuestionOptions(index: number, topic: string) {
+    const isTopicGen = topic.includes('gened');
+    const isTopicProf = topic.includes('profed');
+    if (index % 4 === 0) {
+        return [
+            { id: 'A', text: `It focuses solely on the theoretical aspects of ${topic}.` },
+            { id: 'B', text: `It integrates both theory and practice in addressing ${topic}.` },
+            { id: 'C', text: `It minimizes the importance of foundational concepts.` },
+            { id: 'D', text: `It relies entirely on outdated traditional methods.` }
+        ];
+    } else if (index % 4 === 1) {
+        return [
+            { id: 'A', text: `By applying a strict rule-based approach without exceptions.` },
+            { id: 'B', text: `By adopting a flexible, adaptive strategy based on context.` },
+            { id: 'C', text: `By ignoring edge cases to simplify the overall process.` },
+            { id: 'D', text: `By delegating the responsibility to external stakeholders.` }
+        ];
+    } else if (index % 4 === 2) {
+        return [
+            { id: 'A', text: `The primary objective is rote memorization of facts.` },
+            { id: 'B', text: `The primary objective is the critical synthesis and application of knowledge.` },
+            { id: 'C', text: `The primary objective is to complete the curriculum as fast as possible.` },
+            { id: 'D', text: `The primary objective is to focus only on subjective interpretations.` }
+        ];
+    } else {
+        return [
+            { id: 'A', text: `It ensures that all perspectives are universally identical.` },
+            { id: 'B', text: `It accommodates diverse methods and promotes inclusive understanding.` },
+            { id: 'C', text: `It restricts the scope of learning to a single rigid framework.` },
+            { id: 'D', text: `It eliminates the need for any formal assessment.` }
+        ];
+    }
+}
+
 export async function seedCloudDatabase() {
     console.log("Seeding cloud database with Categories, Topics, Textbooks and Questions...");
     
@@ -90,7 +128,7 @@ export async function seedCloudDatabase() {
                     id: `sec_${idx}`,
                     moduleId: `lesson_${idx}`,
                     title: `Introduction to ${lesson}`,
-                    body: `This is the comprehensive notes for ${lesson}. \n\nKey Concepts:\n- Read carefully to understand the context.\n- Be prepared to analyze and apply theories.\n- Practice answers continuously.`,
+                    body: generateLectureText(lesson, t.title),
                     type: 'reading'
                  })),
                  quizzes: t.lessons.map((lesson, idx) => ({
@@ -121,13 +159,8 @@ export async function seedCloudDatabase() {
             
             const newDoc = doc(questionsRef);
             batch.set(newDoc, {
-                stem: `What is the most appropriate concept regarding ${topicInfo.topic.replace(/_/g, ' ')}? (Question ${index})`,
-                options: [
-                    { id: 'A', text: `A distracter that seems correct for ${topicInfo.topic}` },
-                    { id: 'B', text: `The universally accepted correct principle for ${topicInfo.topic}` },
-                    { id: 'C', text: `An outdated pedagogical theory related to ${topicInfo.topic}` },
-                    { id: 'D', text: `A completely irrelevant answer choice` }
-                ],
+                stem: `In the context of ${topicInfo.topic.replace(/_/g, ' ')}, which of the following best describes the core principle? (Q${index})`,
+                options: generateQuestionOptions(index, topicInfo.topic.replace(/_/g, ' ')),
                 correctOptionId: 'B',
                 categoryId: topicInfo.cat,
                 topicId: topicInfo.topic,

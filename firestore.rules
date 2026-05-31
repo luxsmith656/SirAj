@@ -330,6 +330,12 @@ service cloud.firestore {
       allow read, write: if isInstructor();
     }
     
+    match /studioPresence/{presenceId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+    
     match /settings/{docId} {
       allow read: if true;
       allow write: if isAdmin();

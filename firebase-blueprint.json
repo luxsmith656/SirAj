@@ -128,6 +128,20 @@
         "createdAt": { "type": "number" }
       },
       "required": ["userId", "subject", "description"]
+    },
+    "StudioPresence": {
+      "title": "Studio Presence",
+      "description": "Collaboration real-time user active presence in module edit studio.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "avatarInitials": { "type": "string" },
+        "moduleId": { "type": "string" },
+        "lastActiveAt": { "type": "number" }
+      },
+      "required": ["userId", "moduleId", "lastActiveAt"]
     }
   },
   "firestore": {
@@ -140,6 +154,7 @@
     "/quizAttempts/{attemptId}": { "schema": "QuizAttempt", "description": "Quiz results history." },
     "/diagnosticAttempts/{attemptId}": { "schema": "QuizAttempt", "description": "Initial assessment results." },
     "/badges/{badgeId}": { "schema": "Badge", "description": "Available achievements." },
-    "/reports/{reportId}": { "schema": "Report", "description": "Support tickets." }
+    "/reports/{reportId}": { "schema": "Report", "description": "Support tickets." },
+    "/studioPresence/{presenceId}": { "schema": "StudioPresence", "description": "Tracks real-time active users editing specific items in the studio workspace." }
   }
 }

@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Save, KeyRound, RotateCcw } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import StudentLayout from '../components/StudentLayout';
+import ConfirmModal from '../components/ConfirmModal';
 import { useAuth } from '../context/AuthContext';
 import { db, resetPassword } from '../lib/firebase';
 
@@ -14,19 +15,48 @@ export default function ProfileSettings() {
   const [reviewTrack, setReviewTrack] = useState(user?.reviewTrack || '');
   const [specialization, setSpecialization] = useState(user?.specialization || '');
   const [message, setMessage] = useState('');
+  const [trackChangeOption, setTrackChangeOption] = useState<'keep' | 'reset'>('keep');
   const [isResettingDemo, setIsResettingDemo] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const isDemoAccount = (user?.email || '').toLowerCase() === 'student@letmastery.com' || (user as any)?.isDemo;
 
   const saveProfile = async () => {
     if (!user) return;
-    await updateDoc(doc(db, 'users', user.uid), {
-      fullName: fullName.trim(),
-      reviewTrack: reviewTrack,
-      specialization: specialization,
-      updatedAt: new Date().toISOString(),
-    });
-    await refreshUser();
-    setMessage('Profile updated.');
+    setIsResettingDemo(true);
+    setMessage('Updating profile tracks...');
+    try {
+      if (user?.role === 'student' && reviewTrack !== (user?.reviewTrack || '') && trackChangeOption === 'reset') {
+        const deleteByUserId = async (collectionName: string, field = 'userId') => {
+          const snap = await getDocs(query(collection(db, collectionName), where(field, '==', user.uid)));
+          await Promise.allSettled(snap.docs.map((row) => deleteDoc(row.ref)));
+        };
+
+        await Promise.allSettled([
+          deleteDoc(doc(db, 'learnerProfiles', user.uid)),
+          deleteByUserId('moduleProgress'),
+          deleteByUserId('diagnosticAttempts'),
+          deleteByUserId('quizAttempts'),
+          deleteByUserId('mockExamAttempts'),
+          deleteByUserId('examAttemptLogs'),
+        ]);
+
+        await clearDemoIndexedDb();
+      }
+
+      await updateDoc(doc(db, 'users', user.uid), {
+        fullName: fullName.trim(),
+        reviewTrack: reviewTrack,
+        specialization: specialization,
+        updatedAt: new Date().toISOString(),
+      });
+      await refreshUser();
+      setMessage('Profile settings updated successfully.');
+    } catch (e) {
+      console.warn('Update review track failed', e);
+      setMessage('Profile updated but some progress resets failed.');
+    } finally {
+      setIsResettingDemo(false);
+    }
   };
 
   const sendReset = async () => {
@@ -37,7 +67,6 @@ export default function ProfileSettings() {
 
   const resetDemoProgress = async () => {
     if (!user || !isDemoAccount) return;
-    if (!window.confirm('Reset this demo account to a clean onboarding state? This clears demo progress, attempts, notes, reminders, and local cached learning data.')) return;
     setIsResettingDemo(true);
     setMessage('');
     try {
@@ -120,10 +149,48 @@ export default function ProfileSettings() {
               <select value={reviewTrack} onChange={(e) => setReviewTrack(e.target.value)} className="w-full bg-surface-container rounded-xl px-5 py-4 text-on-surface font-medium text-sm border border-transparent outline-none">
                 <option value="elementary">Elementary Education (BEEd)</option>
                 <option value="secondary">Secondary Education (BSEd)</option>
+                <option value="gened">General Education Only</option>
+                <option value="profed">Professional Education Only</option>
               </select>
             </label>
+
+            {reviewTrack !== (user?.reviewTrack || '') && (
+              <div className="bg-amber-500/10 border border-amber-300/20 rounded-2xl p-5 mt-2 space-y-3">
+                <p className="text-xs font-black uppercase tracking-widest text-amber-800">⚠️ Review Track Change Option</p>
+                <p className="text-xs text-on-surface-variant leading-relaxed">
+                  Changing your track updates your curriculum core. Decide what to do with your current progress records:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setTrackChangeOption('keep')}
+                    className={`p-3 rounded-xl border text-xs font-extrabold text-left transition-all flex flex-col justify-between ${
+                      trackChangeOption === 'keep'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-outline-variant bg-surface-container text-on-surface'
+                    }`}
+                  >
+                    <span>Keep & Merge Progress</span>
+                    <span className="text-[9px] font-normal opacity-70 mt-1">Keep current notes, logs, and answers and merge them with the new track.</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrackChangeOption('reset')}
+                    className={`p-3 rounded-xl border text-xs font-extrabold text-left transition-all flex flex-col justify-between ${
+                      trackChangeOption === 'reset'
+                        ? 'border-error bg-error/10 text-error'
+                        : 'border-outline-variant bg-surface-container text-on-surface'
+                    }`}
+                  >
+                    <span>Reset Track Progress</span>
+                    <span className="text-[9px] font-normal opacity-70 mt-1">Wipe past diagnostics, quizzes and module completion to start the track fresh!</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
             {reviewTrack === 'secondary' && (
-              <label className="block space-y-2">
+              <label className="block space-y-2 select-text">
                 <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50">Specialization / Major</span>
                 <select value={specialization} onChange={(e) => setSpecialization(e.target.value)} className="w-full bg-surface-container rounded-xl px-5 py-4 text-on-surface font-medium text-sm border border-transparent outline-none">
                   <option value="">Select major...</option>
@@ -185,7 +252,7 @@ export default function ProfileSettings() {
           <h2 className="font-headline text-xl font-extrabold text-on-surface">Return this demo to a clean start</h2>
           <p className="text-sm text-on-surface-variant">Clears demo progress, attempts, mistake bank records, notes, highlights, reminders, class enrollment state, and local/offline learning cache.</p>
           <button
-            onClick={resetDemoProgress}
+            onClick={() => setIsResetModalOpen(true)}
             disabled={isResettingDemo}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-error text-on-error px-5 py-3 text-sm font-bold disabled:opacity-50"
           >
@@ -194,6 +261,21 @@ export default function ProfileSettings() {
           </button>
         </section>
       )}
+      
+      <ConfirmModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        onConfirm={async () => {
+          setIsResetModalOpen(false);
+          await resetDemoProgress();
+        }}
+        title="Reset Demo Data?"
+        message="This action will clear all your demo attempts, notes, mistake bank, and configurations. You will return to the onboarding flow."
+        isProcessing={isResettingDemo}
+        confirmText="Yes, reset demo"
+        confirmColor="bg-error text-on-error shadow-error/20"
+        icon="delete"
+      />
     </div>
   );
 

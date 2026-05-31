@@ -11,6 +11,7 @@ interface Category {
   description?: string;
   parentId?: string;
   questionCount: number;
+  reviewTracks?: string[];
 }
 
 export default function CategoryManagement() {
@@ -19,6 +20,7 @@ export default function CategoryManagement() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const [editTracks, setEditTracks] = useState<string[]>(['elementary', 'secondary']);
 
   // Deletion state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -43,6 +45,7 @@ export default function CategoryManagement() {
     setSelectedCategory(null);
     setEditName('');
     setEditDesc('');
+    setEditTracks(['elementary', 'secondary']);
     setIsCreating(true);
   };
 
@@ -57,7 +60,8 @@ export default function CategoryManagement() {
         await addDoc(collection(db, 'categories'), {
           name: editName,
           description: editDesc,
-          questionCount: 0
+          questionCount: 0,
+          reviewTracks: editTracks
         });
         setIsCreating(false);
         setToastMsg('New domain added successfully');
@@ -65,7 +69,8 @@ export default function CategoryManagement() {
       } else if (selectedCategory) {
         await updateDoc(doc(db, 'categories', selectedCategory.id), {
           name: editName,
-          description: editDesc
+          description: editDesc,
+          reviewTracks: editTracks
         });
         setIsEditing(false);
         setToastMsg('Domain updated successfully');
@@ -99,6 +104,7 @@ export default function CategoryManagement() {
     setSelectedCategory(cat);
     setEditName(cat.name);
     setEditDesc(cat.description || '');
+    setEditTracks(cat.reviewTracks || ['elementary', 'secondary']);
     setIsEditing(true);
     setIsCreating(false);
   };
@@ -134,6 +140,15 @@ export default function CategoryManagement() {
                               <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold rounded-full ml-auto uppercase tracking-widest border border-primary/10">{cat.questionCount} Questions</span>
                            </div>
                            {cat.description && <p className="text-xs text-on-surface-variant/60 mt-2 ml-9 line-clamp-1">{cat.description}</p>}
+                           {cat.reviewTracks && cat.reviewTracks.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2.5 ml-9">
+                                 {cat.reviewTracks.map(t => (
+                                    <span key={t} className="px-1.5 py-0.5 bg-surface-container text-on-surface-variant text-[8.5px] font-extrabold uppercase rounded tracking-wider border border-outline-variant/35">
+                                       {t}
+                                    </span>
+                                 ))}
+                              </div>
+                           )}
                         </div>
                      ))}
                   </div>
@@ -184,6 +199,40 @@ export default function CategoryManagement() {
                                    onChange={(e) => setEditDesc(e.target.value)}
                                    placeholder="Optional description..."
                                  />
+                              </div>
+
+                              <div className="space-y-2">
+                                 <label className="block text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest ml-1">Track Alignment</label>
+                                 <div className="flex flex-wrap gap-2">
+                                    {[
+                                       { id: 'elementary', label: 'Elementary' },
+                                       { id: 'secondary', label: 'Secondary' },
+                                       { id: 'gened', label: 'GenEd Only' },
+                                       { id: 'profed', label: 'ProfEd Only' }
+                                    ].map(trk => {
+                                       const active = editTracks.includes(trk.id);
+                                       return (
+                                          <button
+                                             key={trk.id}
+                                             type="button"
+                                             onClick={() => {
+                                                if (active) {
+                                                   setEditTracks(editTracks.filter(t => t !== trk.id));
+                                                } else {
+                                                   setEditTracks([...editTracks, trk.id]);
+                                                }
+                                             }}
+                                             className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
+                                                active 
+                                                   ? 'bg-primary/10 text-primary border-primary/25 shadow-sm' 
+                                                   : 'bg-surface-container border-outline-variant/30 text-on-surface-variant/60 hover:border-on-surface-variant/20'
+                                             }`}
+                                          >
+                                             {trk.label}
+                                          </button>
+                                       );
+                                    })}
+                                 </div>
                               </div>
                               
                               <div className="flex gap-3 pt-4">

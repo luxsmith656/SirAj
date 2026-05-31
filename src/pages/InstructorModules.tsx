@@ -35,8 +35,12 @@ import {
   Trophy,
   Wand2,
   X,
+  Clock,
+  Cloud,
+  CloudOff,
+  Users,
 } from 'lucide-react';
-import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, setDoc, where } from 'firebase/firestore';
 import DashboardLayout from '../components/DashboardLayout';
 import DeleteConfirmModal from '../components/DeleteConfirmModal';
 import Toast from '../components/Toast';
@@ -96,6 +100,8 @@ interface BuilderModule {
   flowItems: { id: string; type: 'textbook' | 'lesson' | 'quiz' | 'activity' | 'exam'; refId: string; title: string }[];
   parts: JourneyModulePart[];
   finalExam: JourneyQuestion[];
+  editHighlights?: Record<string, { updatedBy: string; name: string; email: string; updatedAt: number }>;
+  updatedBy?: string;
 }
 
 type FlowItem = BuilderModule['flowItems'][number];
@@ -389,6 +395,8 @@ function fromFirestoreModule(id: string, data: any): BuilderModule {
     parts,
     finalExam,
     flowItems: data.flowItems?.length ? data.flowItems : buildDefaultFlow(parts, finalExam),
+    editHighlights: data.editHighlights || {},
+    updatedBy: data.updatedBy || '',
   };
 }
 
@@ -416,8 +424,8 @@ export default function InstructorModules() {
   const [isDrafting, setIsDrafting] = useState(false);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [moduleFilter, setModuleFilter] = useState<'all' | 'published' | 'published_public' | 'published_class' | 'draft'>('all');
-  const [builderMode, setBuilderMode] = useState<'edit' | 'preview'>('preview');
-  const [moduleRailCollapsed, setModuleRailCollapsed] = useState(false);
+  const [builderMode, setBuilderMode] = useState<'edit' | 'preview'>('edit');
+  const [moduleRailCollapsed, setModuleRailCollapsed] = useState(true);
   const [aiOpen, setAiOpen] = useState(false);
   const [tourStep, setTourStep] = useState<number | null>(null);
   const [toastMsg, setToastMsg] = useState('');
@@ -425,6 +433,192 @@ export default function InstructorModules() {
   const [deleteTarget, setDeleteTarget] = useState<'module' | 'part' | null>(null);
   const [pendingPartDeleteIndex, setPendingPartDeleteIndex] = useState<number | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Collaborative & Google Docs States
+  const [studioLayoutMode, setStudioLayoutMode] = useState<'docs' | 'multistep'>('docs');
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [activeEditors, setActiveEditors] = useState<any[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [versions, setVersions] = useState<any[]>([]);
+  const isLocalChangeRef = useRef(false);
+
+  // 1. Presence tracking
+  useEffect(() => {
+    if (!user || !selectedModuleId) return;
+
+    const presenceId = `${user.uid}_${selectedModuleId}`;
+    const presenceRef = doc(db, 'studioPresence', presenceId);
+    
+    const updatePresence = async () => {
+      try {
+        await setDoc(presenceRef, {
+          userId: user.uid,
+          userName: user.fullName || user.email || 'Instructor',
+          userEmail: user.email,
+          avatarInitials: (user.fullName || user.email || 'I')
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .substring(0, 2)
+            .toUpperCase(),
+          moduleId: selectedModuleId,
+          lastActiveAt: Date.now(),
+        });
+      } catch (e) {
+        // Silent error
+      }
+    };
+
+    updatePresence();
+    const interval = setInterval(updatePresence, 8000);
+
+    const streamQuery = query(
+      collection(db, 'studioPresence'),
+      where('moduleId', '==', selectedModuleId)
+    );
+    const unsubscribeStream = onSnapshot(streamQuery, (snapshot) => {
+      const list = snapshot.docs.map((docItem) => docItem.data());
+      const activeList = list.filter(
+        (member) => member.lastActiveAt && member.lastActiveAt > Date.now() - 30000
+      );
+      setActiveEditors(activeList);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'studioPresence');
+    });
+
+    return () => {
+      clearInterval(interval);
+      deleteDoc(presenceRef).catch(() => {});
+      unsubscribeStream();
+    };
+  }, [user, selectedModuleId]);
+
+  // 2. Fetch versions
+  useEffect(() => {
+    if (!selectedModuleId) {
+      setVersions([]);
+      return;
+    }
+    const versionsQuery = query(
+      collection(db, 'contentVersions'),
+      where('contentId', '==', selectedModuleId),
+      orderBy('versionedAt', 'desc')
+    );
+    
+    const unsubscribe = onSnapshot(versionsQuery, (snapshot) => {
+      const list = snapshot.docs.map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
+      }));
+      setVersions(list);
+    }, (err) => {
+      console.warn('Error fetching versions:', err);
+    });
+
+    return () => unsubscribe();
+  }, [selectedModuleId]);
+
+  // 3. Debounced Auto-save
+  useEffect(() => {
+    if (!selectedModuleId || journeyModules.some((m) => m.id === selectedModuleId)) return;
+    if (!isLocalChangeRef.current) return;
+    
+    isLocalChangeRef.current = false;
+    setAutoSaveStatus('saving');
+
+    const timer = setTimeout(async () => {
+      try {
+        const payload = {
+          title: draft.title.trim(),
+          description: draft.description.trim(),
+          subjectId: draft.subjectId,
+          categoryId: draft.subjectId,
+          topicId: draft.topicId,
+          level: draft.level,
+          duration: draft.duration,
+          isPublished: draft.isPublished,
+          publishScope: draft.publishScope,
+          classIds: draft.publishScope === 'classes' ? draft.classIds : [],
+          dueAt: draft.dueAt || '',
+          antiCheatEnabled: draft.antiCheatEnabled,
+          recordFirstAttemptOnly: draft.recordFirstAttemptOnly,
+          isTemplate: !!draft.isTemplate,
+          templateSourceId: draft.templateSourceId || '',
+          prerequisiteModuleIds: draft.prerequisiteModuleIds,
+          competencies: draft.competencies,
+          rubric: draft.rubric,
+          unlockRules: draft.unlockRules,
+          examBlueprint: {
+            ...draft.examBlueprint,
+            questionCount: draft.finalExam.length || draft.examBlueprint.questionCount,
+          },
+          certificateEnabled: draft.certificateEnabled,
+          certificateTemplateId: draft.certificateTemplateId || '',
+          certificateRequirementNote: draft.certificateRequirementNote || '',
+          sourceDocument: draft.sourceDocument || null,
+          sourceDocumentId: draft.sourceDocumentId || draft.sourceDocument?.sourceDocumentId || '',
+          sourceDocumentName: draft.sourceDocumentName || draft.sourceDocument?.fileName || '',
+          sourceConfidence: draft.sourceConfidence || draft.sourceDocument?.confidence || '',
+          sourceReviewRequired: !!(draft.sourceReviewRequired || draft.sourceDocument?.reviewRequired),
+          attemptPolicy: draft.attemptPolicy,
+          flowItems: draft.flowItems,
+          updatedBy: user?.uid || '',
+          updatedByEmail: user?.email || '',
+          editHighlights: draft.editHighlights || {},
+          parts: draft.parts,
+          finalExam: draft.finalExam,
+          lessonBlocks: draft.parts.flatMap((part) => part.lessonBlocks),
+          resources: draft.flowItems.map((item) => ({ id: item.id, type: item.type === 'lesson' ? 'textbook' : item.type, title: item.title, meta: item.type === 'exam' ? `${draft.finalExam.length} items` : 'Studio sequence' })),
+          updatedAt: serverTimestamp(),
+        };
+
+        const moduleRef = doc(db, 'modules', selectedModuleId);
+        
+        const previous = await getDoc(moduleRef);
+        if (previous.exists() && versions.length === 0) {
+          await addDoc(collection(db, 'contentVersions'), {
+            contentType: 'module',
+            contentId: selectedModuleId,
+            title: previous.data().title || draft.title,
+            snapshot: previous.data(),
+            changedBy: user?.uid || '',
+            changedByEmail: user?.email || '',
+            changedByName: user?.fullName || user?.email || 'Instructor',
+            versionedAt: serverTimestamp(),
+          });
+        }
+
+        await updateDoc(moduleRef, payload);
+        setAutoSaveStatus('saved');
+      } catch (err) {
+        console.error('Error auto-saving:', err);
+        setAutoSaveStatus('error');
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [draft, selectedModuleId, user]);
+
+  const restoreVersion = async (version: any) => {
+    if (!version.snapshot) return;
+    
+    const restoredDraft = fromFirestoreModule(selectedModuleId, version.snapshot);
+    setDraft(restoredDraft);
+    isLocalChangeRef.current = true;
+    
+    await addDoc(collection(db, 'activityLogs'), {
+      action: 'restore_module_version',
+      category: 'modules',
+      description: `Restored module "${version.title || draft.title}" to version from ${new Date(version.versionedAt?.seconds ? version.versionedAt.seconds * 1000 : version.versionedAt).toLocaleString()}`,
+      userId: user?.uid,
+      userEmail: user?.email,
+      userName: user?.fullName || user?.email,
+      timestamp: serverTimestamp(),
+    });
+    
+    setToastMsg('Module version restored successfully!');
+    setShowToast(true);
+  };
 
   useEffect(() => {
     const modulesQuery = query(collection(db, 'modules'), orderBy('updatedAt', 'desc'));
@@ -437,6 +631,12 @@ export default function InstructorModules() {
         const nextModules = [...remoteModules, ...seedModules];
         setModules(nextModules);
 
+        // Docs real-time sync check: if edited by someone else, merge remote snapshot
+        const currentRemote = remoteModules.find((m) => m.id === selectedModuleId);
+        if (currentRemote && currentRemote.updatedBy && currentRemote.updatedBy !== user?.uid) {
+          setDraft(currentRemote);
+        }
+
         if (!isCreatingNew && !nextModules.some((module) => module.id === selectedModuleId)) {
           setSelectedModuleId(nextModules[0]?.id || '');
           setDraft(nextModules[0] || emptyModule);
@@ -448,7 +648,7 @@ export default function InstructorModules() {
     );
 
     return () => unsubscribe();
-  }, [selectedModuleId, isCreatingNew]);
+  }, [selectedModuleId, isCreatingNew, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -459,6 +659,8 @@ export default function InstructorModules() {
         classItem.instructorId === user.uid ||
         classItem.instructorEmail === user.email
       )));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'classes');
     });
     return () => unsubscribe();
   }, [user]);
@@ -485,28 +687,42 @@ export default function InstructorModules() {
     });
   }, [modules, searchTerm, moduleFilter]);
 
-  const updateDraft = (field: keyof BuilderModule, value: any) => {
+  const updateDraft = (field: keyof BuilderModule, value: any, keyPath?: string) => {
+    isLocalChangeRef.current = true;
     setDraft((current) => {
+      const nextHighlights = { ...(current.editHighlights || {}) };
+      if (keyPath && user) {
+        nextHighlights[keyPath] = {
+          updatedBy: user.uid,
+          name: user.fullName || user.email || 'Instructor',
+          email: user.email || '',
+          updatedAt: Date.now(),
+        };
+      }
       if (field === 'subjectId') {
         const nextSubject = journeySubjects.find((subject) => subject.id === value) || journeySubjects[0];
-        return { ...current, subjectId: nextSubject.id, topicId: nextSubject.topics[0].id };
+        return { ...current, subjectId: nextSubject.id, topicId: nextSubject.topics[0].id, editHighlights: nextHighlights };
       }
-      return { ...current, [field]: value };
+      return { ...current, [field]: value, editHighlights: nextHighlights };
     });
   };
 
-  const updatePart = (patch: Partial<JourneyModulePart>) => {
-    updateDraft('parts', draft.parts.map((part, index) => index === activePartIndex ? { ...part, ...patch } : part));
+  const updatePart = (patch: Partial<JourneyModulePart>, highlightField?: string) => {
+    isLocalChangeRef.current = true;
+    const highlightPath = highlightField ? `parts.${activePartIndex}.${highlightField}` : undefined;
+    updateDraft('parts', draft.parts.map((part, index) => index === activePartIndex ? { ...part, ...patch } : part), highlightPath);
   };
 
-  const updatePartAtIndex = (partIndex: number, patch: Partial<JourneyModulePart>) => {
-    updateDraft('parts', draft.parts.map((part, index) => index === partIndex ? { ...part, ...patch } : part));
+  const updatePartAtIndex = (partIndex: number, patch: Partial<JourneyModulePart>, highlightField?: string) => {
+    isLocalChangeRef.current = true;
+    const highlightPath = highlightField ? `parts.${partIndex}.${highlightField}` : undefined;
+    updateDraft('parts', draft.parts.map((part, index) => index === partIndex ? { ...part, ...patch } : part), highlightPath);
   };
 
-  const updateMiniQuestionAtPart = (partIndex: number, patch: Partial<JourneyQuestion>) => {
+  const updateMiniQuestionAtPart = (partIndex: number, patch: Partial<JourneyQuestion>, highlightField?: string) => {
     const part = draft.parts[partIndex];
     const currentQuestion = part?.miniQuiz?.[0] || blankQuestion(`${part?.id || `part-${partIndex + 1}`}-q1`);
-    updatePartAtIndex(partIndex, { miniQuiz: [{ ...currentQuestion, ...patch }] });
+    updatePartAtIndex(partIndex, { miniQuiz: [{ ...currentQuestion, ...patch }] }, highlightField ? `miniQuiz.${highlightField}` : undefined);
   };
 
   const updateMiniOptionAtPart = (partIndex: number, optionId: string, text: string) => {
@@ -514,18 +730,18 @@ export default function InstructorModules() {
     const currentQuestion = part?.miniQuiz?.[0] || blankQuestion(`${part?.id || `part-${partIndex + 1}`}-q1`);
     updateMiniQuestionAtPart(partIndex, {
       options: currentQuestion.options.map((option) => option.id === optionId ? { ...option, text } : option),
-    });
+    }, `miniQuiz.option-${optionId}`);
   };
 
   const updatePartLessonBlock = (blockIndex: number, content: string) => {
     updatePart({
       lessonBlocks: activePart.lessonBlocks.map((block, index) => index === blockIndex ? { ...block, content } : block),
-    });
+    }, `lessonBlocks.${blockIndex}.content`);
   };
 
-  const updateMiniQuestion = (patch: Partial<JourneyQuestion>) => {
+  const updateMiniQuestion = (patch: Partial<JourneyQuestion>, highlightField?: string) => {
     const currentQuestion = activePart.miniQuiz[0] || blankQuestion(`${activePart.id}-q1`);
-    updatePart({ miniQuiz: [{ ...currentQuestion, ...patch }] });
+    updatePart({ miniQuiz: [{ ...currentQuestion, ...patch }] }, highlightField ? `miniQuiz.${highlightField}` : undefined);
   };
 
   const updateMiniOption = (optionId: string, text: string) => {
@@ -782,6 +998,11 @@ export default function InstructorModules() {
   };
 
   const deleteModule = async () => {
+    if (user?.role === 'instructor') {
+      setToastMsg('Instructors are not permitted to delete tracks, subjects or modules.');
+      setShowToast(true);
+      return;
+    }
     if (!draft.id || isCreatingNew) {
       createNewDraft();
       return;
@@ -991,6 +1212,7 @@ export default function InstructorModules() {
       authorEmail: user?.email || '',
       updatedBy: user?.uid || '',
       updatedByEmail: user?.email || '',
+      editHighlights: draft.editHighlights || {},
       parts: draft.parts,
       finalExam: draft.finalExam,
       lessonBlocks: draft.parts.flatMap((part) => part.lessonBlocks),
@@ -1185,115 +1407,777 @@ export default function InstructorModules() {
             )}
           </aside>
 
-          <main data-tour="studio-workspace" className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden">
-            <div className="border-b border-outline-variant p-4 space-y-4">
-              <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">Focused module workspace</p>
-                  <h2 className="text-xl font-extrabold font-headline text-on-surface">{draft.title || 'Untitled module'}</h2>
+          <main data-tour="studio-workspace" className="bg-surface-container-lowest border border-outline-variant rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[85vh] relative">
+            {/* COLLABORATIVE HEADER / TOP BAR (Google Docs style) */}
+            <div className="border-b border-outline-variant bg-surface-container-lowest p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 z-20">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="bg-primary/10 text-primary p-2 rounded-xl">
+                  <FileQuestion size={20} className="animate-pulse" />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <button onClick={startStudioTour} className="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container text-on-surface px-4 py-2.5 font-bold text-sm border border-outline-variant/40">
-                    <ClipboardList size={16} />
-                    Guide
-                  </button>
-                  <button
-                    data-tour="student-view-toggle"
-                    onClick={() => setBuilderMode('preview')}
-                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 font-bold text-sm border transition-colors ${
-                      builderMode === 'preview' ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container text-on-surface border-outline-variant/40'
-                    }`}
-                  >
-                    <Eye size={16} />
-                    Student view
-                  </button>
-                  <button onClick={duplicateModule} className="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container text-on-surface px-4 py-2.5 font-bold text-sm border border-outline-variant/40">
-                    <Copy size={16} />
-                    Duplicate
-                  </button>
-                  <button data-tour="save-module-button" onClick={saveModule} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-on-primary px-4 py-2.5 font-bold text-sm shadow-sm">
-                    <Save size={16} />
-                    Save
-                  </button>
-                  <button onClick={deleteModule} className="inline-flex items-center justify-center gap-2 rounded-xl bg-error/10 text-error px-4 py-2.5 font-bold text-sm border border-error/20">
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={draft.title}
+                      onChange={(e) => updateDraft('title', e.target.value, 'title')}
+                      className="text-lg font-black font-headline text-on-surface bg-transparent focus:outline-none focus:bg-surface-container/30 rounded px-2 py-0.5 border-b border-transparent focus:border-primary/40 min-w-[200px]"
+                      placeholder="Name this module..."
+                    />
+                    
+                    {/* AUTO-SAVE STATUS CHROME */}
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-container border border-outline-variant/40">
+                      {autoSaveStatus === 'saved' && (
+                        <>
+                          <Cloud size={13} className="text-emerald-500" />
+                          <span className="text-on-surface-variant/70 text-[10px]">Saved to Cloud</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'saving' && (
+                        <>
+                          <span className="w-2 h-2 rounded-full border-2 border-t-transparent border-primary animate-spin" />
+                          <span className="text-primary text-[10px]">Saving...</span>
+                        </>
+                      )}
+                      {autoSaveStatus === 'error' && (
+                        <>
+                          <CloudOff size={13} className="text-error" />
+                          <span className="text-error text-[10px]">Offline / Retrying</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-on-surface-variant/70 ml-2">
+                    {selectedSubject?.title || 'No Subject'} • {draft.duration || 'Study course'}
+                  </p>
                 </div>
               </div>
-              <div data-tour="builder-tabs" className="flex flex-wrap gap-2">
-                {builderSteps.map((step, index) => (
+
+              {/* LIVE ACTIVE EDITORS ICON TRAY & TOOLBAR CONTROLS */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {/* Active Editors Overlapping Avatars (Google Docs Presence) */}
+                {activeEditors.length > 0 && (
+                  <div className="flex items-center -space-x-2 mr-2">
+                    {activeEditors.map((editor, i) => {
+                      const colors = ['bg-red-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500'];
+                      let sum = 0;
+                      const email = editor.userEmail || '';
+                      for (let charIndex = 0; charIndex < email.length; charIndex++) {
+                        sum += email.charCodeAt(charIndex);
+                      }
+                      const color = colors[sum % colors.length];
+                      const isMe = editor.userId === user?.uid;
+
+                      return (
+                        <div
+                          key={editor.userId}
+                          className="relative group cursor-pointer"
+                          onClick={() => {
+                            setToastMsg(`Collaborator: ${editor.userName} is online editing right now.`);
+                            setShowToast(true);
+                          }}
+                        >
+                          <div className={`w-8 h-8 rounded-full ${color} text-white font-extrabold text-[11px] flex items-center justify-center border-2 border-surface-container-lowest shadow-sm hover:scale-110 transition-transform`}>
+                            {editor.avatarInitials}
+                          </div>
+                          
+                          {/* Rich Google Docs hover card */}
+                          <div className="absolute right-0 top-9 bg-surface text-on-surface text-xs rounded-xl p-3 shadow-xl border border-outline-variant/50 hidden group-hover:block z-30 min-w-[200px]">
+                            <p className="font-extrabold">{editor.userName} {isMe && '(You)'}</p>
+                            <p className="text-[10px] text-on-surface-variant line-clamp-1">{editor.userEmail}</p>
+                            <div className="flex items-center gap-1 mt-2 text-[9px] text-primary font-black uppercase tracking-wider">
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                              Active now
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* SIMPIFIED VIEW VS ORIGINAL STATS TAB SELECTOR */}
+                <div className="flex rounded-xl bg-surface-container p-0.5 border border-outline-variant/30 text-xs font-semibold">
                   <button
-                    key={step.id}
-                    onClick={() => { setBuilderMode('edit'); setActiveStep(step.id); }}
-                    className={`rounded-full px-4 py-2 text-[11px] font-black uppercase tracking-widest border transition-colors ${
-                      builderMode === 'edit' && activeStep === step.id ? 'bg-on-surface text-surface border-on-surface' : 'bg-surface-container text-on-surface-variant border-outline-variant/30'
+                    onClick={() => { setStudioLayoutMode('docs'); setBuilderMode('edit'); }}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                      studioLayoutMode === 'docs' && builderMode === 'edit' ? 'bg-surface-container-lowest text-primary font-black shadow-sm' : 'text-on-surface-variant'
                     }`}
                   >
-                    {index + 1}. {step.label}
+                    <BookOpen size={14} />
+                    Docs View
                   </button>
-                ))}
+                  <button
+                    onClick={() => { setStudioLayoutMode('multistep'); setBuilderMode('edit'); }}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                      studioLayoutMode === 'multistep' && builderMode === 'edit' ? 'bg-surface-container-lowest text-primary font-black shadow-sm' : 'text-on-surface-variant'
+                    }`}
+                  >
+                    <Layers3 size={14} />
+                    Multistep Tab
+                  </button>
+                </div>
+
+                {/* VERSION HISTORY BUTTON WITH LOG BADGE */}
+                <button
+                  onClick={() => setHistoryOpen(!historyOpen)}
+                  className={`w-10 h-10 rounded-xl relative flex items-center justify-center border transition-colors ${
+                    historyOpen ? 'bg-primary/15 text-primary border-primary/30' : 'bg-surface-container border-outline-variant/40 text-on-surface-variant hover:text-on-surface'
+                  }`}
+                  title="Version history"
+                >
+                  <Clock size={18} />
+                  {versions.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-primary text-on-primary font-black text-[9px] px-1.5 py-0.5 rounded-full shadow-sm scale-90">
+                      {versions.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* ORIGINAL TOOLBAR ATTEMPTS AND ACTIONS */}
+                <div className="h-6 w-px bg-outline-variant/40" />
+
+                <button
+                  onClick={() => setBuilderMode(builderMode === 'preview' ? 'edit' : 'preview')}
+                  className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-bold text-xs border transition-colors ${
+                    builderMode === 'preview' ? 'bg-primary text-on-primary border-primary' : 'bg-surface-container text-on-surface border-outline-variant/40'
+                  }`}
+                >
+                  <Eye size={14} />
+                  Playground mode
+                </button>
+
+                {user?.role === 'admin' && (
+                  <button
+                    onClick={deleteModule}
+                    className="w-10 h-10 rounded-xl bg-error/10 text-error flex items-center justify-center border border-error/20 hover:bg-error/15"
+                    title="Delete module"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="p-5 md:p-6">
+            {/* LIVE MODULE COLLABORATION EDITORS BANNER */}
+            {activeEditors.filter(e => e.userId !== user?.uid).length > 0 && (
+              <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs flex items-center gap-2 text-amber-800">
+                <Users size={14} className="animate-bounce" />
+                <span>
+                  Others are currently editing: <strong>{activeEditors.filter(e => e.userId !== user?.uid).map(e => e.userName).join(', ')}</strong>. Edits sync in real-time.
+                </span>
+              </div>
+            )}
+
+            {/* VERSION HISTORY DRAW SIDEBAR & RESTORES */}
+            {historyOpen && (
+              <div className="absolute right-0 top-0 bottom-0 w-80 bg-surface border-l border-outline-variant z-40 p-4 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
+                <div className="flex items-center justify-between border-b border-outline-variant pb-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-primary" />
+                    <h3 className="font-extrabold text-sm">Version History</h3>
+                  </div>
+                  <button onClick={() => setHistoryOpen(false)} className="text-on-surface-variant/60 hover:text-on-surface p-1 rounded-lg">
+                    <X size={16} />
+                  </button>
+                </div>
+                
+                <p className="text-[11px] text-on-surface-variant/70 mb-4 leading-relaxed">
+                  Go back to explore previously saved drafts and roll back edits gracefully. Clicking "Restore" will apply that version instantly.
+                </p>
+
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                  {versions.length === 0 ? (
+                    <div className="text-center py-10">
+                      <p className="text-xs text-on-surface-variant/60">No history snapshots recorded yet.</p>
+                      <p className="text-[10px] text-on-surface-variant/40 mt-1">Make changes or wait for autosave snapshots to populate.</p>
+                    </div>
+                  ) : (
+                    versions.map((version) => {
+                      const versionDate = version.versionedAt?.seconds 
+                        ? new Date(version.versionedAt.seconds * 1000) 
+                        : new Date(version.versionedAt || Date.now());
+
+                      return (
+                        <div key={version.id} className="bg-surface-container rounded-xl p-3 border border-outline-variant/30 space-y-2 hover:border-primary/20 transition-all">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <p className="text-xs font-extrabold text-on-surface line-clamp-1">{version.title || 'Saved module snapshot'}</p>
+                              <p className="text-[10px] text-on-surface-variant/70 mt-0.5">{versionDate.toLocaleString()}</p>
+                            </div>
+                            <span className="bg-primary/10 text-primary font-black text-[9px] px-2 py-0.5 rounded-full scale-90 select-none">
+                              v{versions.length - versions.indexOf(version)}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5 text-[10px] text-on-surface-variant-60">
+                            <span className="w-4 h-4 rounded-full bg-primary text-on-primary font-black text-[8px] flex items-center justify-center uppercase">
+                              {(version.changedByName || 'I')[0]}
+                            </span>
+                            <span className="truncate">{version.changedByName || 'Instructor'}</span>
+                          </div>
+
+                          <div className="flex items-center gap-1 pt-1.5 border-t border-outline-variant/20">
+                            <button
+                              onClick={() => restoreVersion(version)}
+                              className="text-xs font-black text-primary hover:underline flex items-center gap-1 w-full justify-center bg-primary/10 hover:bg-primary/15 py-1 rounded-lg"
+                            >
+                              Restore this version
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* PRIMARY BODY CONTAINER */}
+            <div className="flex-1 overflow-y-auto bg-surface-container/25">
+              {/* STUDENT PLAYING SIMULATOR PLAYGROUND */}
               {builderMode === 'preview' && (
-                <ModuleStudentPreview
-                  draft={draft}
-                  updateDraft={updateDraft}
-                  updatePartAtIndex={updatePartAtIndex}
-                  updateMiniQuestionAtPart={updateMiniQuestionAtPart}
-                  updateMiniOptionAtPart={updateMiniOptionAtPart}
-                  updateFinalQuestion={updateFinalQuestion}
-                  updateFinalOption={updateFinalOption}
-                  reorderFlowItem={reorderFlowItem}
-                  resetFlowOrder={resetFlowOrder}
-                  onSave={saveModule}
-                  onOpenAI={() => setAiOpen(true)}
-                  tourStep={tourStep}
-                />
+                <div className="p-5">
+                  <ModuleStudentPreview
+                    draft={draft}
+                    updateDraft={updateDraft}
+                    updatePartAtIndex={updatePartAtIndex}
+                    updateMiniQuestionAtPart={updateMiniQuestionAtPart}
+                    updateMiniOptionAtPart={updateMiniOptionAtPart}
+                    updateFinalQuestion={updateFinalQuestion}
+                    updateFinalOption={updateFinalOption}
+                    reorderFlowItem={reorderFlowItem}
+                    resetFlowOrder={resetFlowOrder}
+                    onSave={saveModule}
+                    onOpenAI={() => setAiOpen(true)}
+                    tourStep={tourStep}
+                  />
+                </div>
               )}
 
-              {builderMode === 'edit' && activeStep === 'outline' && (
-                <OutlineStep draft={draft} selectedSubject={selectedSubject} updateDraft={updateDraft} />
+              {/* SIMPLIFIED GOOGLE DOCS WORKSPACE MODE */}
+              {builderMode === 'edit' && studioLayoutMode === 'docs' && (
+                <div className="flex flex-col lg:flex-row h-full min-h-[75vh]">
+                  {/* Google Docs Outline Left Side Panel */}
+                  <aside className="w-full lg:w-64 bg-surface border-r border-outline-variant p-4 space-y-6 select-none shrink-0 hidden lg:block sticky top-0 self-start">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Document Outline</p>
+                      <p className="text-xs text-on-surface-variant/60">Smooth-scroll to specific sections of your workbook.</p>
+                    </div>
+                    
+                    <nav className="space-y-1">
+                      {[
+                        { id: 'docs-cover', label: '1. Cover Outline' },
+                        { id: 'docs-meta', label: '2. Taxonomy & Track' },
+                        { id: 'docs-parts', label: '3. Lesson Readings' },
+                        { id: 'docs-quizzes', label: '4. Checkpoint Quizzes' },
+                        { id: 'docs-exam', label: '5. Final Exam Blueprint' },
+                        { id: 'docs-blueprint', label: '6. Quality Blueprint' },
+                        { id: 'docs-settings', label: '7. Lock Rules & Badges' },
+                        { id: 'notes-instructor', label: '8. Author Settings' },
+                      ].map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            const dom = document.getElementById(item.id);
+                            if (dom) dom.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className="w-full text-left text-xs font-semibold px-3 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                    </nav>
+
+                    <div className="bg-primary/5 rounded-xl p-3 border border-primary/20 text-xs text-primary leading-relaxed">
+                      💡 <strong>Tip:</strong> Any changes save instantly to our Cloud Database. Collaborative edits show faint amber markers.
+                    </div>
+                  </aside>
+
+                  {/* Active Centered Paper Editor Layout */}
+                  <div className="flex-1 p-4 md:p-8">
+                    <div id="docs-editor-container" className="bg-white text-slate-800 shadow-xl border border-neutral-200/55 rounded-xl p-6 md:p-12 max-w-4xl mx-auto space-y-12 min-h-[900px] leading-relaxed relative">
+                      
+                      {/* HIGHLIGHT RENDERER HELPERS */}
+                      {(() => {
+                        const getHighlight = (path: string) => {
+                          const h = draft.editHighlights?.[path];
+                          if (!h || h.updatedBy === user?.uid) return null;
+                          return h;
+                        };
+
+                        const borderClass = (path: string) => {
+                          const h = getHighlight(path);
+                          if (!h) return '';
+                          return 'border-amber-400/80 bg-amber-50/20 ring-1 ring-amber-300';
+                        };
+
+                        const highlightBadge = (path: string) => {
+                          const h = getHighlight(path);
+                          if (!h) return null;
+                          return (
+                            <div className="absolute right-2 -top-2 bg-amber-500 text-white font-black uppercase text-[8px] tracking-wider px-1.5 py-0.5 rounded-md shadow-sm z-10 pointer-events-none">
+                              ✏️ {h.name}
+                            </div>
+                          );
+                        };
+
+                        return (
+                          <>
+                            {/* Section 1: COVER COVER OUTLINE */}
+                            <section id="docs-cover" className="space-y-4 pt-4 border-b border-outline-variant/20 pb-8">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full">1. Cover Header</span>
+                              
+                              <div className="relative group space-y-1">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Document Main Title</label>
+                                <input
+                                  type="text"
+                                  value={draft.title}
+                                  onChange={(e) => updateDraft('title', e.target.value, 'title')}
+                                  className={`w-full text-3xl font-extrabold text-slate-900 border-none outline-none focus:bg-slate-50 p-2 rounded-lg leading-tight ${borderClass('title')}`}
+                                  placeholder="Untitled Module Title"
+                                />
+                                {highlightBadge('title')}
+                              </div>
+
+                              <div className="relative group space-y-1 pt-2">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Document Description & Abstract</label>
+                                <textarea
+                                  value={draft.description}
+                                  onChange={(e) => updateDraft('description', e.target.value, 'description')}
+                                  rows={3}
+                                  className={`w-full text-slate-600 font-medium text-sm border-none outline-none focus:bg-slate-50 p-2 rounded-lg leading-relaxed ${borderClass('description')}`}
+                                  placeholder="Write a clear module description summarizing lesson objectives, contents, coverage, and review targets..."
+                                />
+                                {highlightBadge('description')}
+                              </div>
+                            </section>
+
+                            {/* Section 2: TAXONOMY & CODES */}
+                            <section id="docs-meta" className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-outline-variant/20 pb-8 pt-4">
+                              <div className="space-y-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full block w-fit">2. Subject Category</span>
+                                <p className="text-xs text-slate-500 mt-1">Assign module to major subject path</p>
+                                <select
+                                  value={draft.subjectId}
+                                  onChange={(e) => updateDraft('subjectId', e.target.value, 'subjectId')}
+                                  className="w-full font-bold bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl p-3 outline-none focus:border-primary/50"
+                                >
+                                  {journeySubjects.map((sub) => (
+                                    <option key={sub.id} value={sub.id}>{sub.title}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full block w-fit">Estimated Study Duration</span>
+                                <p className="text-xs text-slate-500 mt-1">Time expected for student completion</p>
+                                <input
+                                  type="text"
+                                  value={draft.duration}
+                                  onChange={(e) => updateDraft('duration', e.target.value, 'duration')}
+                                  className="w-full font-bold bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl p-3 outline-none focus:border-primary/50"
+                                  placeholder="e.g. 45 min"
+                                />
+                              </div>
+                            </section>
+
+                            {/* Section 3: PARTS READING */}
+                            <section id="docs-parts" className="space-y-8 border-b border-outline-variant/20 pb-8 pt-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full">3. Lesson textbook content</span>
+                                  <p className="text-xs text-slate-500 mt-1.5">Core textbook sections containing key knowledge concepts</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={addPart}
+                                  className="rounded-xl px-3 py-1.5 text-xs font-black bg-primary text-on-primary flex items-center gap-1.5 shadow-sm"
+                                >
+                                  <Plus size={14} /> Add Part
+                                </button>
+                              </div>
+
+                              <div className="space-y-8 mt-4">
+                                {draft.parts.map((p, partIndex) => (
+                                  <div key={p.id || partIndex} className="bg-slate-50 rounded-2xl p-5 border border-slate-200/60 space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <p className="font-extrabold text-sm text-slate-800">Part {partIndex + 1}: Lesson Module Content</p>
+                                      {draft.parts.length > 1 && (
+                                        <button
+                                          onClick={() => requestRemovePart(partIndex)}
+                                          className="text-error/80 hover:text-error text-xs font-bold"
+                                        >
+                                          Remove Part
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Part Title */}
+                                    <div className="relative group space-y-1">
+                                      <label className="text-xs text-slate-500 font-semibold uppercase tracking-wide block">Part Header Title</label>
+                                      <input
+                                        type="text"
+                                        value={p.title}
+                                        onChange={(e) => {
+                                          const up = [...draft.parts];
+                                          up[partIndex].title = e.target.value;
+                                          updateDraft('parts', up, `parts.${partIndex}.title`);
+                                        }}
+                                        className={`w-full bg-white border border-slate-200 text-slate-800 font-extrabold text-xs rounded-xl p-2 px-3 outline-none focus:border-primary/50 ${borderClass(`parts.${partIndex}.title`)}`}
+                                      />
+                                      {highlightBadge(`parts.${partIndex}.title`)}
+                                    </div>
+
+                                    {/* Textbook Reading Material */}
+                                    <div className="relative group space-y-1">
+                                      <label className="text-xs text-slate-500 font-semibold uppercase tracking-wide block">Concept & Study Material Textbook section</label>
+                                      <textarea
+                                        value={p.textbookSection?.body || p.lessonBlocks?.[0]?.content || ''}
+                                        onChange={(e) => {
+                                          const up = [...draft.parts];
+                                          
+                                          // Update both data formats to keep backend robust
+                                          if (up[partIndex].textbookSection) {
+                                            up[partIndex].textbookSection.body = e.target.value;
+                                          } else {
+                                            up[partIndex].textbookSection = {
+                                              title: p.title + ' Reading',
+                                              body: e.target.value,
+                                              estimatedReadMinutes: 5
+                                            };
+                                          }
+                                          if (up[partIndex].lessonBlocks?.[0]) {
+                                            up[partIndex].lessonBlocks[0].content = e.target.value;
+                                          } else {
+                                            up[partIndex].lessonBlocks = [{ type: 'text' as const, content: e.target.value }];
+                                          }
+                                          
+                                          updateDraft('parts', up, `parts.${partIndex}.textbookBody`);
+                                        }}
+                                        rows={8}
+                                        className={`w-full bg-white border border-slate-200 text-slate-700 text-xs font-medium rounded-xl p-3 outline-none focus:border-primary/50 leading-relaxed font-mono ${borderClass(`parts.${partIndex}.textbookBody`)}`}
+                                        placeholder="Paste or write detailed curriculum lectures, topics review, or explanations here..."
+                                      />
+                                      {highlightBadge(`parts.${partIndex}.textbookBody`)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+
+                            {/* Section 4: CHECKPOINT QUIZZES */}
+                            <section id="docs-quizzes" className="space-y-6 border-b border-outline-variant/20 pb-8 pt-4">
+                              <div>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full">4. Checkpoint quizzes</span>
+                                <p className="text-xs text-slate-500 mt-1.5">Single formative assessment test item at end of each learning part</p>
+                              </div>
+
+                              <div className="space-y-6 mt-4">
+                                {draft.parts.map((p, partIndex) => {
+                                  const quiz = p.miniQuiz?.[0] || blankQuestion(`${p.id || `part-${partIndex + 1}`}-q1`);
+                                  
+                                  return (
+                                    <div key={p.id || partIndex} className="bg-slate-50/50 rounded-2xl p-5 border border-slate-200/50 space-y-4">
+                                      <p className="font-extrabold text-xs text-slate-600">Checkpoint Quiz {partIndex + 1} (End of Part {partIndex + 1})</p>
+                                      
+                                      {/* Quiz Stem */}
+                                      <div className="relative group space-y-1">
+                                        <label className="text-xs text-slate-500 font-semibold block">Question Stem</label>
+                                        <input
+                                          type="text"
+                                          value={quiz.stem}
+                                          onChange={(e) => {
+                                            const up = [...draft.parts];
+                                            const subQuiz = { ...quiz, stem: e.target.value };
+                                            up[partIndex].miniQuiz = [subQuiz];
+                                            updateDraft('parts', up, `parts.${partIndex}.miniQuiz.stem`);
+                                          }}
+                                          className={`w-full bg-white border border-slate-200 text-slate-800 text-xs font-semibold rounded-xl p-2.5 outline-none focus:border-primary/50 ${borderClass(`parts.${partIndex}.miniQuiz.stem`)}`}
+                                        />
+                                        {highlightBadge(`parts.${partIndex}.miniQuiz.stem`)}
+                                      </div>
+
+                                      {/* Choices Option list */}
+                                      <div className="space-y-2 pt-1 border-t border-slate-100">
+                                        <label className="text-xs text-slate-500 font-semibold block">Answer Options & Correct Answer Selected</label>
+                                        {quiz.options.map((opt) => (
+                                          <div key={opt.id} className="flex items-center gap-2">
+                                            <button
+                                              onClick={() => {
+                                                const up = [...draft.parts];
+                                                const subQuiz = { ...quiz, correctOptionId: opt.id };
+                                                up[partIndex].miniQuiz = [subQuiz];
+                                                updateDraft('parts', up, `parts.${partIndex}.miniQuiz.correctOptionId`);
+                                              }}
+                                              className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 select-none ${
+                                                quiz.correctOptionId === opt.id
+                                                  ? 'bg-primary text-on-primary'
+                                                  : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
+                                              }`}
+                                            >
+                                              {opt.id.toUpperCase()}
+                                            </button>
+                                            
+                                            <div className="relative group flex-1">
+                                              <input
+                                                type="text"
+                                                value={opt.text}
+                                                onChange={(e) => {
+                                                  const up = [...draft.parts];
+                                                  const nextQuiz = {
+                                                    ...quiz,
+                                                    options: quiz.options.map(o => o.id === opt.id ? { ...o, text: e.target.value } : o)
+                                                  };
+                                                  up[partIndex].miniQuiz = [nextQuiz];
+                                                  updateDraft('parts', up, `parts.${partIndex}.miniQuiz.option-${opt.id}`);
+                                                }}
+                                                className={`w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-xl p-2 outline-none focus:border-primary/50 ${borderClass(`parts.${partIndex}.miniQuiz.option-${opt.id}`)}`}
+                                              />
+                                              {highlightBadge(`parts.${partIndex}.miniQuiz.option-${opt.id}`)}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+
+                                      {/* Rationalization */}
+                                      <div className="relative group space-y-1">
+                                        <label className="text-xs text-slate-500 font-semibold block">Answer Rationalization & Explanation</label>
+                                        <textarea
+                                          value={quiz.explanation || ''}
+                                          onChange={(e) => {
+                                            const up = [...draft.parts];
+                                            const subQuiz = { ...quiz, explanation: e.target.value };
+                                            up[partIndex].miniQuiz = [subQuiz];
+                                            updateDraft('parts', up, `parts.${partIndex}.miniQuiz.explanation`);
+                                          }}
+                                          rows={2}
+                                          className={`w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-2.5 outline-none focus:border-primary/50 ${borderClass(`parts.${partIndex}.miniQuiz.explanation`)}`}
+                                          placeholder="Explain why the chosen correct key A-D is correct and outline why details differ..."
+                                        />
+                                        {highlightBadge(`parts.${partIndex}.miniQuiz.explanation`)}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </section>
+
+                            {/* Section 5: FINAL MODULE EXAM BLUEPRINT */}
+                            <section id="docs-exam" className="space-y-6 border-b border-outline-variant/20 pb-8 pt-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full">5. Final Module exam builder</span>
+                                  <p className="text-xs text-slate-500 mt-1.5">Summative final test to unlock the subject completion certificate</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={addFinalQuestion}
+                                  className="rounded-xl px-3 py-1.5 text-xs font-black bg-primary text-on-primary flex items-center gap-1.5 shadow-sm"
+                                >
+                                  <Plus size={14} /> Add Exam Question
+                                </button>
+                              </div>
+
+                              <div className="space-y-6 mt-4">
+                                {draft.finalExam.map((quiz, quizIndex) => (
+                                  <div key={quiz.id || quizIndex} className="bg-slate-50/40 rounded-2xl p-5 border border-slate-200 space-y-4">
+                                    <div className="flex items-center justify-between border-b border-slate-200/55 pb-2">
+                                      <p className="font-extrabold text-xs text-slate-700">Exam Question Item #{quizIndex + 1}</p>
+                                      {draft.finalExam.length > 2 && (
+                                        <button
+                                          onClick={() => {
+                                            const nextExam = draft.finalExam.filter((_, idx) => idx !== quizIndex);
+                                            updateDraft('finalExam', nextExam);
+                                          }}
+                                          className="text-error/80 hover:text-error text-[10px] font-black uppercase"
+                                        >
+                                          Delete Question
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Question stem */}
+                                    <div className="relative group space-y-1">
+                                      <label className="text-xs text-slate-500 font-semibold block">Stem</label>
+                                      <input
+                                        type="text"
+                                        value={quiz.stem}
+                                        onChange={(e) => {
+                                          const next = [...draft.finalExam];
+                                          next[quizIndex].stem = e.target.value;
+                                          updateDraft('finalExam', next, `finalExam.${quizIndex}.stem`);
+                                        }}
+                                        className={`w-full bg-white border border-slate-200 text-slate-800 text-xs font-bold rounded-xl p-2.5 outline-none focus:border-primary/50 ${borderClass(`finalExam.${quizIndex}.stem`)}`}
+                                      />
+                                      {highlightBadge(`finalExam.${quizIndex}.stem`)}
+                                    </div>
+
+                                    {/* Exam Choice option items A-D */}
+                                    <div className="space-y-2">
+                                      <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider block">Choices Options</label>
+                                      {quiz.options.map((opt) => (
+                                        <div key={opt.id} className="flex items-center gap-2">
+                                          <button
+                                            onClick={() => {
+                                              const next = [...draft.finalExam];
+                                              next[quizIndex].correctOptionId = opt.id;
+                                              updateDraft('finalExam', next, `finalExam.${quizIndex}.correctOptionId`);
+                                            }}
+                                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 select-none ${
+                                              quiz.correctOptionId === opt.id
+                                                ? 'bg-primary text-on-primary font-black shadow-inner'
+                                                : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
+                                            }`}
+                                          >
+                                            {opt.id.toUpperCase()}
+                                          </button>
+                                          <div className="relative group flex-1">
+                                            <input
+                                              type="text"
+                                              value={opt.text}
+                                              onChange={(e) => {
+                                                const next = [...draft.finalExam];
+                                                next[quizIndex].options = next[quizIndex].options.map(o => o.id === opt.id ? { ...o, text: e.target.value } : o);
+                                                updateDraft('finalExam', next, `finalExam.${quizIndex}.option-${opt.id}`);
+                                              }}
+                                              className={`w-full bg-white border border-slate-200 text-slate-800 text-xs rounded-xl p-2 outline-none focus:border-primary/50 ${borderClass(`finalExam.${quizIndex}.option-${opt.id}`)}`}
+                                            />
+                                            {highlightBadge(`finalExam.${quizIndex}.option-${opt.id}`)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+
+                                    {/* rationalization */}
+                                    <div className="relative group space-y-1">
+                                      <label className="text-xs text-slate-500 font-semibold block">Explanation & Rationale info</label>
+                                      <textarea
+                                        value={quiz.explanation || ''}
+                                        onChange={(e) => {
+                                          const next = [...draft.finalExam];
+                                          next[quizIndex].explanation = e.target.value;
+                                          updateDraft('finalExam', next, `finalExam.${quizIndex}.explanation`);
+                                        }}
+                                        className={`w-full bg-white border border-slate-200 text-slate-700 text-xs rounded-xl p-2.5 outline-none focus:border-primary/50 ${borderClass(`finalExam.${quizIndex}.explanation`)}`}
+                                        rows={2}
+                                        placeholder="Outline rationalization checkpoints..."
+                                      />
+                                      {highlightBadge(`finalExam.${quizIndex}.explanation`)}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+
+                            {/* Section 6: QUALITY DISTRIBUTION AND BLUEPRINT CHROME */}
+                            <section id="docs-blueprint" className="space-y-4 border-b border-outline-variant/20 pb-8 pt-4">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full">6. Core Quality Blueprint Specs</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                <div className="bg-slate-50 rounded-xl p-4 border border-outline-variant/30 space-y-1">
+                                  <p className="text-xs font-bold text-slate-600">Question Volume count</p>
+                                  <p className="text-slate-900 font-headline font-black text-xl leading-none">{draft.finalExam.length} assessment items</p>
+                                  <p className="text-[10px] text-slate-500 mt-1">Sourced in this active session workbook.</p>
+                                </div>
+                                <div className="bg-slate-50 rounded-xl p-4 border border-outline-variant/30 space-y-1">
+                                  <p className="text-xs font-bold text-slate-600">Distribution metrics</p>
+                                  <p className="text-slate-900 font-headline font-black text-xl leading-none">Complete Coverage</p>
+                                  <p className="text-[10px] text-slate-500 mt-1">Matches the global core LET Board review tracks.</p>
+                                </div>
+                              </div>
+                            </section>
+
+                            {/* Section 7: GRADING, UNLOCK RULES, AND BADGES */}
+                            <section id="docs-settings" className="space-y-6 pt-4 border-b border-outline-variant/20 pb-8">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full block w-fit">7. Grading, unlock Rules & badges settings</span>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                <div className="space-y-2">
+                                  <label className="text-xs font-bold text-slate-600 tracking-wide block">Passing Assessment Threshold Percentage</label>
+                                  <input
+                                    type="number"
+                                    value={draft.unlockRules?.minScorePercent || 75}
+                                    onChange={(e) => updateDraft('unlockRules', { ...draft.unlockRules, minScorePercent: Number(e.target.value) }, 'unlockRules.minScorePercent')}
+                                    className="w-full font-bold bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl p-3 outline-none focus:border-primary/50"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <p className="text-xs font-bold text-slate-600 block">Certificate distribution state</p>
+                                  <label className="flex items-center gap-2 pt-3 text-xs font-semibold text-slate-700 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={draft.certificateEnabled}
+                                      onChange={(e) => updateDraft('certificateEnabled', e.target.checked, 'certificateEnabled')}
+                                      className="rounded text-primary border-slate-300 focus:ring-primary focus:ring-opacity-20"
+                                    />
+                                    <span>Award fully generated certificate on success</span>
+                                  </label>
+                                </div>
+                              </div>
+                            </section>
+
+                            {/* Section 8: NOTES FOR THE AUTHOR */}
+                            <section id="notes-instructor" className="pt-4 space-y-2">
+                              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2.5 py-1 rounded-full block w-fit">8. Author Settings</span>
+                              <div className="bg-slate-50 p-4 rounded-xl border border-outline-variant/30 text-xs">
+                                <p className="font-semibold text-slate-700">Document authored by: <span className="text-slate-900 font-extrabold">{draft.authorName || 'No creator'}</span></p>
+                                {draft.authorEmail && <p className="text-[10px] text-slate-500 mt-1">Author email: {draft.authorEmail}</p>}
+                                <p className="text-[10px] text-slate-500 mt-2">To publish this module to student dashboard classes, navigate to 'Lock Rules & Badges' and choose enrollment criteria.</p>
+                              </div>
+                            </section>
+                          </>
+                        );
+                      })()}
+
+                    </div>
+                  </div>
+                </div>
               )}
 
-              {builderMode === 'edit' && activeStep === 'parts' && (
-                <PartsStep
-                  draft={draft}
-                  activePartIndex={activePartIndex}
-                  setActivePartIndex={setActivePartIndex}
-                  activePart={activePart}
-                  updatePart={updatePart}
-                  updatePartLessonBlock={updatePartLessonBlock}
-                  addPart={addPart}
-                  removePart={removePart}
-                  requestRemovePart={requestRemovePart}
-                  reorderPart={reorderPart}
-                  duplicatePart={duplicatePart}
-                />
-              )}
+              {/* ORIGINAL RECTANGLE TAB LAYOUT SWITCHER */}
+              {builderMode === 'edit' && studioLayoutMode === 'multistep' && (
+                <div className="p-5 md:p-6 space-y-6">
+                  {activeStep === 'outline' && (
+                    <OutlineStep draft={draft} selectedSubject={selectedSubject} updateDraft={updateDraft} />
+                  )}
 
-              {builderMode === 'edit' && activeStep === 'assessments' && (
-                <AssessmentsStep
-                  draft={draft}
-                  activePartIndex={activePartIndex}
-                  setActivePartIndex={setActivePartIndex}
-                  activePart={activePart}
-                  updateMiniQuestion={updateMiniQuestion}
-                  updateMiniOption={updateMiniOption}
-                  updateFinalQuestion={updateFinalQuestion}
-                  updateFinalOption={updateFinalOption}
-                  addFinalQuestion={addFinalQuestion}
-                />
-              )}
+                  {activeStep === 'parts' && (
+                    <PartsStep
+                      draft={draft}
+                      activePartIndex={activePartIndex}
+                      setActivePartIndex={setActivePartIndex}
+                      activePart={activePart}
+                      updatePart={updatePart}
+                      updatePartLessonBlock={updatePartLessonBlock}
+                      addPart={addPart}
+                      removePart={removePart}
+                      requestRemovePart={requestRemovePart}
+                      reorderPart={reorderPart}
+                      duplicatePart={duplicatePart}
+                    />
+                  )}
 
-              {builderMode === 'edit' && activeStep === 'design' && (
-                <LearningDesignStep draft={draft} updateDraft={updateDraft} />
-              )}
+                  {activeStep === 'assessments' && (
+                    <AssessmentsStep
+                      draft={draft}
+                      activePartIndex={activePartIndex}
+                      setActivePartIndex={setActivePartIndex}
+                      activePart={activePart}
+                      updateMiniQuestion={updateMiniQuestion}
+                      updateMiniOption={updateMiniOption}
+                      updateFinalQuestion={updateFinalQuestion}
+                      updateFinalOption={updateFinalOption}
+                      addFinalQuestion={addFinalQuestion}
+                    />
+                  )}
 
-              {builderMode === 'edit' && activeStep === 'publish' && (
-                <PublishStep draft={draft} classes={classes} updateDraft={updateDraft} saveModule={saveModule} />
+                  {activeStep === 'design' && (
+                    <LearningDesignStep draft={draft} updateDraft={updateDraft} />
+                  )}
+
+                  {activeStep === 'publish' && (
+                    <PublishStep draft={draft} classes={classes} updateDraft={updateDraft} saveModule={saveModule} />
+                  )}
+                </div>
               )}
             </div>
           </main>

@@ -46,6 +46,7 @@ const Flashcards = React.lazy(() => import('./pages/Flashcards'));
 const ProfileSettings = React.lazy(() => import('./pages/ProfileSettings'));
 const StudentTodo = React.lazy(() => import('./pages/StudentTodo'));
 const MistakeBank = React.lazy(() => import('./pages/MistakeBank'));
+const MistakeRepairDrill = React.lazy(() => import('./pages/MistakeRepairDrill'));
 
 function ProtectedRoute({ children, role, requireOnboarded = true }: { children: React.ReactNode, role?: 'admin' | 'instructor' | 'student', requireOnboarded?: boolean }) {
   const { user, isLoading } = useAuth();
@@ -179,6 +180,7 @@ function AppContent() {
             <Route path="/quiz-results" element={<ProtectedRoute role="student"><QuizResults /></ProtectedRoute>} />
             <Route path="/exam" element={<ProtectedRoute role="student"><ExamSimulation /></ProtectedRoute>} />
             <Route path="/practice" element={<ProtectedRoute role="student"><PracticeMode /></ProtectedRoute>} />
+            <Route path="/mistakes/drill" element={<ProtectedRoute role="student"><MistakeRepairDrill /></ProtectedRoute>} />
             <Route path="/flashcards" element={<ProtectedRoute role="student"><Flashcards /></ProtectedRoute>} />
             <Route path="/mistake-bank" element={<ProtectedRoute role="student"><MistakeBank /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><ProfileSettings /></ProtectedRoute>} />

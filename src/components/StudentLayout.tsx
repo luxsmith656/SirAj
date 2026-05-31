@@ -19,7 +19,9 @@ import {
   WifiOff,
   UserPlus,
   Wifi,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import HelpSupportButton from './HelpSupportButton';
 import { useNotifications } from '../hooks/useNotifications';
@@ -33,6 +35,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
   const [lowBandwidth, setLowBandwidth] = useState(() => localStorage.getItem('let-mastery-low-bandwidth') === '1');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,8 +86,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
     { name: 'Planner', path: '/student/todo', icon: CalendarDays },
     { name: 'Mistake Bank', path: '/mistake-bank', icon: AlertTriangle },
     { name: 'Reviewer Notes', path: '/flashcards', icon: BookOpen },
-    { name: 'Practice Mode', path: '/practice', icon: Target },
-    { name: 'Exam Simulator', path: '/exam', target: '/exam?type=mock', icon: Target },
+    { name: 'Practice', path: '/practice', icon: Target },
     { name: 'Performance', path: '/quiz-results', icon: BarChart },
   ];
 
@@ -116,7 +118,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
             return (
               <button 
                 key={item.name}
-                onClick={() => navigate(item.target || item.path)} 
+                onClick={() => navigate(item.path)} 
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all ${isActive ? 'bg-primary/10 text-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
               >
                 <item.icon size={18} />
@@ -164,66 +166,104 @@ export default function StudentLayout({ children, title }: { children: ReactNode
             </div>
           </div>
           <div className="flex items-center gap-1 sm:gap-2 ml-2 md:ml-4">
-            {/* Sync / Online Status indicator */}
-            <div className="hidden lg:flex items-center gap-2 mr-2 bg-surface-container px-3 py-1.5 rounded-full text-xs font-bold text-on-surface-variant cursor-pointer" onClick={isOnline ? triggerSync : undefined}>
-               {isOnline ? (
-                  isSyncing ? (
-                     <><span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span> Syncing...</>
-                  ) : (
-                     <><Wifi size={14} className="text-primary" /> Synced</>
-                  )
-               ) : (
-                  <><WifiOff size={14} className="text-error" /> Offline</>
-               )}
+            {/* Collapsible Utility Row */}
+            <div className={`flex items-center gap-1 sm:gap-1.5 transition-all duration-300 overflow-hidden ${
+              isToolbarExpanded 
+                ? 'max-w-xs md:max-w-md opacity-100 mr-1' 
+                : 'max-w-0 opacity-0 pointer-events-none'
+            }`}>
+              {/* Sync / Online Status indicator */}
+              <div 
+                onClick={isOnline ? triggerSync : undefined}
+                className="hidden lg:flex items-center gap-1.5 mr-1 bg-surface-container hover:bg-surface-container-high px-2.5 py-1 rounded-full text-[10px] font-extrabold text-on-surface-variant cursor-pointer select-none shrink-0" 
+              >
+                 {isOnline ? (
+                    isSyncing ? (
+                       <><span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Syncing</>
+                    ) : (
+                       <><Wifi size={12} className="text-primary" /> Synced</>
+                    )
+                 ) : (
+                    <><WifiOff size={12} className="text-error" /> Offline</>
+                 )}
+              </div>
+
+              {deferredPrompt && (
+                <button 
+                  onClick={handleInstallClick}
+                  className="hidden md:flex items-center gap-1.5 bg-tertiary text-on-tertiary px-2.5 py-1 rounded-full text-[10px] font-extrabold hover:bg-tertiary/90 transition-colors shrink-0"
+                >
+                  <Download size={12} /> Install PWA
+                </button>
+              )}
+
+              <button 
+                onClick={toggleTheme}
+                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"
+                title="Toggle theme"
+              >
+                <span className="material-symbols-outlined text-[18px]">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/join-class')}
+                className="p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"
+                title="Join class"
+                aria-label="Join class"
+              >
+                <UserPlus size={16} />
+              </button>
+
+              <button
+                onClick={() => setLowBandwidth((value) => !value)}
+                className={`p-1.5 rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0 ${lowBandwidth ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
+                title="Low-bandwidth mode"
+              >
+                <WifiOff size={16} />
+              </button>
+
+              <button 
+                onClick={() => navigate('/profile')} 
+                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors hidden md:flex items-center justify-center w-8 h-8 md:w-9 md:h-9 shrink-0"
+                title="Profile & Settings"
+              >
+                <Settings size={16} />
+              </button>
             </div>
 
-            {deferredPrompt && (
-              <button 
-                onClick={handleInstallClick}
-                className="hidden md:flex items-center gap-2 bg-tertiary text-on-tertiary px-3 py-1.5 rounded-full text-xs font-bold hover:bg-tertiary/90 transition-colors"
-              >
-                <Download size={14} /> Install App
-              </button>
-            )}
+            {/* Collapse / Uncollapse Button */}
+            <button
+              onClick={() => setIsToolbarExpanded((prev) => !prev)}
+              className={`p-1.5 rounded-full transition-all w-8 h-8 md:w-9 md:h-9 flex items-center justify-center ${
+                isToolbarExpanded 
+                  ? 'bg-primary text-on-primary' 
+                  : 'text-on-surface-variant hover:bg-surface-container bg-surface-container/40'
+              }`}
+              title={isToolbarExpanded ? "Collapse settings toolbar" : "Expand settings toolbar"}
+            >
+              {isToolbarExpanded ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
 
+            {/* Notification Bell (Always Visible) */}
             <button 
-              onClick={toggleTheme}
-              className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-9 h-9 md:w-10 md:h-10 flex items-center justify-center"
-              title="Toggle theme"
+              onClick={() => navigate('/notifications')} 
+              className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"
             >
-              <span className="material-symbols-outlined text-[20px]">{theme === 'light' ? 'dark_mode' : 'light_mode'}</span>
-            </button>
-            <button
-              onClick={() => navigate('/join-class')}
-              className="p-2 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-full transition-colors w-9 h-9 md:w-10 md:h-10 flex items-center justify-center"
-              title="Join class"
-              aria-label="Join class"
-            >
-              <UserPlus size={20} />
-            </button>
-            <button
-              onClick={() => setLowBandwidth((value) => !value)}
-              className={`p-2 rounded-full transition-colors w-9 h-9 md:w-10 md:h-10 flex items-center justify-center ${lowBandwidth ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
-              title="Low-bandwidth mode"
-            >
-              <WifiOff size={20} />
-            </button>
-            <button onClick={() => navigate('/notifications')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors relative w-9 h-9 md:w-10 md:h-10 flex items-center justify-center">
                {unreadCount > 0 && (
-                 <span className="absolute top-1 right-1 min-w-4 h-4 px-1 bg-error rounded-full text-[9px] leading-4 text-white font-black pointer-events-none text-center">
+                 <span className="absolute top-0 right-0 min-w-3.5 h-3.5 px-1 bg-error rounded-full text-[8.5px] leading-3.5 text-white font-black pointer-events-none text-center animate-bounce">
                    {unreadCount > 9 ? '9+' : unreadCount}
                  </span>
                )}
-               <Bell size={20} />
+               <Bell size={18} />
             </button>
-            <button onClick={() => navigate('/profile')} className="p-2 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors hidden md:block">
-              <Settings size={20} />
-            </button>
+
+            {/* Mobile-only Logout button (Always Visible) */}
             <button 
               onClick={handleSignOut}
-              className="p-2 text-on-surface-variant md:hidden"
+              className="p-1.5 text-on-surface-variant md:hidden shrink-0"
+              title="Sign Out"
             >
-              <LogOut size={20} />
+              <LogOut size={18} />
             </button>
           </div>
         </header>
@@ -239,7 +279,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
         {navItems.slice(0, 4).map(item => {
            const isActive = location.pathname.startsWith(item.path);
            return (
-              <button key={item.name} onClick={() => navigate(item.target || item.path)} className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-on-surface-variant/40'}`}>
+              <button key={item.name} onClick={() => navigate(item.path)} className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-on-surface-variant/40'}`}>
                 <item.icon size={20} />
                 <span className="text-[10px] font-bold tracking-tight">{item.name}</span>
               </button>

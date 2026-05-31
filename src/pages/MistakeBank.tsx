@@ -200,7 +200,7 @@ export default function MistakeBank() {
                           Review module
                         </button>
                       )}
-                      <button onClick={() => navigate(`/practice?category=${group.categoryId || ''}&topic=${group.topicId || ''}`)} className="inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container px-4 py-2.5 text-xs font-bold text-on-surface">
+                      <button onClick={() => navigate(`/mistakes/drill?category=${group.categoryId || ''}&topic=${group.topicId || ''}`)} className="inline-flex items-center gap-2 rounded-xl border border-outline-variant bg-surface-container px-4 py-2.5 text-xs font-bold text-on-surface">
                         <RefreshCcw size={14} />
                         Repair drill
                       </button>
@@ -278,7 +278,7 @@ export default function MistakeBank() {
 
                   <div className="flex lg:flex-col gap-2 shrink-0">
                     <button
-                      onClick={() => navigate(`/practice?category=${mistake.categoryId || ''}&topic=${mistake.topicId || ''}`)}
+                      onClick={() => navigate(`/mistakes/drill?category=${mistake.categoryId || ''}&topic=${mistake.topicId || ''}`)}
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-on-primary px-4 py-3 text-sm font-bold"
                     >
                       <RefreshCcw size={15} />

@@ -1473,42 +1473,6 @@ export default function LearningQuest() {
               </div>
             )}
             <div className="mt-5">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <button onClick={() => setIsBookmarked(!isBookmarked)} className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold ${isBookmarked ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface'}`}>
-                  <Bookmark size={14} />
-                  {isBookmarked ? 'Bookmarked' : 'Bookmark'}
-                </button>
-                <button disabled={!selectedRange} onClick={() => void addHighlight(false)} className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 text-amber-700 px-3 py-2 text-xs font-bold disabled:opacity-40">
-                  <Highlighter size={14} />
-                  Highlight
-                </button>
-                <button disabled={!selectedRange} onClick={() => void addHighlight(true)} className="inline-flex items-center gap-2 rounded-full bg-surface-container text-on-surface px-3 py-2 text-xs font-bold disabled:opacity-40">
-                  <EyeOff size={14} />
-                  Hide for recall
-                </button>
-                <button disabled={!selectedRange} onClick={() => void addHighlight(false, true)} className="inline-flex items-center gap-2 rounded-full bg-surface-container text-on-surface px-3 py-2 text-xs font-bold disabled:opacity-40">
-                  <MessageCircle size={14} />
-                  Add note
-                </button>
-                <button onClick={saveLessonNote} className="inline-flex items-center gap-2 rounded-full bg-primary text-on-primary px-3 py-2 text-xs font-bold">
-                  <Save size={14} />
-                  Save notes
-                </button>
-                {lessonHighlights.length > 0 && (
-                  <>
-                    {hiddenHighlightCount > 0 && (
-                      <button onClick={revealedHighlightIds.length ? hideRevealedHighlights : revealAllHiddenHighlights} className="inline-flex items-center gap-2 rounded-full bg-surface-container text-on-surface px-3 py-2 text-xs font-bold">
-                        {revealedHighlightIds.length ? <EyeOff size={14} /> : <Eye size={14} />}
-                        {revealedHighlightIds.length ? 'Hide revealed' : `Reveal hidden (${hiddenHighlightCount})`}
-                      </button>
-                    )}
-                    <button onClick={clearLessonHighlights} className="inline-flex items-center gap-2 rounded-full bg-error/10 text-error px-3 py-2 text-xs font-bold">
-                      <X size={14} />
-                      Clear marks
-                    </button>
-                  </>
-                )}
-              </div>
               <div className="fixed bottom-24 left-1/2 z-40 flex -translate-x-1/2 gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest/95 p-2 shadow-lg backdrop-blur md:hidden">
                 <button disabled={!selectedRange} onClick={() => void addHighlight(false)} className="rounded-full p-2 text-on-surface disabled:opacity-35" aria-label="Highlight selected text">
                   <Highlighter size={17} />
@@ -1531,23 +1495,18 @@ export default function LearningQuest() {
                   </button>
                 )}
               </div>
-              <div className="hidden lg:flex fixed right-5 top-1/3 z-30 w-56 flex-col gap-2 rounded-2xl border border-outline-variant/40 bg-surface-container-lowest/95 p-3 shadow-lg backdrop-blur">
-                <div className="border-b border-outline-variant/30 pb-2">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">Study marker</p>
-                  <p className="mt-1 line-clamp-3 text-[11px] font-semibold text-on-surface-variant/70">
-                    {selectedRange ? `"${selectedRange.text}"` : 'Select exact text in the reader to enable marks.'}
-                  </p>
-                </div>
-                <MarkerToolButton disabled={!selectedRange} icon={Highlighter} label="Highlight" onClick={() => void addHighlight(false)} />
-                <MarkerToolButton disabled={!selectedRange} icon={EyeOff} label="Hide for recall" onClick={() => void addHighlight(true)} />
-                <MarkerToolButton disabled={!selectedRange} icon={MessageCircle} label="Add note mark" onClick={() => void addHighlight(false, true)} />
-                <MarkerToolButton icon={Bookmark} label={isBookmarked ? 'Bookmarked' : 'Bookmark'} active={isBookmarked} onClick={() => setIsBookmarked(!isBookmarked)} />
-                <MarkerToolButton icon={Save} label="Save notes" onClick={saveLessonNote} />
-                <MarkerToolButton icon={Download} label="Study guide" onClick={downloadStudyGuide} />
+              <div className="hidden lg:flex fixed right-5 top-1/3 z-30 flex-row gap-1 rounded-full border border-outline-variant/40 bg-surface-container-lowest/95 p-1 px-2 shadow-lg backdrop-blur items-center">
+                <MarkerToolButton disabled={!selectedRange} icon={Highlighter} label="Highlight" iconOnly={true} onClick={() => void addHighlight(false)} />
+                <MarkerToolButton disabled={!selectedRange} icon={EyeOff} label="Hide for recall" iconOnly={true} onClick={() => void addHighlight(true)} />
+                <MarkerToolButton disabled={!selectedRange} icon={MessageCircle} label="Add note mark" iconOnly={true} onClick={() => void addHighlight(false, true)} />
+                <MarkerToolButton icon={Bookmark} label={isBookmarked ? 'Bookmarked' : 'Bookmark'} active={isBookmarked} iconOnly={true} onClick={() => setIsBookmarked(!isBookmarked)} />
+                <MarkerToolButton icon={Save} label="Save notes" iconOnly={true} onClick={saveLessonNote} />
+                <MarkerToolButton icon={Download} label="Study guide" iconOnly={true} onClick={downloadStudyGuide} />
                 {hiddenHighlightCount > 0 && (
                   <MarkerToolButton
                     icon={revealedHighlightIds.length ? EyeOff : Eye}
                     label={revealedHighlightIds.length ? 'Hide revealed' : 'Reveal hidden'}
+                    iconOnly={true}
                     onClick={revealedHighlightIds.length ? hideRevealedHighlights : revealAllHiddenHighlights}
                   />
                 )}
@@ -1571,66 +1530,6 @@ export default function LearningQuest() {
                       <button disabled={!selectedRange} onClick={() => void addHighlight(false, true)} className="rounded-full bg-surface-container px-3 py-2 text-xs font-bold text-on-surface disabled:opacity-40">Note</button>
                     </div>
                   </div>
-                </div>
-              )}
-              {activeHighlightId && (
-                <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/5 p-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
-                        <MessageCircle size={14} />
-                        Study mark
-                      </div>
-                      <p className="mt-2 max-w-2xl text-sm font-semibold text-on-surface">
-                        "{lessonHighlights.find((item) => item.id === activeHighlightId)?.text}"
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {lessonHighlights.find((item) => item.id === activeHighlightId)?.hidden ? (
-                        <>
-                          <button
-                            onClick={() => toggleRevealHighlight(activeHighlightId)}
-                            className="inline-flex items-center gap-2 rounded-full bg-surface-container px-3 py-2 text-xs font-bold text-on-surface"
-                          >
-                            <Eye size={14} />
-                            {revealedHighlightIds.includes(activeHighlightId) ? 'Hide again' : 'Reveal once'}
-                          </button>
-                          <button
-                            onClick={() => void updateHighlight(activeHighlightId, { hidden: false })}
-                            className="inline-flex items-center gap-2 rounded-full bg-primary text-on-primary px-3 py-2 text-xs font-bold"
-                          >
-                            <Eye size={14} />
-                            Unhide permanently
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => void updateHighlight(activeHighlightId, { hidden: true })}
-                          className="inline-flex items-center gap-2 rounded-full bg-surface-container px-3 py-2 text-xs font-bold text-on-surface"
-                        >
-                          <EyeOff size={14} />
-                          Hide for recall
-                        </button>
-                      )}
-                      <button
-                        onClick={() => void removeHighlight(activeHighlightId)}
-                        className="inline-flex items-center gap-2 rounded-full bg-error/10 px-3 py-2 text-xs font-bold text-error"
-                      >
-                        <X size={14} />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  <details className="mt-3">
-                    <summary className="cursor-pointer text-xs font-black uppercase tracking-widest text-on-surface-variant/60">Note on this mark</summary>
-                    <textarea
-                      value={lessonHighlights.find((item) => item.id === activeHighlightId)?.note || ''}
-                      onChange={(event) => void updateHighlight(activeHighlightId, { note: event.target.value })}
-                      rows={2}
-                      placeholder="Add a short note for this exact highlighted idea."
-                      className="mt-3 w-full bg-surface-container-lowest border border-outline-variant/30 rounded-xl p-3 text-sm outline-none focus:border-primary/40 resize-none"
-                    />
-                  </details>
                 </div>
               )}
               <details className="mt-4 rounded-2xl border border-outline-variant/40 bg-surface-container/30 p-3">
@@ -2061,18 +1960,21 @@ function renderHighlightedText(
         data-annotation-end={end}
         data-annotation-hidden={isHidden && !isRevealed ? 'true' : 'false'}
         onClick={() => {
+          if (isHidden) {
+            toggleRevealHighlight(highlight.id);
+          }
           setActiveHighlightId(activeHighlightId === highlight.id ? '' : highlight.id);
         }}
         className={`inline rounded px-1 font-semibold transition-colors ${
           isHidden
             ? isRevealed
               ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
-              : 'bg-on-surface text-surface hover:bg-on-surface/90'
-            : 'bg-amber-200/70 text-on-surface hover:bg-amber-300/80'
+              : 'bg-on-surface text-surface hover:bg-on-surface/90 cursor-pointer'
+            : 'bg-amber-200/70 text-on-surface hover:bg-amber-300/80 cursor-pointer'
         }`}
         title={isHidden && !isRevealed ? 'Hidden for recall - tap to reveal' : highlight.note || 'Click to add or view note'}
       >
-        {isHidden && !isRevealed ? 'Hidden for recall - tap to reveal' : exactText}
+        {isHidden && !isRevealed ? (exactText.length <= 15 ? 'reveal' : 'click to reveal text') : exactText}
         {highlight.note && <sup className="ml-1 text-primary">note</sup>}
         {highlight.legacy && <sup className="ml-1 text-on-surface-variant/50">legacy</sup>}
       </button>,
@@ -2105,25 +2007,27 @@ function MarkerToolButton({
   disabled = false,
   active = false,
   onClick,
+  iconOnly = false,
 }: {
   icon: React.ComponentType<{ size?: number }>;
   label: string;
   disabled?: boolean;
   active?: boolean;
   onClick: () => void;
+  iconOnly?: boolean;
 }) {
   return (
     <button
       disabled={disabled}
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-bold transition-colors disabled:opacity-35 ${
+      className={`flex items-center justify-center rounded-xl p-2.5 transition-colors disabled:opacity-35 ${
         active ? 'bg-primary text-on-primary' : 'text-on-surface hover:bg-surface-container'
-      }`}
+      } ${iconOnly ? 'w-10 h-10' : 'gap-2 px-3 py-2 text-left text-xs font-bold'}`}
       title={label}
       aria-label={label}
     >
-      <Icon size={16} />
-      <span>{label}</span>
+      <Icon size={18} />
+      {!iconOnly && <span>{label}</span>}
     </button>
   );
 }

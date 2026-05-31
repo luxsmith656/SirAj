@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../components/AdminLayout';
+import InstructorLayout from '../components/InstructorLayout';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, where, getDocs, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -209,8 +210,10 @@ export default function Analytics() {
   const COLORS = ['#1b366a', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
   const STATUS_COLORS = ['#10b981', '#cbd5e1'];
 
+  const LayoutComponent = user?.role === 'admin' ? AdminLayout : InstructorLayout;
+
   return (
-    <AdminLayout title="Performance Metrics">
+    <LayoutComponent title="Performance Metrics">
       <div className="p-8 max-w-[1400px] mx-auto space-y-8 text-on-surface">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                <div>
@@ -383,6 +386,6 @@ export default function Analytics() {
                </div>
             </div>
          </div>
-    </AdminLayout>
+    </LayoutComponent>
   );
 }

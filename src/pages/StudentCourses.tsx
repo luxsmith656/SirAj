@@ -103,12 +103,23 @@ function normalizeTopic(id: string, data: any): ReviewTopic {
 function categoryAllowedForStudent(category: ReviewSubject & { raw: any }, user: any) {
   const track = user?.reviewTrack || '';
   if (!track) return true;
+  
+  // If student has an active class, they can see multiple tracks assigned by the class.
+  // For now, if activeClassId exists, they bypass strict personal track limits.
+  if (user?.activeClassId) return true;
+
   const raw = category.raw || {};
   const allowedTracks = raw.reviewTracks || raw.trackIds || raw.tracks;
   if (Array.isArray(allowedTracks) && allowedTracks.length > 0) {
-    return allowedTracks.includes(track) || allowedTracks.includes('all');
+    if (allowedTracks.includes('all')) return true;
+    return allowedTracks.includes(track);
   }
   if (raw.reviewTrack) return raw.reviewTrack === track || raw.reviewTrack === 'all';
+
+  // Strict enforcement: if track matches category id exactly (e.g., student track 'gened' only sees category 'gened')
+  if (track === 'gened' || track === 'profed' || track === 'major') {
+     return category.id === track;
+  }
 
   if (track === 'elementary') {
     const haystack = `${category.id} ${category.title} ${category.levelLabel}`.toLowerCase();
@@ -248,8 +259,7 @@ export default function StudentCourses() {
   const publicReviewers = useMemo(() => visibleModules
     .filter((module) => !module.publishScope || module.publishScope === 'public')
     .filter((module) => moduleAllowedForStudent(module as any, user)), [visibleModules, user]);
-  const explorePublicReviewers = useMemo(() => publicReviewers
-    .filter((module) => !progressByModule[module.id]), [publicReviewers, progressByModule]);
+  const explorePublicReviewers = useMemo(() => publicReviewers, [publicReviewers]);
 
   const allowedSubjects = useMemo<ReviewSubject[]>(() => {
     return categories
@@ -359,7 +369,7 @@ export default function StudentCourses() {
 
             <div className="grid grid-cols-3 gap-3 min-w-full lg:min-w-[360px]">
               <Stat label="Tracks" value={allowedSubjects.length} />
-              <Stat label="Explore" value={explorePublicReviewers.length} />
+              <Stat label="Reviewers" value={explorePublicReviewers.length} />
               <Stat label="Completed" value={completedCount} />
             </div>
           </div>
@@ -378,7 +388,7 @@ export default function StudentCourses() {
           <aside className="space-y-4">
             <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-4 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="font-headline font-extrabold text-lg text-on-surface">Explore Public Reviewers</h2>
+                <h2 className="font-headline font-extrabold text-lg text-on-surface">Track Reviewers</h2>
                 <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40">{allowedSubjects.length} tracks</span>
               </div>
               
@@ -476,32 +486,85 @@ export default function StudentCourses() {
                 </div>
               ) : (
                 selectedPublicModules.map((module, index) => {
+                  const progress = progressByModule[module.id];
+                  const isCompleted = progress?.status === 'completed' || (progress?.progressPercent ?? 0) >= 100;
+                  const isStarted = !!progress;
+
                   return (
-                    <article key={module.id} className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 shadow-sm">
+                    <article 
+                      key={module.id} 
+                      className={`border rounded-2xl p-5 shadow-sm transition-all ${
+                        isCompleted
+                          ? 'border-green-500/40 bg-green-500/[0.01]'
+                          : isStarted
+                            ? 'border-blue-500/30 bg-blue-500/[0.01]'
+                            : 'bg-surface-container-lowest border-outline-variant'
+                      }`}
+                    >
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                         <div className="flex gap-4 min-w-0">
-                          <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                            isCompleted 
+                              ? 'bg-green-500/10 text-green-700' 
+                              : isStarted 
+                                ? 'bg-blue-500/10 text-blue-700' 
+                                : 'bg-primary/10 text-primary'
+                          }`}>
                             <Library size={24} />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40">Public reviewer {index + 1} / {module.duration}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40">Public reviewer {index + 1} / {module.duration}</p>
+                              {isCompleted && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-green-700">
+                                  ✓ Completed
+                                </span>
+                              )}
+                              {!isCompleted && isStarted && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-blue-700">
+                                  ⚡ Active ({progress.progressPercent}%)
+                                </span>
+                              )}
+                            </div>
                             <h3 className="text-lg font-extrabold text-on-surface mt-1">{module.title}</h3>
                             <p className="text-sm text-on-surface-variant mt-1">{module.description}</p>
                             {module.authorName && <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 mt-3">Author: {module.authorName}</p>}
                           </div>
                         </div>
                         <button
-                          onClick={() => startReview(module)}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-on-primary px-5 py-3 text-sm font-bold"
+                          onClick={() => {
+                            if (isStarted) {
+                              navigate(`/quest?moduleId=${module.id}`);
+                            } else {
+                              startReview(module);
+                            }
+                          }}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold shadow-sm whitespace-nowrap ${
+                            isCompleted
+                              ? 'bg-green-600 hover:bg-green-700 text-white'
+                              : isStarted
+                                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-primary text-on-primary hover:bg-primary/95'
+                          }`}
                         >
-                          Start Review
+                          {isCompleted ? 'Re-visit / Re-take' : isStarted ? 'Resume Review' : 'Start Review'}
                           <ArrowRight size={16} />
                         </button>
                       </div>
 
-                      <div className="mt-5 rounded-xl border border-outline-variant/30 bg-surface-container/30 p-3 text-xs font-bold text-on-surface-variant/70">
-                        Not active yet. Starting this reviewer creates your real progress record at 0%.
-                      </div>
+                      {isCompleted ? (
+                        <div className="mt-5 rounded-xl border border-green-500/20 bg-green-500/5 p-3 text-xs font-bold text-green-700/90">
+                          Completed! Click Re-visit to study textbook blocks again or retake tests. Retaking quizzes/exams records a new attempt score.
+                        </div>
+                      ) : isStarted ? (
+                        <div className="mt-5 rounded-xl border border-blue-500/20 bg-blue-500/5 p-3 text-xs font-bold text-blue-700/90">
+                          Active. Current progress is {progress.progressPercent}%. Click Resume Review to continue from where you left off.
+                        </div>
+                      ) : (
+                        <div className="mt-5 rounded-xl border border-outline-variant/30 bg-surface-container/30 p-3 text-xs font-bold text-on-surface-variant/70">
+                          Not active yet. Starting this reviewer creates your real progress record at 0%.
+                        </div>
+                      )}
                     </article>
                   );
                 })

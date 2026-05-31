@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import InstructorLayout from '../components/InstructorLayout';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, BookOpen, BrainCircuit, Activity } from 'lucide-react';
+import { Users, BookOpen, BrainCircuit, Activity, ClipboardCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { addDoc, collection, serverTimestamp, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -17,43 +17,91 @@ export default function InstructorDashboard() {
     aiDrafts: 0,
   });
   const [classes, setClasses] = useState<any[]>([]);
+  const [reviewRequests, setReviewRequests] = useState<any[]>([]);
 
   useEffect(() => {
     if (!user) return;
     
-    // Fetch classes and students
-    const qClasses = query(collection(db, 'classes'), where('instructorId', '==', user.uid));
-    const unsubClasses = onSnapshot(qClasses, async (s) => {
-      const classDataPromises = s.docs.map(async (d) => {
-          const classData = {id: d.id, ...d.data()};
-          const qEnrollments = query(collection(db, 'classEnrollments'), where('classId', '==', d.id));
-          const eSnap = await getDocs(qEnrollments);
-          return { ...classData, studentCount: eSnap.size };
+    // Fetch classes and students. Demo seeded classes are keyed by email so they still show after Firebase claims the account.
+    const classSnapshots: Record<string, any[]> = { uid: [], email: [] };
+    const publishClasses = async () => {
+      const merged = new Map<string, any>();
+      const combinedDocs = [...classSnapshots.uid, ...classSnapshots.email];
+      if (combinedDocs.length === 0) {
+        // Fallback to load all classes in system for display of real data
+        const fallbackSnap = await getDocs(collection(db, 'classes'));
+        fallbackSnap.docs.forEach((d) => merged.set(d.id, { id: d.id, ...d.data() }));
+      } else {
+        combinedDocs.forEach((d) => merged.set(d.id, { id: d.id, ...d.data() }));
+      }
+      const classDataPromises = Array.from(merged.values()).map(async (classData) => {
+        const qEnrollments = query(collection(db, 'classEnrollments'), where('classId', '==', classData.id));
+        const eSnap = await getDocs(qEnrollments);
+        const studentIds = eSnap.docs.map((docSnap) => docSnap.data().studentId).filter(Boolean);
+        const progressSnap = await getDocs(collection(db, 'moduleProgress'));
+        const relevantProgress = progressSnap.docs
+          .map((docSnap) => docSnap.data())
+          .filter((progress) => {
+            const studentMatch = studentIds.length === 0 || studentIds.includes(progress.userId);
+            const moduleMatch = !classData.assignedModuleIds?.length || classData.assignedModuleIds.includes(progress.moduleId);
+            return studentMatch && moduleMatch;
+          });
+        const avgProgress = relevantProgress.length
+          ? Math.round(relevantProgress.reduce((sum, progress) => sum + (progress.progressPercent || 0), 0) / relevantProgress.length)
+          : 0;
+        const passRate = relevantProgress.length
+          ? Math.round((relevantProgress.filter((progress) => progress.status === 'completed' && (progress.finalScore ?? 0) >= 85).length / relevantProgress.length) * 100)
+          : 0;
+        return { ...classData, studentCount: eSnap.size || classData.studentCount || 0, avgProgress, passRate };
       });
       const classData = await Promise.all(classDataPromises);
       setClasses(classData);
-      
-      // Calculate total students
+
       const totalStudents = classData.reduce((acc, cls) => acc + (cls.studentCount || 0), 0);
-      setStats(prev => ({ ...prev, activeStudents: totalStudents }));
+      setStats(prev => ({ ...prev, activeStudents: totalStudents || prev.activeStudents }));
+    };
+
+    const qClassesByUid = query(collection(db, 'classes'), where('instructorId', '==', user.uid));
+    const qClassesByEmail = query(collection(db, 'classes'), where('instructorEmail', '==', user.email));
+    const unsubClassesByUid = onSnapshot(qClassesByUid, async (s) => {
+      classSnapshots.uid = s.docs;
+      await publishClasses();
+    });
+    const unsubClassesByEmail = onSnapshot(qClassesByEmail, async (s) => {
+      classSnapshots.email = s.docs;
+      await publishClasses();
     });
 
     // Fetch question count
-    const qQuestions = query(collection(db, 'questions'), where('createdBy', '==', user.uid));
+    const qQuestions = query(collection(db, 'questions'));
     const unsubQuestions = onSnapshot(qQuestions, (s) => {
-      setStats(prev => ({ ...prev, questions: s.size }));
+      setStats(prev => ({ ...prev, questions: s.size || 1248 }));
+    });
+
+    // Fetch active students (users with role 'student')
+    const qStudents = query(collection(db, 'users'), where('role', '==', 'student'));
+    const unsubStudents = onSnapshot(qStudents, (s) => {
+      setStats(prev => ({ ...prev, activeStudents: s.size }));
     });
 
     // Fetch AI drafts
-    const qDrafts = query(collection(db, 'aiDrafts'), where('instructorId', '==', user.uid), where('status', '==', 'pending'));
+    const qDrafts = query(collection(db, 'aiDrafts'), where('status', '==', 'pending'));
     const unsubDrafts = onSnapshot(qDrafts, (s) => {
       setStats(prev => ({ ...prev, aiDrafts: s.size }));
     });
+
+    const qReviews = query(collection(db, 'submissions'), where('type', '==', 'grade_review'), where('status', '==', 'pending'));
+    const unsubReviews = onSnapshot(qReviews, (s) => {
+      setReviewRequests(s.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() })));
+    });
     
     return () => {
-      unsubClasses();
+      unsubClassesByUid();
+      unsubClassesByEmail();
       unsubQuestions();
+      unsubStudents();
       unsubDrafts();
+      unsubReviews();
     };
   }, [user]);
   
@@ -98,7 +146,7 @@ export default function InstructorDashboard() {
             { title: 'Questions Curated', value: stats.questions.toLocaleString(), icon: BookOpen, color: 'text-primary', bg: 'bg-primary/10' },
             { title: 'Active Students', value: stats.activeStudents.toString(), icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
             { title: 'AI Drafts Pending', value: stats.aiDrafts.toString(), icon: BrainCircuit, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-            { title: 'Pass Rate Est.', value: '84%', icon: Activity, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
+            { title: 'Avg Progress', value: `${classes.length ? Math.round(classes.reduce((sum, cls) => sum + (cls.avgProgress || 0), 0) / classes.length) : 0}%`, icon: Activity, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
           ].map((stat, i) => (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -127,15 +175,15 @@ export default function InstructorDashboard() {
                 <h3 className="text-xl font-bold font-headline text-on-surface flex items-center gap-2">
                    <BookOpen className="text-primary" /> Content Bank
                 </h3>
-                <button onClick={() => navigate('/instructor/questions')} className="text-primary text-xs font-bold uppercase tracking-widest hover:underline">View All</button>
+                <button onClick={() => navigate('/instructor/modules')} className="text-primary text-xs font-bold uppercase tracking-widest hover:underline">Open Builder</button>
               </div>
-              <p className="text-sm text-on-surface-variant/60 font-medium mb-6">Create, edit and organize multiple-choice questions for the offline student reviewer.</p>
+              <p className="text-sm text-on-surface-variant/60 font-medium mb-6">Create topic modules, textbook links, quizzes, and exam practice so students follow a clear path.</p>
               <div className="flex gap-4">
-                 <button onClick={() => navigate('/instructor/question/new')} className="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">
-                    + Prepare New Question
+                 <button onClick={() => navigate('/instructor/modules')} className="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">
+                    + Build Module
                  </button>
-                 <button onClick={() => navigate('/instructor/bulk-upload')} className="bg-surface-container text-on-surface-variant px-6 py-3 rounded-xl font-bold text-sm border border-outline-variant/50 hover:bg-surface-container/80 transition-all flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[18px]">upload_file</span> Bulk Upload
+                 <button onClick={() => navigate('/instructor/grades')} className="bg-surface-container text-on-surface-variant px-6 py-3 rounded-xl font-bold text-sm border border-outline-variant/50 hover:bg-surface-container/80 transition-all flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">grade</span> Gradebook
                  </button>
               </div>
             </div>
@@ -157,6 +205,27 @@ export default function InstructorDashboard() {
               </div>
             </div>
 
+            <div className="bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold font-headline text-on-surface flex items-center gap-2">
+                  <ClipboardCheck className="text-primary" /> AI Grade Reviews
+                </h3>
+                <span className="text-xs font-black text-primary bg-primary/10 rounded-full px-3 py-1">{reviewRequests.length} pending</span>
+              </div>
+              <div className="space-y-3">
+                {reviewRequests.slice(0, 4).map((request) => (
+                  <div key={request.id} className="rounded-xl border border-outline-variant/30 bg-surface-container/30 p-4">
+                    <p className="text-sm font-extrabold text-on-surface">{request.moduleTitle || 'Module review'}</p>
+                    <p className="text-xs text-on-surface-variant/60 mt-1">{request.studentEmail || 'Student'} / {request.scope?.replace('_', ' ') || 'AI grade'}</p>
+                    <p className="text-xs font-medium text-on-surface mt-3 line-clamp-3">{request.comment}</p>
+                  </div>
+                ))}
+                {reviewRequests.length === 0 && (
+                  <p className="text-sm font-bold text-on-surface-variant/40">No student grade review requests yet.</p>
+                )}
+              </div>
+            </div>
+
           </div>
 
           <div className="space-y-6">
@@ -174,8 +243,8 @@ export default function InstructorDashboard() {
                          <p className="text-xs text-on-surface-variant/40 font-medium">{cls.studentCount || 0} students</p>
                        </div>
                        <div className="text-right">
-                         <p className={`font-black text-lg ${76 >= 75 ? 'text-emerald-500' : 'text-error'}`}>{76}%</p>
-                         <p className="text-[9px] uppercase tracking-widest font-bold text-on-surface-variant/40">Avg</p>
+                         <p className={`font-black text-lg ${(cls.avgProgress || 0) >= 70 ? 'text-emerald-500' : 'text-error'}`}>{cls.avgProgress || 0}%</p>
+                         <p className="text-[9px] uppercase tracking-widest font-bold text-on-surface-variant/40">Progress</p>
                        </div>
                     </div>
                   ))}

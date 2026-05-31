@@ -28,13 +28,24 @@ export default function InstructorGradebook() {
     const byUid = query(collection(db, 'classes'), where('instructorId', '==', user.uid));
     const byEmail = query(collection(db, 'classes'), where('instructorEmail', '==', user.email));
     const snapshots: Record<string, any[]> = { uid: [], email: [] };
-    const publish = () => {
+    const publish = async () => {
       const merged = new Map<string, any>();
-      [...snapshots.uid, ...snapshots.email].forEach((classDoc) => merged.set(classDoc.id, { id: classDoc.id, ...classDoc.data() }));
-      const nextClasses = Array.from(merged.values());
-      setClasses(nextClasses);
-      const requestedClassId = searchParams.get('class');
-      setSelectedClassId((current) => current || requestedClassId || nextClasses[0]?.id || '');
+      const combinedDocs = [...snapshots.uid, ...snapshots.email];
+      if (combinedDocs.length === 0) {
+        getDocs(collection(db, 'classes')).then((fallbackSnap) => {
+          fallbackSnap.docs.forEach((classDoc) => merged.set(classDoc.id, { id: classDoc.id, ...classDoc.data() }));
+          const nextClasses = Array.from(merged.values());
+          setClasses(nextClasses);
+          const requestedClassId = searchParams.get('class');
+          setSelectedClassId((current) => current || requestedClassId || nextClasses[0]?.id || '');
+        });
+      } else {
+        combinedDocs.forEach((classDoc) => merged.set(classDoc.id, { id: classDoc.id, ...classDoc.data() }));
+        const nextClasses = Array.from(merged.values());
+        setClasses(nextClasses);
+        const requestedClassId = searchParams.get('class');
+        setSelectedClassId((current) => current || requestedClassId || nextClasses[0]?.id || '');
+      }
     };
 
     const unsubUid = onSnapshot(byUid, (snap) => {
@@ -58,8 +69,7 @@ export default function InstructorGradebook() {
       const remoteModules = snap.docs.map((moduleDoc) => ({ id: moduleDoc.id, ...moduleDoc.data() }));
       setModules(remoteModules);
     });
-
-    getDocs(collection(db, 'users')).then((snap) => {
+    const unsubStudents = onSnapshot(collection(db, 'users'), (snap) => {
       setStudents(snap.docs.map((userDoc) => ({ uid: userDoc.id, ...userDoc.data() })).filter((row: any) => row.role === 'student'));
     });
 
@@ -70,6 +80,7 @@ export default function InstructorGradebook() {
       unsubAttemptLogs();
       unsubEnrollments();
       unsubModules();
+      unsubStudents();
     };
   }, [user, searchParams]);
 

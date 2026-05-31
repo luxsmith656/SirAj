@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import DeleteConfirmModal from '../components/DeleteConfirmModal';
+import ConfirmModal from '../components/ConfirmModal';
 import Toast from '../components/Toast';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
@@ -39,6 +39,7 @@ export default function QuestionBank() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedTrack, setSelectedTrack] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const navigate = useNavigate();
@@ -54,6 +55,9 @@ export default function QuestionBank() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
+  
+  const [isSeedingModalOpen, setIsSeedingModalOpen] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
 
   useEffect(() => {
     // Categories for mapping names
@@ -107,11 +111,36 @@ export default function QuestionBank() {
     hasWrongChoiceExplanations(question)
   );
 
+  const visibleCategories = useMemo(() => {
+    return categories.filter(cat => {
+      if (selectedTrack === 'all') return true;
+      const tracks = (cat as any).reviewTracks || (cat.id === 'major' ? ['secondary', 'specialization'] : ['elementary', 'secondary']);
+      return tracks.includes(selectedTrack);
+    });
+  }, [categories, selectedTrack]);
+
+  useEffect(() => {
+    if (selectedCategory !== 'all') {
+      const isStillVisible = visibleCategories.some(cat => cat.id === selectedCategory);
+      if (!isStillVisible) {
+        setSelectedCategory('all');
+      }
+    }
+  }, [selectedTrack, visibleCategories, selectedCategory]);
+
   const filteredQuestions = questions.filter(q => {
     const matchesSearch = q.stem.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    let matchesTrack = true;
+    if (selectedTrack !== 'all') {
+      const cat = categories.find(c => c.id === q.categoryId);
+      const tracks = (cat as any)?.reviewTracks || (q.categoryId === 'major' ? ['secondary', 'specialization'] : ['elementary', 'secondary']);
+      matchesTrack = tracks.includes(selectedTrack);
+    }
+
     const matchesCategory = selectedCategory === 'all' || q.categoryId === selectedCategory;
     const matchesStatus = selectedStatus === 'all' || getQuestionStatus(q) === selectedStatus;
-    return matchesSearch && matchesCategory && matchesStatus;
+    return matchesSearch && matchesTrack && matchesCategory && matchesStatus;
   });
   const statusCounts = questions.reduce<Record<string, number>>((counts, question) => {
     const status = getQuestionStatus(question);
@@ -242,12 +271,7 @@ export default function QuestionBank() {
           </div>
           <div className="flex gap-2">
             <button 
-              onClick={async () => {
-                if (window.confirm('Directly seed 5000 mock questions into the cloud database? This will use up write quotas.')) {
-                    const { seedCloudDatabase } = await import('../lib/offline/seeder');
-                    seedCloudDatabase().then(() => alert('Successfully seeded into cloud db!')).catch(console.error);
-                }
-              }}
+              onClick={() => setIsSeedingModalOpen(true)}
               className="px-6 py-2.5 rounded-xl bg-amber-500 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20"
             >
               Seed 5k to Cloud
@@ -281,7 +305,21 @@ export default function QuestionBank() {
                 />
              </div>
              
-             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[200px]">
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[170px]">
+                <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">map</span>
+                <select 
+                   value={selectedTrack}
+                   onChange={(e) => setSelectedTrack(e.target.value)}
+                   className="bg-transparent border-none outline-none text-xs font-bold uppercase tracking-widest text-primary w-full appearance-none animate-fade-in"
+                >
+                   <option value="all">All Tracks</option>
+                   <option value="elementary">Elementary</option>
+                   <option value="secondary">Secondary</option>
+                   <option value="specialization">Specialization</option>
+                </select>
+             </div>
+
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[180px]">
                 <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">filter_list</span>
                 <select 
                    value={selectedCategory}
@@ -289,7 +327,7 @@ export default function QuestionBank() {
                    className="bg-transparent border-none outline-none text-xs font-bold uppercase tracking-widest text-primary w-full appearance-none"
                 >
                    <option value="all">All Subjects</option>
-                   {categories.map(cat => (
+                   {visibleCategories.map(cat => (
                      <option key={cat.id} value={cat.id}>{cat.name}</option>
                    ))}
                 </select>
@@ -343,13 +381,43 @@ export default function QuestionBank() {
         </div>
       </div>
 
-      <DeleteConfirmModal 
+      <ConfirmModal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={confirmDelete}
         title="Delete Question?"
         message="Are you sure you want to permanently remove this question from the bank? This action cannot be undone."
-        isDeleting={isDeleting}
+        isProcessing={isDeleting}
+        confirmText="Delete Now"
+        confirmColor="bg-error text-on-error shadow-error/20"
+        icon="delete_forever"
+      />
+      
+      <ConfirmModal
+        isOpen={isSeedingModalOpen}
+        onClose={() => setIsSeedingModalOpen(false)}
+        onConfirm={async () => {
+          setIsSeeding(true);
+          try {
+            const { seedCloudDatabase } = await import('../lib/offline/seeder');
+            await seedCloudDatabase();
+            setToastMsg('Successfully seeded cloud database!');
+            setShowToast(true);
+          } catch(e) {
+            console.error(e);
+            setToastMsg('Failed to seed database.');
+            setShowToast(true);
+          } finally {
+            setIsSeeding(false);
+            setIsSeedingModalOpen(false);
+          }
+        }}
+        title="Seed Database"
+        message="Generate and seed thousands of questions and modules into the database? This may take a minute and consume Firebase quota."
+        isProcessing={isSeeding}
+        confirmText="Start Seeding"
+        confirmColor="bg-amber-500 text-white shadow-amber-500/20"
+        icon="database"
       />
 
       <Toast 

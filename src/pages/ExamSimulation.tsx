@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import {
   arrayUnion,
   collection,
@@ -339,6 +339,7 @@ export default function ExamSimulation() {
   const topicId = searchParams.get('topic');
   const isFullMock = searchParams.get('type') === 'mock';
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
   const [phase, setPhase] = useState<ExamPhase>('loading');
@@ -1221,9 +1222,21 @@ export default function ExamSimulation() {
     return (
       <div className="min-h-screen bg-surface px-5 py-8 text-on-surface">
         <div className="mx-auto max-w-4xl">
-          <button onClick={() => navigate('/student/dashboard')} className="mb-6 text-sm font-bold text-on-surface-variant hover:text-on-surface">
-            Back to dashboard
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-sm font-bold text-on-surface-variant hover:text-on-surface bg-gray-500/10 hover:bg-gray-500/20 px-4 py-2 rounded-xl transition-all">
+              <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+              Back
+            </button>
+            {location.pathname === '/practice' && (
+              <button
+                onClick={() => navigate('/practice?mode=practice')}
+                className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-primary-dark border border-primary/20 bg-primary/5 hover:bg-primary/10 px-4 py-2 rounded-xl transition-all shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[18px]">swap_horiz</span>
+                Switch to Practice Mode
+              </button>
+            )}
+          </div>
           <section className="rounded-3xl border border-outline-variant/40 bg-surface-container-lowest p-6 shadow-sm md:p-8">
             <p className="text-xs font-black uppercase tracking-widest text-primary">{isFullMock ? 'Full LET Simulation' : 'Protected Practice'}</p>
             <h1 className="mt-2 font-headline text-3xl font-black tracking-tight text-on-surface">{blueprint.title || 'LET Assessment'}</h1>

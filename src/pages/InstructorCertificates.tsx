@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { addDoc, collection, getDocs, onSnapshot, query, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, getDocs, onSnapshot, query, serverTimestamp, where, updateDoc, doc } from 'firebase/firestore';
 import { Award, ExternalLink, ShieldCheck } from 'lucide-react';
 import InstructorLayout from '../components/InstructorLayout';
 import Toast from '../components/Toast';
@@ -63,11 +63,21 @@ export default function InstructorCertificates() {
   useEffect(() => {
     async function loadStudents() {
       if (!selectedClassId) {
-        setStudents([]);
+        const userSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'student')));
+        const rows = userSnap.docs.map((userDoc) => ({ id: userDoc.id, ...userDoc.data() }));
+        setStudents(rows);
+        setSelectedStudentId((current) => current || rows[0]?.id || '');
         return;
       }
       const enrollSnap = await getDocs(query(collection(db, 'classEnrollments'), where('classId', '==', selectedClassId)));
       const studentIds = enrollSnap.docs.map((enrollDoc) => enrollDoc.data().studentId).filter(Boolean);
+      if (studentIds.length === 0) {
+        const userSnap = await getDocs(query(collection(db, 'users'), where('role', '==', 'student')));
+        const rows = userSnap.docs.map((userDoc) => ({ id: userDoc.id, ...userDoc.data() }));
+        setStudents(rows);
+        setSelectedStudentId((current) => current || rows[0]?.id || '');
+        return;
+      }
       const userSnap = await getDocs(collection(db, 'users'));
       const rows = userSnap.docs
         .map((userDoc) => ({ id: userDoc.id, ...userDoc.data() }))
@@ -81,11 +91,12 @@ export default function InstructorCertificates() {
   const selectedClass = classes.find((classItem) => classItem.id === selectedClassId);
   const selectedStudent = students.find((student) => student.id === selectedStudentId);
   const selectedTemplate = templates.find((template) => template.id === selectedTemplateId);
-  const previewTemplate = selectedTemplate || {
+  const previewTemplate = {
     ...draft,
     title: draft.title || 'LET Mastery Certificate',
     signatureName: draft.signatureName || user?.fullName || user?.email || 'Lead Instructor',
     verificationPrefix: draft.verificationPrefix || 'LM',
+    bodyText: draft.bodyText || 'has successfully completed all required review sessions, diagnostic evaluations, and structured training modules for the Licensure Examination for Teachers (LET) preparation course.',
   };
 
   const requiredModuleIds = useMemo(() => {
@@ -115,24 +126,31 @@ export default function InstructorCertificates() {
       setShowToast(true);
       return;
     }
-    await addDoc(collection(db, 'certificateTemplates'), {
-      ...draft,
+    const dataToSave = {
       title: draft.title.trim(),
-      requirements: draft.requirements.trim(),
+      canvaUrl: draft.canvaUrl.trim(),
+      requirements: draft.requirements.trim() || 'Complete required modules and pass final assessments at 85%.',
       bodyText: draft.bodyText.trim() || defaultCertificateBody,
-      signatureName: draft.signatureName.trim(),
+      signatureName: draft.signatureName.trim() || 'Lead Instructor',
       leftLogoUrl: draft.leftLogoUrl.trim(),
       rightLogoUrl: draft.rightLogoUrl.trim(),
       verificationPrefix: draft.verificationPrefix.trim() || 'LM',
-      createdBy: user.uid,
-      createdByEmail: user.email,
-      ownerRole: 'instructor',
-      status: 'active',
-      createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
-    setDraft((current) => ({ ...current, title: '', canvaUrl: '' }));
-    setToastMsg('Certificate template saved.');
+    };
+    if (selectedTemplateId) {
+      await updateDoc(doc(db, 'certificateTemplates', selectedTemplateId), dataToSave);
+      setToastMsg('Certificate template updated.');
+    } else {
+      await addDoc(collection(db, 'certificateTemplates'), {
+        ...dataToSave,
+        createdBy: user.uid,
+        createdByEmail: user.email,
+        ownerRole: 'instructor',
+        status: 'active',
+        createdAt: serverTimestamp(),
+      });
+      setToastMsg('Certificate template saved.');
+    }
     setShowToast(true);
   };
 
@@ -232,7 +250,23 @@ export default function InstructorCertificates() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {templates.map((template) => (
-            <button key={template.id} onClick={() => setSelectedTemplateId(template.id)} className={`text-left bg-surface-container-lowest border rounded-2xl p-5 shadow-sm ${selectedTemplateId === template.id ? 'border-primary ring-1 ring-primary/30' : 'border-outline-variant'}`}>
+            <button 
+              key={template.id} 
+              onClick={() => {
+                setSelectedTemplateId(template.id);
+                setDraft({
+                  title: template.title || '',
+                  canvaUrl: template.canvaUrl || '',
+                  requirements: template.requirements || '',
+                  bodyText: template.bodyText || '',
+                  leftLogoUrl: template.leftLogoUrl || '',
+                  rightLogoUrl: template.rightLogoUrl || '',
+                  signatureName: template.signatureName || '',
+                  verificationPrefix: template.verificationPrefix || 'LM',
+                });
+              }} 
+              className={`text-left bg-surface-container-lowest border rounded-2xl p-5 shadow-sm transition-all duration-200 ${selectedTemplateId === template.id ? 'border-primary ring-1 ring-primary/30' : 'border-outline-variant hover:border-primary/50'}`}
+            >
               <p className="text-xs font-black uppercase tracking-widest text-primary mb-2">{template.verificationPrefix || 'LM'} template</p>
               <h2 className="font-extrabold text-on-surface">{template.title}</h2>
               <p className="text-sm text-on-surface-variant mt-1">{template.requirements}</p>
@@ -284,51 +318,53 @@ function CertificateBlueprintPreview({
           </a>
         )}
       </div>
-      <div
-        className="relative aspect-[1.414/1] overflow-hidden border border-slate-200 bg-white p-[5%] text-slate-950 shadow-sm"
-        style={{
-          backgroundImage: 'linear-gradient(to right, rgba(15,23,42,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.06) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-        }}
-      >
-        <CornerMark position="top-left" />
-        <CornerMark position="top-right" />
-        <CornerMark position="bottom-left" />
-        <CornerMark position="bottom-right" />
+      <div className="w-full overflow-x-auto p-1 scrollbar-thin">
+        <div
+          className="relative min-w-[760px] aspect-[1.414/1] overflow-hidden border border-slate-200 bg-white p-[5%] text-slate-950 shadow-sm rounded-lg"
+          style={{
+            backgroundImage: 'linear-gradient(to right, rgba(15,23,42,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.06) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        >
+          <CornerMark position="top-left" />
+          <CornerMark position="top-right" />
+          <CornerMark position="bottom-left" />
+          <CornerMark position="bottom-right" />
 
-        <div className="flex items-start justify-between gap-6 border-b border-slate-300 pb-6">
-          <div className="flex items-center gap-4">
-            <LogoBox url={template.leftLogoUrl} label="Left logo" />
-            <div>
-              <p className="text-[clamp(9px,1.1vw,14px)] font-black uppercase tracking-[0.35em]">Certificate of Completion</p>
-              <p className="mt-2 font-headline text-[clamp(18px,2vw,30px)] font-black">{template.title || 'LET Mastery Certificate'}</p>
-              <p className="mt-1 text-[clamp(9px,0.9vw,12px)] font-semibold uppercase tracking-[0.18em] text-slate-500">{className}</p>
+          <div className="flex items-start justify-between gap-6 border-b border-slate-300 pb-6">
+            <div className="flex items-center gap-4">
+              <LogoBox url={template.leftLogoUrl} label="Left logo" />
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.35em] text-slate-800">Certificate of Completion</p>
+                <p className="mt-1 font-headline text-2xl font-black text-slate-900">{template.title || 'LET Mastery Certificate'}</p>
+                <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">{className}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <LogoBox url={template.rightLogoUrl} label="Right logo" alignRight />
+              <p className="mt-3 text-xs font-black uppercase tracking-[0.25em] text-slate-800">ID: {certificateId}</p>
+              <p className="mt-1 text-[10px] font-bold uppercase text-slate-500">Scale: 1:1</p>
             </div>
           </div>
-          <div className="text-right">
-            <LogoBox url={template.rightLogoUrl} label="Right logo" alignRight />
-            <p className="mt-3 text-[clamp(9px,0.9vw,12px)] font-black uppercase tracking-[0.25em]">ID: {certificateId}</p>
-            <p className="mt-1 text-[clamp(9px,0.8vw,11px)] font-bold uppercase text-slate-500">Scale: 1:1</p>
-          </div>
-        </div>
 
-        <div className="flex h-[52%] flex-col items-center justify-center text-center">
-          <p className="text-[clamp(10px,1vw,15px)] uppercase tracking-[0.32em] text-slate-700">This document certifies that</p>
-          <p className="mt-6 font-headline text-[clamp(30px,4.3vw,62px)] font-black leading-none">{studentName}</p>
-          <p className="mt-8 max-w-[72%] text-[clamp(11px,1.25vw,18px)] leading-relaxed text-slate-700">{template.bodyText || defaultCertificateBody}</p>
-        </div>
-
-        <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-8 border-t border-slate-300 pt-6">
-          <div>
-            <p className="font-headline text-[clamp(16px,1.8vw,26px)] font-black italic">{template.signatureName || 'Lead Instructor'}</p>
-            <div className="mt-3 h-px bg-slate-300" />
-            <p className="mt-3 text-[clamp(8px,0.85vw,11px)] font-black uppercase tracking-[0.28em]">Lead Instructor</p>
+          <div className="flex h-[52%] flex-col items-center justify-center text-center">
+            <p className="text-sm uppercase tracking-[0.32em] text-slate-700">This document certifies that</p>
+            <p className="mt-4 font-headline text-4xl font-black leading-none text-slate-900">{studentName}</p>
+            <p className="mt-5 max-w-[85%] text-sm leading-relaxed text-slate-700">{template.bodyText || defaultCertificateBody}</p>
           </div>
-          <div className="flex aspect-square w-[clamp(58px,8vw,110px)] items-center justify-center rounded-2xl border border-slate-950 bg-slate-50 text-[clamp(8px,0.9vw,12px)] font-black uppercase tracking-[0.25em]">Seal</div>
-          <div className="text-right">
-            <p className="font-mono text-[clamp(11px,1.2vw,17px)]">{new Date().toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-            <div className="mt-3 h-px bg-slate-300" />
-            <p className="mt-3 text-[clamp(8px,0.85vw,11px)] font-black uppercase tracking-[0.28em]">Date issued</p>
+
+          <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-8 border-t border-slate-300 pt-6">
+            <div>
+              <p className="font-headline text-xl font-black italic text-slate-900">{template.signatureName || 'Lead Instructor'}</p>
+              <div className="mt-2 h-px bg-slate-300" />
+              <p className="mt-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">Lead Instructor</p>
+            </div>
+            <div className="flex aspect-square w-20 items-center justify-center rounded-2xl border border-slate-900 bg-slate-50 text-[10px] font-black uppercase tracking-[0.25em] text-slate-800">Seal</div>
+            <div className="text-right">
+              <p className="font-mono text-sm text-slate-900">{new Date().toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+              <div className="mt-2 h-px bg-slate-300" />
+              <p className="mt-2 text-[10px] font-black uppercase tracking-[0.28em] text-slate-500">Date issued</p>
+            </div>
           </div>
         </div>
       </div>
