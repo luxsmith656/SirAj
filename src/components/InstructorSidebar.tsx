@@ -23,7 +23,7 @@ export default function InstructorSidebar() {
 
   const renderLogo = () => {
     if (settings.logo && (settings.logo.startsWith('http') || settings.logo.startsWith('data:'))) {
-      return <img src={settings.logo} alt="Logo" className="w-8 h-8 object-cover rounded-full" />;
+      return <img src={settings.logo} alt="Logo" className="w-8 h-8 object-contain rounded-full" />;
     }
     return <span className="material-symbols-outlined text-primary text-[24px] font-variation-settings-fill-1">{settings.logo || 'school'}</span>;
   };

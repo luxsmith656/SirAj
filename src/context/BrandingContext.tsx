@@ -52,12 +52,13 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
       name: data.siteName,
       short_name: data.siteName.split(' ')[0] || data.siteName,
       description: 'Offline-capable LET Review platform',
+      start_url: '.',
+      display: 'standalone',
       theme_color: data.primaryColor,
       background_color: '#ffffff',
-      display: 'standalone',
       icons: [
-        { src: iconSrc, sizes: '192x192', type: normalizeIconType(iconSrc) },
-        { src: iconSrc, sizes: '512x512', type: normalizeIconType(iconSrc) }
+        { src: iconSrc, sizes: '192x192', type: normalizeIconType(iconSrc), purpose: 'any maskable' },
+        { src: iconSrc, sizes: '512x512', type: normalizeIconType(iconSrc), purpose: 'any maskable' }
       ]
     };
 

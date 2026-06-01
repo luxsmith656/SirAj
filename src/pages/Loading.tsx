@@ -37,7 +37,7 @@ export default function Loading() {
     // If logo is a URL (starts with http or data:), display as image
     if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
       return (
-        <img src={settings.logo} alt="Logo" className="w-full h-full object-cover" />
+        <img src={settings.logo} alt="Logo" className="w-full h-full object-contain" />
       );
     }
     // Otherwise, display the first letter of site name

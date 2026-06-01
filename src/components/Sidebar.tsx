@@ -30,7 +30,7 @@ export default function Sidebar() {
 
   const renderLogo = () => {
     if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
-      return <img src={settings.logo} alt="Logo" className="w-full h-full object-cover rounded-full" />;
+      return <img src={settings.logo} alt="Logo" className="w-full h-full object-contain rounded-full" />;
     }
     return <span className="material-symbols-outlined text-[24px]">{settings.logo || 'school'}</span>;
   };

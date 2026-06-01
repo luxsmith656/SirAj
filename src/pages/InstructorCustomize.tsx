@@ -200,7 +200,7 @@ export default function InstructorCustomize() {
                     style={{ backgroundColor: primaryColor }}
                   >
                     {logo && (logo.startsWith('data:') || logo.startsWith('http')) ? (
-                      <img src={logo} alt="Preview" className="w-full h-full object-cover" />
+                      <img src={logo} alt="Preview" className="w-full h-full object-contain" />
                     ) : (
                       <span className="material-symbols-outlined text-white text-4xl font-variation-settings-fill-1">{logo || 'school'}</span>
                     )}
