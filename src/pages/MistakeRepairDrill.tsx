@@ -17,7 +17,7 @@ function shuffleArray(array: any[]) {
 }
 
 export default function MistakeRepairDrill() {
-  const { user } = useAuth();
+  const { user, recordActivity } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const categoryId = searchParams.get('category');
@@ -35,6 +35,9 @@ export default function MistakeRepairDrill() {
   const [currentOptions, setCurrentOptions] = useState<any[]>([]);
 
   useEffect(() => {
+    // Record current activity for streak on start
+    recordActivity();
+    
     const fetchMistakes = async () => {
       if (!user) return;
       setIsLoading(true);

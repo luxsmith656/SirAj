@@ -13,10 +13,11 @@ interface BrandingContextType {
   updateSettings: (newSettings: Partial<SiteSettings>) => Promise<void>;
   resetSettings: () => Promise<void>;
   isLoading: boolean;
+  quotaExceeded: boolean;
 }
 
 export const defaultSettings: SiteSettings = {
-  siteName: 'Let Mastery Pro',
+  siteName: 'Let Mastery',
   logo: 'school', // Material icon name or URL
   primaryColor: '#00236f',
 };
@@ -26,6 +27,7 @@ const BrandingContext = createContext<BrandingContextType | undefined>(undefined
 export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'branding'), (snapshot) => {
@@ -33,15 +35,18 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         const data = snapshot.data() as SiteSettings;
         setSettings(data);
         updateStyles(data);
+        setQuotaExceeded(false);
       } else {
-        // Only bootstrap admin or someone with permission should initialize
-        // For now, we'll just log and let the admin seeding handle it
         console.warn('Branding settings not found. Waiting for initialization...');
       }
       setIsLoading(false);
     }, (error) => {
       console.error('Branding query failed:', error);
+      const isQuota = error.message?.toLowerCase().includes('quota') || (error as any).code === 'resource-exhausted';
+      if (isQuota) setQuotaExceeded(true);
+      
       setIsLoading(false);
+      updateStyles(defaultSettings);
     });
 
     return () => unsub();
@@ -73,7 +78,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <BrandingContext.Provider value={{ settings, updateSettings, resetSettings, isLoading }}>
+    <BrandingContext.Provider value={{ settings, updateSettings, resetSettings, isLoading, quotaExceeded }}>
       {children}
     </BrandingContext.Provider>
   );

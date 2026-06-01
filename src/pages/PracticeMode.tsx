@@ -21,7 +21,7 @@ import { db } from '../lib/firebase';
 import ExamSimulation from './ExamSimulation';
 
 export default function PracticeMode() {
-  const { user } = useAuth();
+  const { user, recordActivity } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -34,6 +34,10 @@ export default function PracticeMode() {
   const [questionCount, setQuestionCount] = useState<number>(20);
 
   useEffect(() => {
+    recordActivity();
+  }, [recordActivity]);
+
+  useEffect(() => {
     if (user) {
       if (user.reviewTrack === 'secondary' || user.reviewTrack === 'specialization') {
         setSelectedCategory('major');
@@ -41,7 +45,7 @@ export default function PracticeMode() {
         setSelectedCategory('gened');
       }
       if (user.specialization) {
-        setSelectedMajor(user.specialization.toLowerCase());
+        setSelectedMajor(String(user.specialization).toLowerCase());
       }
     }
   }, [user]);
@@ -77,13 +81,6 @@ export default function PracticeMode() {
     }
   };
 
-  const handleSelectOption = (optionId: string) => {
-    if (showFeedback) return;
-    const currentQ = questions[currentIndex];
-    setAnswers(prev => ({ ...prev, [currentQ?.id]: optionId }));
-    setShowFeedback(true);
-  };
-
   const handleNext = () => {
     setShowFeedback(false);
     if (currentIndex < questions.length - 1) {
@@ -91,6 +88,27 @@ export default function PracticeMode() {
     } else {
       finishPractice();
     }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && showFeedback) {
+        handleNext();
+      } else if (e.key === 'ArrowRight' && showFeedback) {
+        handleNext();
+      } else if (e.key === 'ArrowLeft' && !showFeedback && currentIndex > 0) {
+        // Maybe implement previous? For now, just focus.
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showFeedback, handleNext, currentIndex]);
+
+  const handleSelectOption = (optionId: string) => {
+    if (showFeedback) return;
+    const currentQ = questions[currentIndex];
+    setAnswers(prev => ({ ...prev, [currentQ?.id]: optionId }));
+    setShowFeedback(true);
   };
 
   const finishPractice = async () => {
@@ -132,6 +150,9 @@ export default function PracticeMode() {
     };
     
     await OfflineData.saveQuizAttempt(attempt);
+    if (recordActivity) {
+      await recordActivity();
+    }
   };
 
   // Switch modes easily via updates to search params

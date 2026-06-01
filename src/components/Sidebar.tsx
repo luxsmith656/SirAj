@@ -1,27 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
 import { useBranding } from '../context/BrandingContext';
+import { useAuth } from '../context/AuthContext';
+import UpdateModal from './UpdateModal';
 
 export default function Sidebar() {
   const location = useLocation();
   const { isOpen, toggle, isCollapsed, toggleCollapse } = useSidebar();
   const { settings } = useBranding();
+  const { user } = useAuth();
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/admin/dashboard', icon: 'dashboard' },
-    { name: 'Curriculum', path: '/admin/categories', icon: 'menu_book' },
-    { name: 'Classes', path: '/admin/classes', icon: 'groups' },
-    { name: 'Question Bank', path: '/admin/question/bank', icon: 'quiz' },
-    { name: 'Analytics', path: '/admin/analytics', icon: 'bar_chart' },
-    { name: 'Users', path: '/admin/users', icon: 'group' },
-    { name: 'Uploads', path: '/admin/bulk-upload', icon: 'upload_file' },
-    { name: 'Settings', path: '/admin/settings', icon: 'settings' },
+  const instructorNavItems = [
+    { name: 'Dashboard', path: '/instructor/dashboard', icon: 'dashboard' },
+    { name: 'Modules', path: '/instructor/modules', icon: 'menu_book' },
+    { name: 'Classes', path: '/instructor/classes', icon: 'groups' },
+    { name: 'Question Bank', path: '/instructor/questions', icon: 'quiz' },
+    { name: 'Analytics', path: '/instructor/analytics', icon: 'bar_chart' },
+    { name: 'Certificates', path: '/instructor/certificates', icon: 'workspace_premium' },
+    { name: 'Customize', path: '/instructor/customize', icon: 'palette' },
   ];
+
+  const studentNavItems = [
+    // Add student items if needed, currently maybe handled by top bar/other patterns
+  ];
+
+  const navItems = user?.role === 'instructor' ? instructorNavItems : studentNavItems;
 
   const renderLogo = () => {
     if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
-      return <img src={settings.logo} alt="Logo" className="w-8 h-8 object-contain" />;
+      return <img src={settings.logo} alt="Logo" className="w-full h-full object-cover" />;
     }
     return <span className="material-symbols-outlined text-[24px]">{settings.logo || 'school'}</span>;
   };
@@ -44,13 +53,13 @@ export default function Sidebar() {
       `}>
         {/* Header / Brand */}
         <div className={`px-6 mt-8 mb-10 flex items-center transition-all duration-300 ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}>
-          <div className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
             {renderLogo()}
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
               <div className="font-extrabold text-primary text-[18px] tracking-tight leading-tight truncate">{settings.siteName}</div>
-              <div className="text-[10px] text-on-surface-variant/40 font-bold font-body mt-0.5 truncate uppercase tracking-widest">Admin Control</div>
+              <div className="text-[10px] text-on-surface-variant/40 font-bold font-body mt-0.5 truncate uppercase tracking-widest">Platform Admin</div>
             </div>
           )}
           
@@ -95,11 +104,13 @@ export default function Sidebar() {
 
         {/* Bottom Actions & Collapse Toggle */}
         <div className={`mt-auto pb-8 ${isCollapsed ? 'px-2' : 'px-4'} space-y-4`}>
-          <button className={`w-full flex items-center bg-primary text-on-primary rounded-full font-bold transition-all hover:opacity-90 hover:shadow-lg focus:outline-none ${
+          <button 
+           onClick={() => setIsUpdateOpen(true)}
+           className={`w-full flex items-center bg-primary text-on-primary rounded-full font-bold transition-all hover:opacity-90 hover:shadow-lg focus:outline-none ${
             isCollapsed ? 'justify-center p-3' : 'justify-center gap-2 px-4 py-3'
           }`}>
-            <span className="material-symbols-outlined text-sm">download</span>
-            {!isCollapsed && <span className="text-xs">Export Reports</span>}
+            <span className="material-symbols-outlined text-sm">refresh</span>
+            {!isCollapsed && <span className="text-xs">Check for Update</span>}
           </button>
 
           {/* Desktop Collapse Toggle */}
@@ -113,6 +124,8 @@ export default function Sidebar() {
           </button>
         </div>
       </nav>
+
+      <UpdateModal isOpen={isUpdateOpen} onClose={() => setIsUpdateOpen(false)} />
     </>
   );
 }

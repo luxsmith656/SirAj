@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FixedSizeList as List } from 'react-window';
 import { BookOpen, Search, ArrowLeft, Filter, BookText, Download } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { useAuth } from '../context/AuthContext';
 
 // Mock generation of a massive library
 const generateLibrary = (size: number) => {
@@ -25,9 +26,14 @@ const generateLibrary = (size: number) => {
 const massiveLibrary = generateLibrary(10000); // 10,000 textbooks without lag
 
 export default function TextbookLibrary() {
+  const { recordActivity } = useAuth();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('All');
+
+  React.useEffect(() => {
+    recordActivity();
+  }, [recordActivity]);
 
   const filteredLibrary = useMemo(() => {
     return massiveLibrary.filter(book => {

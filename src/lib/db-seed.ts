@@ -1,6 +1,7 @@
-import { collection, doc, setDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
+import { collection, doc, setDoc, serverTimestamp, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 import { CATEGORIES as SEED_CATEGORIES, TOPICS as SEED_TOPICS, SKILLS as SEED_SKILLS, INITIAL_QUESTIONS as SEED_QUESTIONS } from './seedData';
+import { journeyModules } from './learningJourney';
 import { handleFirestoreError, OperationType } from './firestoreUtils';
 
 // Simple hash function for stable IDs
@@ -62,6 +63,8 @@ export async function seedDatabase() {
     }
 
     // 4. Seed Questions with Stable IDs
+    const questionsAdded = new Set<string>();
+    
     for (const quest of SEED_QUESTIONS) {
         try {
           const stableId = generateStableId(quest.stem);
@@ -74,45 +77,55 @@ export async function seedDatabase() {
             updatedAt: serverTimestamp(),
             createdBy: 'system-seed'
           }, { merge: true });
+          questionsAdded.add(stableId);
           console.log(`Seeded question (${stableId}): ${quest.stem.substring(0, 30)}...`);
         } catch (err) {
           handleFirestoreError(err, OperationType.WRITE, 'questions');
         }
     }
 
-    // 5. Seed Starter Modules
-    const starterModules = [
-      {
-        id: 'mod_intro_profed',
-        title: 'Introduction to Professional Education',
-        description: 'Foundation of the teaching profession and legal bases.',
-        categoryId: 'profed',
-        topicId: 'profed_principles',
-        skillIds: [],
-        level: 1,
-        lessonBlocks: [
-          { type: 'text', content: 'The teaching profession is grounded in ethical principles and legal frameworks. In the Philippines, the Code of Ethics for Professional Teachers serves as the primary guide.' },
-          { type: 'callout', content: 'Key Concept: Teaching is both a mission and a profession.' }
-        ],
-        checkQuestionIds: [], // To be linked to seeded questions
-        challengeQuestionIds: [],
-        prerequisiteModuleIds: [],
-        isPublished: true,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }
-    ];
-
-    for (const mod of starterModules) {
+    // 5. Seed Journey Modules and their questions
+    for (const mod of journeyModules) {
       try {
-        await setDoc(doc(db, 'modules', mod.id), mod, { merge: true });
-        console.log(`Seeded module: ${mod.title}`);
+        await setDoc(doc(db, 'modules', mod.id), {
+          ...mod,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        // Seed questions from module if not already seeded
+        const modQuestions = [
+          ...(mod.questions || []),
+          ...(mod.finalExam || []),
+          ...(mod.parts?.flatMap(p => p.miniQuiz || []) || [])
+        ];
+
+        for (const q of modQuestions) {
+          if (questionsAdded.has(q.id)) continue;
+          
+          await setDoc(doc(db, 'questions', q.id), {
+            id: q.id,
+            stem: q.stem,
+            options: q.options,
+            correctOptionId: q.correctOptionId,
+            explanation: q.explanation,
+            categoryId: mod.subjectId,
+            topicId: mod.topicId,
+            difficulty: q.difficulty || 'medium',
+            status: 'live',
+            approved: true,
+            isPublished: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+          questionsAdded.add(q.id);
+        }
+
+        console.log(`Seeded journey module: ${mod.title}`);
       } catch (err) {
         handleFirestoreError(err, OperationType.WRITE, `modules/${mod.id}`);
       }
     }
-
-    console.log('Standardized seeding completed');
 
     // 6. Seed Demo Accounts
     const demoAccounts = [
@@ -159,6 +172,7 @@ export async function seedDatabase() {
       }
     }
 
+    console.log('Seeding completed. Total questions:', questionsAdded.size);
     return true;
   } catch (error) {
     console.error('Seeding process failed:', error);

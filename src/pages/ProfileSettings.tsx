@@ -306,9 +306,6 @@ async function clearDemoIndexedDb() {
     await Promise.all([
       localDb.clear('localQuizAttempts'),
       localDb.clear('localProgress'),
-      localDb.clear('localNotes'),
-      localDb.clear('localRecallChallenges'),
-      localDb.clear('localStudyPlan'),
       localDb.clear('syncQueue'),
     ]);
   } catch (error) {

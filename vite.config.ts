@@ -13,8 +13,8 @@ export default defineConfig(({mode}) => {
       VitePWA({
         registerType: 'autoUpdate',
         manifest: {
-          name: 'Let Mastery Pro',
-          short_name: 'LetMasteryPro',
+          name: 'Let Mastery',
+          short_name: 'LetMastery',
           description: 'Offline-capable LET Review platform',
           theme_color: '#00236f',
           icons: [

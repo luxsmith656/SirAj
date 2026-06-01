@@ -25,10 +25,11 @@ import {
 } from 'lucide-react';
 import HelpSupportButton from './HelpSupportButton';
 import { useNotifications } from '../hooks/useNotifications';
+import UpdateModal from './UpdateModal';
 
 export default function StudentLayout({ children, title }: { children: ReactNode, title?: string }) {
   const { user, signOut } = useAuth();
-  const { settings } = useBranding();
+  const { settings, quotaExceeded } = useBranding();
   const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications();
   const { isSyncing, lastSync, triggerSync } = useSync();
@@ -36,6 +37,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -91,10 +93,10 @@ export default function StudentLayout({ children, title }: { children: ReactNode
   ];
 
   const renderLogo = () => {
-    if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
+    if (settings.logo && (settings.logo.startsWith('http') || settings.logo.startsWith('data:'))) {
       return <img src={settings.logo} alt="Logo" className="w-8 h-8 object-contain" />;
     }
-    return <span className="material-symbols-outlined text-primary text-[24px]">{settings.logo || 'school'}</span>;
+    return <span className="material-symbols-outlined text-primary text-[24px] font-variation-settings-fill-1">{settings.logo || 'school'}</span>;
   };
 
   return (
@@ -107,7 +109,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 {renderLogo()}
              </div>
-             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tight leading-none truncate">{settings.siteName}</h1>
+             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tight leading-none truncate">{settings.siteName || 'Let Mastery'}</h1>
           </div>
           <p className="text-on-surface-variant/40 text-[10px] font-bold uppercase tracking-widest mt-2">{user?.learningMode === 'class_based' ? 'Classroom Mode' : 'Self-Paced Learning'}</p>
         </div>
@@ -154,7 +156,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
         <header className="px-3 md:px-6 py-4 flex items-center justify-between bg-surface-container-lowest md:bg-surface/80 md:backdrop-blur-md border-b border-outline-variant sticky top-0 z-30">
           <div className="md:hidden flex items-center gap-2">
              {renderLogo()}
-             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tighter truncate max-w-[112px] sm:max-w-[200px]">{settings.siteName}</h1>
+             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tighter truncate max-w-[112px] sm:max-w-[200px]">{settings.siteName || 'Let Mastery'}</h1>
           </div>
           <div className="hidden md:flex items-center flex-1 ml-4 justify-between">
             <div className="flex items-center gap-2">
@@ -222,6 +224,14 @@ export default function StudentLayout({ children, title }: { children: ReactNode
                 <WifiOff size={16} />
               </button>
 
+              <button
+                onClick={() => setIsUpdateOpen(true)}
+                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"
+                title="Check for updates"
+              >
+                <span className="material-symbols-outlined text-[18px]">refresh</span>
+              </button>
+
 
             </div>
 
@@ -271,6 +281,21 @@ export default function StudentLayout({ children, title }: { children: ReactNode
 
         {/* Content Wrapper */}
         <div className="p-4 md:p-8 w-full max-w-7xl mx-auto space-y-8 flex-1">
+          {quotaExceeded && (
+            <div className="bg-error/10 border border-error/20 rounded-2xl p-4 flex items-center gap-3">
+              <AlertTriangle className="text-error shrink-0" size={20} />
+              <div>
+                <p className="text-xs font-black text-error uppercase tracking-widest">System Overload</p>
+                <p className="text-[10px] font-bold text-error/60 leading-tight">Local cache is active while we wait for resources to reset. Some real-time updates may be delayed.</p>
+              </div>
+              <button 
+                onClick={() => window.location.reload()}
+                className="ml-auto px-3 py-1.5 bg-error text-white text-[10px] font-black uppercase rounded-lg"
+              >
+                Retry
+              </button>
+            </div>
+          )}
           {children}
         </div>
       </main>
@@ -288,6 +313,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
         })}
       </nav>
       <HelpSupportButton />
+      <UpdateModal isOpen={isUpdateOpen} onClose={() => setIsUpdateOpen(false)} />
     </div>
   );
 }

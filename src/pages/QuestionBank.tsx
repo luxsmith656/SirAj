@@ -43,7 +43,11 @@ export default function QuestionBank() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, recordActivity } = useAuth();
+
+  useEffect(() => {
+    recordActivity();
+  }, [recordActivity]);
 
   const getEditPath = (id?: string) => {
     const base = user?.role === 'instructor' ? '/instructor' : '/admin';

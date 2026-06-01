@@ -7,11 +7,18 @@ export interface UserProfile {
   role: Role;
   fullName: string;
   age?: number;
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
   onboarded: boolean;
   learningMode?: LearningMode;
   activeClassId?: string;
   instructorId?: string;
   selectedFocus?: string; // e.g., 'gened', 'profed', 'major'
+  reviewTrack?: string;
+  specialization?: string;
+  targetExamDate?: string;
+  lastActiveDate?: string;
+  classIds?: string[];
+  streakHistory?: string[]; // Array of YYYY-MM-DD
   diagnosticCompleted: boolean;
   streak: number;
   lastLoginDate: string;

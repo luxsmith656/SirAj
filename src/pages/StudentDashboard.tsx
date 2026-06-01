@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where, documentId } from 'firebase/firestore';
 import {
   AlertTriangle,
   Award,
@@ -16,6 +16,7 @@ import {
   Target,
 } from 'lucide-react';
 import StudentLayout from '../components/StudentLayout';
+import StreakCalendar from '../components/StreakCalendar';
 import { useAuth } from '../context/AuthContext';
 import { useSync } from '../context/SyncContext';
 import { db } from '../lib/firebase';
@@ -31,6 +32,24 @@ type DashboardModule = {
   progress: number;
   phase?: string;
   finalScore?: number;
+};
+
+// Caching helper
+const getCachedData = (key: string) => {
+  try {
+    const cached = localStorage.getItem(`dash_cache_${key}`);
+    if (cached) {
+      const { data, expiry } = JSON.parse(cached);
+      if (Date.now() < expiry) return data;
+    }
+  } catch (e) { console.warn('Cache read error', e); }
+  return null;
+};
+
+const setCachedData = (key: string, data: any, ttl = 1000 * 60 * 30) => { // 30 min default
+  try {
+    localStorage.setItem(`dash_cache_${key}`, JSON.stringify({ data, expiry: Date.now() + ttl }));
+  } catch (e) { console.warn('Cache write error', e); }
 };
 
 function toDate(value: any): Date | null {
@@ -75,7 +94,7 @@ function publicModuleAllowedForStudent(data: any, user: any) {
 }
 
 export default function StudentDashboard() {
-  const { user } = useAuth();
+  const { user, recordActivity } = useAuth();
   const { isSyncing, lastSync, triggerSync } = useSync();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -88,9 +107,13 @@ export default function StudentDashboard() {
   const [diagnosticAttempts, setDiagnosticAttempts] = useState<any[]>([]);
   const [mockAttempts, setMockAttempts] = useState<any[]>([]);
   const [mistakeCount, setMistakeCount] = useState(0);
+  const [quotaError, setQuotaError] = useState(false);
 
   // Auto-Sync Logic
   useEffect(() => {
+    // Record current activity for streak once per session
+    recordActivity();
+
     if (localStorage.getItem('did-initial-sync')) return;
     
     const shouldSync = !lastSync || (Date.now() - lastSync > 1000 * 60 * 60 * 24);
@@ -104,27 +127,49 @@ export default function StudentDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
-      setIsLoading(true);
-      try {
-        const profileSnap = await getDoc(doc(db, 'learnerProfiles', user.uid));
-        setProfile(profileSnap.exists() ? profileSnap.data() : null);
+      
+      // Try cache first if we are offline or quota was hit recently
+      const cached = getCachedData(user.uid);
+      if (cached) {
+        setProfile(cached.profile);
+        setProgressRows(cached.progressRows);
+        setProgressByModuleState(cached.progressMap);
+        setDiagnosticAttempts(cached.diagnosticAttempts);
+        setMockAttempts(cached.mockAttempts);
+        setMistakeCount(cached.mistakeCount);
+        setClassData(cached.classData);
+        setActiveModules(cached.activeModules);
+        setPublicExploreModules(cached.exploreRows || []);
+        setIsLoading(false);
+      }
 
-        const progressSnap = await getDocs(query(collection(db, 'moduleProgress'), where('userId', '==', user.uid)));
+      try {
+        setIsLoading(true);
+        const [profileSnap, progressSnap, diagnosticSnap, mockSnap, mistakeSnap] = await Promise.all([
+          getDoc(doc(db, 'learnerProfiles', user.uid)),
+          getDocs(query(collection(db, 'moduleProgress'), where('userId', '==', user.uid))),
+          getDocs(query(collection(db, 'diagnosticAttempts'), where('userId', '==', user.uid))),
+          getDocs(query(collection(db, 'mockExamAttempts'), where('userId', '==', user.uid))),
+          getDocs(query(collection(db, 'mistakeBank'), where('userId', '==', user.uid)))
+        ]);
+
+        const profileData = profileSnap.exists() ? profileSnap.data() : null;
+        setProfile(profileData);
+
         const rows = progressSnap.docs.map((progressDoc) => ({ id: progressDoc.id, ...progressDoc.data() }));
         setProgressRows(rows);
         const progressMap = Object.fromEntries(rows.filter((row: any) => row.moduleId).map((row: any) => [row.moduleId, row]));
         setProgressByModuleState(progressMap);
         const archivedModuleIds = new Set<string>(((user as any).archivedModuleIds || []).filter(Boolean));
 
-        const diagnosticSnap = await getDocs(query(collection(db, 'diagnosticAttempts'), where('userId', '==', user.uid)));
-        setDiagnosticAttempts(diagnosticSnap.docs.map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
-          .sort((a: any, b: any) => (toDate(b.completedAt)?.getTime() || 0) - (toDate(a.completedAt)?.getTime() || 0)));
+        const diagnostics = diagnosticSnap.docs.map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
+          .sort((a: any, b: any) => (toDate(b.completedAt)?.getTime() || 0) - (toDate(a.completedAt)?.getTime() || 0));
+        setDiagnosticAttempts(diagnostics);
 
-        const mockSnap = await getDocs(query(collection(db, 'mockExamAttempts'), where('userId', '==', user.uid)));
-        setMockAttempts(mockSnap.docs.map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
-          .sort((a: any, b: any) => (toDate(b.completedAt)?.getTime() || 0) - (toDate(a.completedAt)?.getTime() || 0)));
+        const mocks = mockSnap.docs.map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() }))
+          .sort((a: any, b: any) => (toDate(b.completedAt)?.getTime() || 0) - (toDate(a.completedAt)?.getTime() || 0));
+        setMockAttempts(mocks);
 
-        const mistakeSnap = await getDocs(query(collection(db, 'mistakeBank'), where('userId', '==', user.uid)));
         setMistakeCount(mistakeSnap.size);
 
         let classInfo: any = null;
@@ -140,42 +185,39 @@ export default function StudentDashboard() {
             ? classInfo.assignedModuleIds.filter((id: string) => id && !archivedModuleIds.has(id))
             : []),
         ];
-        const uniqueModuleIds = Array.from(new Set<string>(moduleIds));
-        const loadedModules: DashboardModule[] = [];
-
-        for (const moduleId of uniqueModuleIds) {
-          let remoteModule: any = null;
-          try {
-            const moduleSnap = await getDoc(doc(db, 'modules', moduleId));
-            if (moduleSnap.exists()) remoteModule = moduleSnap.data();
-          } catch {
-            remoteModule = null;
+        const uniqueModuleIds = Array.from(new Set<string>(moduleIds)).slice(0, 30); // 30 modules max at once for dashboard
+        
+        let loadedModules: DashboardModule[] = [];
+        if (uniqueModuleIds.length > 0) {
+          // OPTIMIZED: Fetch all modules in a single batch
+          const modulesSnap = await getDocs(query(collection(db, 'modules'), where(documentId(), 'in', uniqueModuleIds)));
+          const modulesMap = Object.fromEntries(modulesSnap.docs.map(d => [d.id, d.data()]));
+          
+          for (const moduleId of uniqueModuleIds) {
+            const remoteModule = modulesMap[moduleId];
+            const progress = progressMap[moduleId];
+            if (!remoteModule && !progress) continue;
+            loadedModules.push({
+              id: moduleId,
+              title: remoteModule?.title || progress?.moduleTitle || 'Reviewer unavailable',
+              description: remoteModule?.description || progress?.moduleDescription || 'Module content is currently unavailable.',
+              duration: remoteModule?.duration || '',
+              dueAt: remoteModule?.dueAt || '',
+              status: moduleStatus(progress),
+              progress: progress?.progressPercent ?? 0,
+              phase: progress?.phase || progress?.moduleState || '',
+              finalScore: progress?.finalScore,
+            });
           }
-
-          const progress = progressMap[moduleId];
-          if (!remoteModule && !progress) continue;
-          loadedModules.push({
-            id: moduleId,
-            title: remoteModule?.title || progress?.moduleTitle || 'Reviewer unavailable',
-            description: remoteModule?.description || progress?.moduleDescription || 'This recorded reviewer progress points to content that is no longer available.',
-            duration: remoteModule?.duration || '',
-            dueAt: remoteModule?.dueAt || '',
-            status: moduleStatus(progress),
-            progress: progress?.progressPercent ?? 0,
-            phase: progress?.phase || progress?.moduleState || '',
-            finalScore: progress?.finalScore,
-          });
         }
         setActiveModules(loadedModules);
 
-        const publishedSnap = await getDocs(query(collection(db, 'modules'), where('isPublished', '==', true))).catch(() => null);
+        const publishedSnap = await getDocs(query(collection(db, 'modules'), where('isPublished', '==', true), where('publishScope', '==', 'public'))).catch(() => null);
         const exploreRows: DashboardModule[] = publishedSnap
           ? publishedSnap.docs
             .filter((moduleDoc) => {
               const data = moduleDoc.data() as any;
-              const publishScope = data.publishScope || (data.classIds?.length ? 'classes' : 'public');
-              return publishScope === 'public' &&
-                !progressMap[moduleDoc.id] &&
+              return !progressMap[moduleDoc.id] &&
                 !archivedModuleIds.has(moduleDoc.id) &&
                 publicModuleAllowedForStudent(data, user);
             })
@@ -193,8 +235,25 @@ export default function StudentDashboard() {
             .slice(0, 4)
           : [];
         setPublicExploreModules(exploreRows);
+
+        // Update cache
+        setCachedData(user.uid, {
+          profile: profileData,
+          progressRows: rows,
+          progressMap,
+          diagnosticAttempts: diagnostics,
+          mockAttempts: mocks,
+          mistakeCount: mistakeSnap.size,
+          classData: classInfo,
+          activeModules: loadedModules,
+          exploreRows
+        });
+        setQuotaError(false);
       } catch (error: any) {
         console.error('Failed to fetch dashboard data', error.message || error);
+        if (error.message?.toLowerCase().includes('quota')) {
+          setQuotaError(true);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -307,8 +366,6 @@ export default function StudentDashboard() {
               <StatCard icon={Target} label="Board readiness" value={`${boardReadiness}%`} sublabel={readinessLabel} />
               <StatCard icon={ClipboardList} label="Review track" value={reviewTrackLabel} sublabel={targetExamLabel} />
               <StatCard icon={AlertTriangle} label="Mistake bank" value={String(mistakeCount)} sublabel="Saved wrong answers" />
-              <StatCard icon={Award} label="Current Streak" value={`${profile?.streak || 0} days`} sublabel="Consistent learning" />
-              <StatCard icon={Award} label="Badges" value={`${profile?.earnedBadges?.length || 0}`} sublabel="Milestones achieved" />
             </div>
           </div>
         </section>
@@ -443,6 +500,11 @@ export default function StudentDashboard() {
           </div>
 
           <div className="space-y-6">
+            <StreakCalendar 
+              streak={profile?.streak || 0} 
+              streakHistory={(user as any)?.streakHistory || []} 
+            />
+
             {(classData?.showGradesToStudents || classData?.leaderboardEnabled) && (
               <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-6 shadow-sm">
                 <h3 className="font-extrabold font-headline text-on-surface mb-4 flex items-center gap-2">

@@ -22,16 +22,22 @@ interface Flashcard {
   correctAnswer: string;
   explanation?: string;
   categoryName?: string;
+  topicId?: string;
+  mastery?: number;
 }
 
 export default function Flashcards() {
-  const { user } = useAuth();
+  const { user, recordActivity } = useAuth();
   const navigate = useNavigate();
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessionXP, setSessionXP] = useState(0);
+
+  useEffect(() => {
+    recordActivity();
+  }, [recordActivity]);
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -43,9 +49,14 @@ export default function Flashcards() {
         
         // 1. Get focus from user profile
         if (user.selectedFocus) {
-           const cats = await getDocs(collection(db, 'categories'));
-           const matched = cats.docs.find(d => d.id === user.selectedFocus || d.data().title.toLowerCase().includes(user.selectedFocus.replace('_', ' ')));
-           if (matched) focusCategoryId = matched.id;
+          const cats = await getDocs(collection(db, 'categories'));
+          const matched = cats.docs.find(d => {
+            const data = d.data();
+            const title = data.title || data.name || '';
+            const searchStr = user.selectedFocus?.toLowerCase().replace('_', ' ') || '';
+            return d.id === user.selectedFocus || (typeof title === 'string' && title.toLowerCase().includes(searchStr));
+          });
+          if (matched) focusCategoryId = matched.id;
         }
 
         // 2. Fetch questions - prioritize weak topics if available
@@ -55,20 +66,19 @@ export default function Flashcards() {
           where('approved', '==', true)
         );
 
-        if (focusCategoryId) {
-          q = query(q, where('categoryId', '==', focusCategoryId));
-        }
-
         const snap = await getDocs(q);
-        const fetchedCards: Flashcard[] = [];
+        let fetchedCards: Flashcard[] = [];
         
-        // Sort by weak topics if we have profile data
+        // 3. Get profile for mastery sorting
         const profileSnap = await getDoc(doc(db, 'learnerProfiles', user.uid));
         const profile = profileSnap.exists() ? profileSnap.data() : null;
         const topicMastery = profile?.masteryByTopic || {};
 
         for (const d of snap.docs) {
           const data = d.data();
+          
+          // Filter by category if focusCategoryId is set, but only if we have enough cards
+          // Actually, let's keep all cards but sort them
           const correctOption = data.options?.find((o: any) => o.id === data.correctOptionId);
           fetchedCards.push({
             id: d.id,
@@ -78,13 +88,27 @@ export default function Flashcards() {
             categoryName: data.categoryName,
             topicId: data.topicId,
             mastery: topicMastery[data.topicId] || 0
-          } as any);
+          });
         }
         
-        // Sort: Weakest first (mastery ascending)
-        fetchedCards.sort((a: any, b: any) => a.mastery - b.mastery);
+        // If we have a focus category, prioritize it but don't exclusively limit to it if deck is small
+        if (focusCategoryId) {
+          const focused = fetchedCards.filter(c => q && (c as any).categoryId === focusCategoryId);
+          if (focused.length > 5) {
+            fetchedCards = focused;
+          }
+        }
+
+        // Shuffle all cards for "wide data" and variety
+        fetchedCards.sort(() => Math.random() - 0.5);
         
-        setCards(fetchedCards.slice(0, 20)); // Limit to 20 per session
+        // Then prioritize weak ones slightly but keep variety
+        const weakOnes = fetchedCards.filter(c => (c.mastery || 0) < 60).slice(0, 15);
+        const randomOnes = fetchedCards.filter(c => (c.mastery || 0) >= 60).slice(0, 10);
+        
+        const combined = [...weakOnes, ...randomOnes].sort(() => Math.random() - 0.5);
+        
+        setCards(combined.slice(0, 25)); // Slightly larger deck
         setLoading(false);
       } catch (e) {
         console.error('Failed to fetch flashcards', e);

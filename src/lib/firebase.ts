@@ -44,8 +44,11 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const message = error instanceof Error ? error.message : String(error);
+  const isQuota = message.toLowerCase().includes('quota') || message.toLowerCase().includes('resource_exhausted');
+  
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: isQuota ? 'System busy (Quota exceeded). Please try again in a few minutes.' : message,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -56,6 +59,11 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   }
+  
+  if (isQuota) {
+     console.error('CRITICAL: Firestore Quota Exceeded. Action required.');
+  }
+  
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  throw new Error(errInfo.error);
 }

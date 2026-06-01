@@ -126,18 +126,18 @@ export default function SignIn() {
 
   return (
     <div className="bg-surface text-on-surface font-body min-h-screen flex items-center justify-center antialiased relative overflow-hidden">
-       <div className="absolute top-0 right-0 w-full h-1/2 bg-gradient-to-b from-primary/10 to-transparent pointer-events-none"></div>
-
        <div className="max-w-md w-full px-6 z-10">
           <div className="text-center mb-6">
-             <div className="w-16 h-16 bg-primary text-on-primary rounded-3xl mx-auto mb-4 flex items-center justify-center shadow-lg">
-                {settings.logo.startsWith('http') ? (
+             <div className="w-16 h-16 bg-primary/10 text-primary rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden transition-all duration-500">
+                {settings.logo && (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) ? (
                   <img src={settings.logo} alt="Logo" className="w-10 h-10 object-contain" />
                 ) : (
-                  <span className="material-symbols-outlined text-3xl font-variation-settings-fill-1">{settings.logo}</span>
+                  <span className="material-symbols-outlined text-3xl font-variation-settings-fill-1">
+                    {settings.logo || 'school'}
+                  </span>
                 )}
              </div>
-             <h1 className="text-3xl font-extrabold font-headline text-on-surface tracking-tight">{settings.siteName}</h1>
+             <h1 className="text-3xl font-extrabold font-headline text-on-surface tracking-tight">{settings.siteName || 'Let Mastery'}</h1>
              <p className="text-on-surface-variant/40 text-[10px] font-bold leading-tight mt-1 uppercase tracking-[0.2em]">{isSignUp ? 'Create your professional account' : 'Sign in to your learning dashboard'}</p>
           </div>
 
@@ -242,16 +242,15 @@ export default function SignIn() {
 
             <div className="mt-8 pt-8 border-t border-outline-variant/10">
                <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] text-center mb-4">Quick Demo Access</p>
-               <div className="grid grid-cols-3 gap-3">
+               <div className="grid grid-cols-2 gap-3">
                   {[
                     { label: 'Student', email: 'student@letmastery.com', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-                    { label: 'Instructor', email: 'instructor@letmastery.com', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-                    { label: 'Admin', email: 'admin@letmastery.com', color: 'bg-primary/10 text-primary border-primary/20' }
+                    { label: 'Instructor', email: 'instructor@letmastery.com', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' }
                   ].map((role) => (
                     <button
                       key={role.label}
                       onClick={() => handleDemoLogin(role.email)}
-                      className={`py-3 px-1 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${role.color}`}
+                      className={`py-3 px-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${role.color}`}
                     >
                       {role.label}
                     </button>

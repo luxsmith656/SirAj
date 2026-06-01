@@ -1,6 +1,6 @@
-# Let Mastery Pro
+# Let Mastery
 
-Let Mastery Pro is a web-based PWA for LET review, adaptive learning, and role-based course management. It turns instructor materials into guided learning journeys: document upload or AI draft, instructor review, publish to class or self-study, student learning part by part, mini quizzes, final exam gating, progress tracking, and certificate eligibility.
+Let Mastery is a web-based PWA for LET review, adaptive learning, and role-based course management. It turns instructor materials into guided learning journeys: document upload or AI draft, instructor review, publish to class or self-study, student learning part by part, mini quizzes, final exam gating, progress tracking, and certificate eligibility.
 
 ## Roles
 

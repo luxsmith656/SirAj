@@ -9,17 +9,13 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { BrandingProvider, useBranding } from './context/BrandingContext';
 import { SyncProvider } from './context/SyncContext';
 
-const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const QuestionBank = React.lazy(() => import('./pages/QuestionBank'));
 const EditQuestion = React.lazy(() => import('./pages/EditQuestion'));
-const QuestionDetail = React.lazy(() => import('./pages/QuestionDetail'));
-const CurriculumSettings = React.lazy(() => import('./pages/CurriculumSettings'));
 const Analytics = React.lazy(() => import('./pages/Analytics'));
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const Users = React.lazy(() => import('./pages/Users'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
-const ActivityLogs = React.lazy(() => import('./pages/ActivityLogs'));
 const BulkUpload = React.lazy(() => import('./pages/BulkUpload'));
-const SyncCenter = React.lazy(() => import('./pages/SyncCenter'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Onboarding = React.lazy(() => import('./pages/Onboarding'));
 const Focus = React.lazy(() => import('./pages/Focus'));
@@ -33,11 +29,10 @@ const InstructorModules = React.lazy(() => import('./pages/InstructorModules'));
 const DiagnosticAssessment = React.lazy(() => import('./pages/DiagnosticAssessment'));
 const AIDrafts = React.lazy(() => import('./pages/AIDrafts'));
 const LearningQuest = React.lazy(() => import('./pages/LearningQuest'));
-const AdminClasses = React.lazy(() => import('./pages/AdminClasses'));
 const InstructorClasses = React.lazy(() => import('./pages/InstructorClasses'));
 const InstructorGradebook = React.lazy(() => import('./pages/InstructorGradebook'));
-const AdminCertificates = React.lazy(() => import('./pages/AdminCertificates'));
 const InstructorCertificates = React.lazy(() => import('./pages/InstructorCertificates'));
+const InstructorCustomize = React.lazy(() => import('./pages/InstructorCustomize'));
 const TextbookLibrary = React.lazy(() => import('./pages/TextbookLibrary'));
 const ChooseLearningMode = React.lazy(() => import('./pages/ChooseLearningMode'));
 const ChooseFocus = React.lazy(() => import('./pages/ChooseFocus'));
@@ -77,22 +72,14 @@ function ProtectedRoute({ children, role, requireOnboarded = true }: { children:
 function DevIndex() {
   return (
     <div className="p-8 max-w-2xl mx-auto space-y-6">
-      <h1 className="text-2xl font-bold font-headline">Let Mastery Pro App Navigation</h1>
+      <h1 className="text-2xl font-bold font-headline">Let Mastery App Navigation</h1>
       <p className="text-on-surface-variant font-body mb-4 shrink-0">Development index mapping early routes.</p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
           <h2 className="font-bold text-primary mb-2">Admin Panel</h2>
-          <Link to="/admin/dashboard" className="text-blue-600 hover:underline">1. Dashboard</Link>
-          <Link to="/admin/categories" className="text-blue-600 hover:underline">2. Category Management</Link>
-          <Link to="/admin/question/edit" className="text-blue-600 hover:underline">3. Edit Question</Link>
-          <Link to="/admin/question/detail" className="text-blue-600 hover:underline">4. Question Detail</Link>
-          <Link to="/admin/curriculum-settings" className="text-blue-600 hover:underline">5. Curriculum Settings</Link>
-          <Link to="/admin/analytics" className="text-blue-600 hover:underline">6. Student Analytics</Link>
-          <Link to="/admin/users" className="text-blue-600 hover:underline">7. User & Role Management</Link>
-          <Link to="/admin/bulk-upload" className="text-blue-600 hover:underline">8. Roster Upload</Link>
-          <Link to="/admin/sync" className="text-blue-600 hover:underline">9. Sync Control Center</Link>
-          <Link to="/admin/settings" className="text-blue-600 hover:underline">10. System Settings</Link>
+          <Link to="/admin/dashboard" className="text-blue-600 hover:underline">0. Admin Dashboard (Seed here)</Link>
+          <Link to="/instructor/dashboard" className="text-blue-600 hover:underline">1. Instructor Dashboard</Link>
         </div>
         
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-2">
@@ -131,22 +118,6 @@ function AppContent() {
             
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/categories" element={<ProtectedRoute role="admin"><Navigate to="/admin/modules" replace /></ProtectedRoute>} />
-            <Route path="/admin/question/bank" element={<ProtectedRoute role="admin"><QuestionBank /></ProtectedRoute>} />
-            <Route path="/admin/question/new" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
-            <Route path="/admin/question/edit/:id" element={<ProtectedRoute role="admin"><EditQuestion /></ProtectedRoute>} />
-            <Route path="/admin/bulk-upload" element={<ProtectedRoute role="admin"><BulkUpload /></ProtectedRoute>} />
-            <Route path="/admin/question/detail" element={<ProtectedRoute role="admin"><QuestionDetail /></ProtectedRoute>} />
-            <Route path="/admin/curriculum-settings" element={<ProtectedRoute role="admin"><CurriculumSettings /></ProtectedRoute>} />
-            <Route path="/admin/analytics" element={<ProtectedRoute role="admin"><Analytics /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute role="admin"><Users /></ProtectedRoute>} />
-            <Route path="/admin/classes" element={<ProtectedRoute role="admin"><AdminClasses /></ProtectedRoute>} />
-            <Route path="/admin/modules" element={<ProtectedRoute role="admin"><InstructorModules /></ProtectedRoute>} />
-            <Route path="/admin/certificates" element={<ProtectedRoute role="admin"><AdminCertificates /></ProtectedRoute>} />
-            <Route path="/admin/notifications" element={<ProtectedRoute role="admin"><Notifications /></ProtectedRoute>} />
-            <Route path="/admin/activity-logs" element={<ProtectedRoute role="admin"><ActivityLogs /></ProtectedRoute>} />
-            <Route path="/admin/sync" element={<ProtectedRoute role="admin"><SyncCenter /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute role="admin"><Settings /></ProtectedRoute>} />
 
             {/* Instructor Routes */}
             <Route path="/instructor/dashboard" element={<ProtectedRoute role="instructor"><InstructorDashboard /></ProtectedRoute>} />
@@ -157,10 +128,10 @@ function AppContent() {
             <Route path="/instructor/modules" element={<ProtectedRoute role="instructor"><InstructorModules /></ProtectedRoute>} />
             <Route path="/instructor/grades" element={<ProtectedRoute role="instructor"><InstructorGradebook /></ProtectedRoute>} />
             <Route path="/instructor/certificates" element={<ProtectedRoute role="instructor"><InstructorCertificates /></ProtectedRoute>} />
-            <Route path="/instructor/students" element={<ProtectedRoute role="instructor"><Users /></ProtectedRoute>} />
+            <Route path="/instructor/users" element={<ProtectedRoute role="instructor"><Users /></ProtectedRoute>} />
             <Route path="/instructor/ai-drafts" element={<ProtectedRoute role="instructor"><AIDrafts /></ProtectedRoute>} />
             <Route path="/instructor/analytics" element={<ProtectedRoute role="instructor"><Analytics /></ProtectedRoute>} />
-            <Route path="/instructor/classes" element={<ProtectedRoute role="instructor"><InstructorClasses /></ProtectedRoute>} />
+            <Route path="/instructor/customize" element={<ProtectedRoute role="instructor"><InstructorCustomize /></ProtectedRoute>} />
 
             {/* Mobile / App Routes */}
             <Route path="/loading" element={<Loading />} />

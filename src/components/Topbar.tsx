@@ -12,6 +12,8 @@ interface TopbarProps {
 
 import { useTheme } from '../context/ThemeContext';
 
+import { useBranding } from '../context/BrandingContext';
+
 export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -20,16 +22,11 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const { toggle } = useSidebar();
   const { signOut, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { settings, quotaExceeded } = useBranding();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user?.role === 'admin') {
-      const q = query(collection(db, 'reports'), where('status', '==', 'open'));
-      const unsub = onSnapshot(q, (snapshot) => {
-        setOpenReports(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
-      return () => unsub();
-    }
+    // Generic notifications or other logic
   }, [user]);
 
   const handleSignOut = () => {
@@ -37,20 +34,30 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
     navigate('/sign-in');
   };
 
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await seedDatabase();
-      alert('Cloud Sync Successful: Preset curriculum and questions have been updated.');
-    } catch (err: any) {
-      alert('Sync Failed: ' + (err.message || 'Unknown error'));
-    } finally {
-      setSyncing(false);
+  const renderLogo = () => {
+    if (settings.logo && (settings.logo.startsWith('http') || settings.logo.startsWith('data:'))) {
+      return <img src={settings.logo} alt="Logo" className="w-6 h-6 object-contain" />;
     }
+    return <span className="material-symbols-outlined text-primary text-[20px] font-variation-settings-fill-1">{settings.logo || 'school'}</span>;
   };
 
   return (
-    <header className="flex justify-between items-center w-full px-6 py-3 bg-surface/80 backdrop-blur-md text-on-surface font-headline text-sm tracking-tight sticky top-0 z-40 border-b border-outline-variant">
+    <>
+      {quotaExceeded && (
+        <div className="bg-error text-white px-6 py-2 flex items-center justify-between gap-4 sticky top-0 z-[60]">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-sm">report</span>
+            <div className="text-[10px] sm:text-xs">
+              <span className="font-black uppercase tracking-widest mr-2">System Busy:</span>
+              <span className="font-semibold opacity-90">Firestore quota reached. Using local cache for most features. Real-time updates paused.</span>
+            </div>
+          </div>
+          <button onClick={() => window.location.reload()} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors shrink-0">
+            Retry
+          </button>
+        </div>
+      )}
+      <header className="flex justify-between items-center w-full px-6 py-3 bg-surface/80 backdrop-blur-md text-on-surface font-headline text-sm tracking-tight sticky top-0 z-40 border-b border-outline-variant">
       {/* Mobile Menu Toggle & Brand */}
       <div className="flex items-center gap-4">
         <button 
@@ -59,8 +66,13 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
         >
           <span className="material-symbols-outlined">menu</span>
         </button>
-        <div className="text-xl font-extrabold tracking-tighter text-primary md:hidden">
-          {title}
+        <div className="flex items-center gap-2 md:hidden">
+           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              {renderLogo()}
+           </div>
+           <div className="text-xl font-extrabold tracking-tighter text-primary truncate max-w-[150px]">
+             {settings.siteName || title}
+           </div>
         </div>
         {/* Search Bar */}
         <div className="hidden sm:flex items-center bg-surface-container rounded-xl px-4 py-2 border border-outline-variant transition-all min-w-[280px] focus-within:ring-2 focus-within:ring-primary/10">
@@ -87,50 +99,18 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
           className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors duration-200 relative w-10 h-10 flex items-center justify-center"
         >
           <span className="material-symbols-outlined">notifications</span>
-          {openReports.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border-2 border-surface"></span>}
         </button>
-
-        {notificationsOpen && (
-          <div className="absolute top-12 right-0 w-80 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant py-2 z-50 transition-all">
-            <div className="px-4 py-2 border-b border-outline-variant/10 font-bold text-on-surface flex justify-between items-center text-sm">
-              <span>Notifications</span>
-              <Link to="/admin/notifications" className="text-[10px] text-primary font-bold uppercase tracking-widest hover:underline">View All</Link>
-            </div>
-            <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
-              {openReports.length === 0 ? (
-                <p className="text-xs text-on-surface-variant/40 px-3 py-2">No new notifications</p>
-              ) : (
-                openReports.map(report => (
-                  <Link to="/admin/notifications" key={report.id} className="block px-3 py-2 hover:bg-surface-container rounded-xl transition-colors cursor-pointer">
-                    <p className="text-xs font-bold text-on-surface truncate">New Report: {report.subject}</p>
-                    <p className="text-[10px] text-on-surface-variant/40 font-medium">By: {report.userEmail}</p>
-                  </Link>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {user?.role === 'admin' && (
-          <button 
-            disabled={syncing}
-            onClick={handleSync}
-            className={`p-2 rounded-full transition-colors duration-200 w-10 h-10 flex items-center justify-center ${syncing ? 'text-primary animate-spin' : 'text-on-surface-variant/40 hover:bg-surface-container'}`}
-            title="Manual Cloud Sync (Seed Presets)"
-          >
-            <span className="material-symbols-outlined">{syncing ? 'sync' : 'cloud_sync'}</span>
-          </button>
-        )}
 
         <ExtractedProfileMenu 
           open={profileOpen} 
           setOpen={setProfileOpen} 
           setNotificationsOpen={setNotificationsOpen} 
           onSignOut={handleSignOut}
-          userEmail={user?.email}
+          user={user}
         />
       </div>
     </header>
+    </>
   );
 }
 
@@ -139,10 +119,10 @@ interface ProfileMenuProps {
   setOpen: (o: boolean) => void;
   setNotificationsOpen: (o: boolean) => void;
   onSignOut: () => void;
-  userEmail?: string;
+  user: any;
 }
 
-function ExtractedProfileMenu({ open, setOpen, setNotificationsOpen, onSignOut, userEmail }: ProfileMenuProps) {
+function ExtractedProfileMenu({ open, setOpen, setNotificationsOpen, onSignOut, user }: ProfileMenuProps) {
   return (
     <>
       <button 
@@ -152,14 +132,16 @@ function ExtractedProfileMenu({ open, setOpen, setNotificationsOpen, onSignOut, 
         }}
         className="w-10 h-10 rounded-xl ml-1 overflow-hidden border border-outline-variant shadow-sm transition-transform active:scale-95 bg-surface-container"
       >
-        <img alt="Administrator Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAwKbH0aIL4IWnrRmSgvV-T1zY-iZ9g3vvSayMrf3zKTRs2YDu90bNYCDqmRDIy1V7MxxknH8iEIKZnSqc-wpPtp7GklcEQAILGB2QGCgPgaBUB09Vr2o3NNPXL_ShgIzMof2IhZ-kVrOvQexTScDa7zCL3rqT_jrt71OefgsN6lsoFFL0kDmshpoIP4bXcAJqTkHIt8O6XV6NQVqe9p728CqyBa9JjtU-Es_amvnc2dHadh1pim0Xon2o5DDEPOzgjFCJua_mKw" />
+        <div className="w-full h-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+            {user?.email?.[0].toUpperCase()}
+        </div>
       </button>
 
       {open && (
         <div className="absolute top-12 right-0 w-64 bg-surface-container-lowest rounded-2xl shadow-xl border border-outline-variant py-2 z-50 transition-all">
           <div className="px-4 py-3 border-b border-outline-variant/10 mb-1">
-            <p className="font-bold text-on-surface truncate text-sm">Administrator</p>
-            <p className="text-[10px] text-on-surface-variant/60 truncate font-medium lowercase">{userEmail || 'admin@portal.edu'}</p>
+            <p className="font-bold text-on-surface truncate text-sm">{user?.fullName || 'User'}</p>
+            <p className="text-[10px] text-on-surface-variant/60 truncate font-medium lowercase">{user?.email}</p>
           </div>
           <Link to="/settings" className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-container transition-colors text-xs font-bold text-on-surface-variant uppercase tracking-widest">
             <span className="material-symbols-outlined text-[18px]">account_circle</span>

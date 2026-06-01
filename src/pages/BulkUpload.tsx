@@ -88,10 +88,16 @@ export default function BulkUpload() {
           const existingQs = await getDocs(collection(db, 'questions'));
           
           const topicMap: Record<string, string> = {};
-          topSnap.forEach(s => topicMap[s.data().title.toLowerCase()] = s.id);
+          topSnap.forEach(s => {
+            const title = s.data().title || s.data().name || '';
+            topicMap[title.toLowerCase()] = s.id;
+          });
 
           const skillMap: Record<string, string> = {};
-          skillSnap.forEach(s => skillMap[s.data().title.toLowerCase()] = s.id);
+          skillSnap.forEach(s => {
+            const title = s.data().title || s.data().name || '';
+            skillMap[title.toLowerCase()] = s.id;
+          });
 
           const existingStems = new Set(existingQs.docs.map(d => String(d.data().stem || '').toLowerCase().trim()).filter(Boolean));
           const importedStems = new Set<string>();

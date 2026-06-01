@@ -340,9 +340,13 @@ export default function ExamSimulation() {
   const isFullMock = searchParams.get('type') === 'mock';
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, recordActivity } = useAuth();
 
   const [phase, setPhase] = useState<ExamPhase>('loading');
+
+  useEffect(() => {
+    recordActivity();
+  }, [recordActivity]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [questionPool, setQuestionPool] = useState<Question[]>([]);
   const [blueprint, setBlueprint] = useState<ExamBlueprint>(() => buildDefaultBlueprint(isFullMock));
@@ -675,6 +679,9 @@ export default function ExamSimulation() {
       setResult(finalResult);
       setPhase('submitted');
       submittingRef.current = false;
+      if (recordActivity) {
+        void recordActivity().catch(console.warn);
+      }
     }
   }, [blueprint.id, blueprint.title, compileResult, integrityPolicy.level, isFullMock, localAttemptKey, mode, refreshCount, user]);
 

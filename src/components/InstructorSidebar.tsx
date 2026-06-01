@@ -1,29 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSidebar } from '../context/SidebarContext';
 import { useBranding } from '../context/BrandingContext';
+import UpdateModal from './UpdateModal';
 
 export default function InstructorSidebar() {
   const location = useLocation();
   const { isOpen, toggle, isCollapsed, toggleCollapse } = useSidebar();
   const { settings } = useBranding();
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
 
   const navItems = [
     { name: 'Dashboard', path: '/instructor/dashboard', icon: 'dashboard' },
-    { name: 'Classes', path: '/instructor/classes', icon: 'groups' },
     { name: 'Questions', path: '/instructor/questions', icon: 'quiz' },
     { name: 'Bulk Upload', path: '/instructor/bulk-upload', icon: 'upload_file' },
     { name: 'Modules', path: '/instructor/modules', icon: 'book' },
-    { name: 'Students', path: '/instructor/students', icon: 'person_search' },
+    { name: 'User Management', path: '/instructor/users', icon: 'manage_accounts' },
     { name: 'AI Drafts', path: '/instructor/ai-drafts', icon: 'smart_toy' },
     { name: 'Analytics', path: '/instructor/analytics', icon: 'bar_chart' },
+    { name: 'Customize', path: '/instructor/customize', icon: 'palette' },
   ];
 
   const renderLogo = () => {
-    if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
+    if (settings.logo && (settings.logo.startsWith('http') || settings.logo.startsWith('data:'))) {
       return <img src={settings.logo} alt="Logo" className="w-8 h-8 object-contain" />;
     }
-    return <span className="material-symbols-outlined text-[24px]">{settings.logo || 'school'}</span>;
+    return <span className="material-symbols-outlined text-primary text-[24px] font-variation-settings-fill-1">{settings.logo || 'school'}</span>;
   };
 
   return (
@@ -44,12 +46,12 @@ export default function InstructorSidebar() {
       `}>
         {/* Header / Brand */}
         <div className={`px-6 mt-8 mb-10 flex items-center transition-all duration-300 ${isCollapsed ? 'justify-center px-0' : 'gap-3'}`}>
-          <div className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
             {renderLogo()}
           </div>
           {!isCollapsed && (
             <div className="min-w-0">
-              <div className="font-extrabold text-primary text-[20px] tracking-tight leading-tight truncate">{settings.siteName}</div>
+              <div className="font-extrabold text-primary text-[20px] tracking-tight leading-tight truncate">{settings.siteName || 'Let Mastery'}</div>
               <div className="text-[11px] text-on-surface-variant/40 font-medium font-body mt-0.5 truncate uppercase tracking-wider">Instructor Panel</div>
             </div>
           )}
@@ -95,6 +97,15 @@ export default function InstructorSidebar() {
 
         {/* Bottom Actions & Collapse Toggle */}
         <div className={`mt-auto pb-8 ${isCollapsed ? 'px-2' : 'px-4'} space-y-4`}>
+          <button 
+           onClick={() => setIsUpdateOpen(true)}
+           className={`w-full flex items-center bg-primary text-on-primary rounded-full font-bold transition-all hover:opacity-90 hover:shadow-lg focus:outline-none ${
+            isCollapsed ? 'justify-center p-3' : 'justify-center gap-2 px-4 py-3'
+          }`}>
+            <span className="material-symbols-outlined text-md">refresh</span>
+            {!isCollapsed && <span className="text-xs">Check for Update</span>}
+          </button>
+
           {/* Desktop Collapse Toggle */}
           <button 
             onClick={toggleCollapse}
@@ -106,6 +117,8 @@ export default function InstructorSidebar() {
           </button>
         </div>
       </nav>
+
+      <UpdateModal isOpen={isUpdateOpen} onClose={() => setIsUpdateOpen(false)} />
     </>
   );
 }

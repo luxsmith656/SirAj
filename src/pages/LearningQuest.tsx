@@ -187,7 +187,13 @@ export default function LearningQuest() {
   const [searchParams] = useSearchParams();
   const moduleId = searchParams.get('moduleId');
   const demoMode = searchParams.get('demo') === '1' || searchParams.get('demo') === 'true';
-  const { user } = useAuth();
+  const { user, recordActivity } = useAuth();
+  
+  useEffect(() => {
+    if (moduleId && !demoMode) {
+      recordActivity();
+    }
+  }, [moduleId, demoMode, recordActivity]);
 
   const [module, setModule] = useState<JourneyModule>(() => demoMode ? findJourneyModule(moduleId) : createPendingModule(moduleId));
   const [progress, setProgress] = useState<QuestProgress>(defaultProgress);

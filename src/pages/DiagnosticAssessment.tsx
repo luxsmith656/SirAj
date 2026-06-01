@@ -18,8 +18,12 @@ interface Question {
 }
 
 export default function DiagnosticAssessment() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, recordActivity } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    recordActivity();
+  }, [recordActivity]);
 
   const [hasStarted, setHasStarted] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -134,6 +138,9 @@ export default function DiagnosticAssessment() {
            updatedAt: serverTimestamp(),
            onboardingStep: 3
         }, { merge: true });
+
+        // Record activity for initial streak
+        await recordActivity();
 
         await refreshUser();
         navigate('/student/dashboard');
