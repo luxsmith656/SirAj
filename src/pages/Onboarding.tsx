@@ -418,7 +418,7 @@ export default function Onboarding() {
           onConfirm={() => {
               setIsApkModalOpen(false);
               setDownloadStarted(true);
-              window.location.href = "https://github.com/luxsmith656/SirAj/releases/latest/download/app-release.apk";
+              window.location.href = "https://github.com/luxsmith656/SirAj/raw/main/app-release.apk";
               setTimeout(() => setDownloadStarted(false), 3000);
           }}
           title="Download App APK?"

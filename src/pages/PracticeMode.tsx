@@ -118,7 +118,8 @@ export default function PracticeMode() {
     // Track mistake bank
     let correctCount = 0;
     questions.forEach(q => {
-      if (answers[q.id] === q.correctOptionId) {
+      const isFlashcardCorrect = (!q.options || q.options.length === 0) && answers[q.id] === 'correct';
+      if (answers[q.id] === q.correctOptionId || isFlashcardCorrect) {
         correctCount++;
       } else if (answers[q.id]) {
         if (navigator.onLine) {
@@ -129,7 +130,7 @@ export default function PracticeMode() {
             options: q.options || [],
             explanation: q.explanation || q.rationalization || '',
             selectedOptionId: answers[q.id],
-            correctOptionId: q.correctOptionId,
+            correctOptionId: q.correctOptionId || 'correct', // for flashcard it should be correct
             timesMissed: 1,
             lastMissedAt: serverTimestamp(),
           }, { merge: true }).catch(console.warn);
@@ -368,7 +369,8 @@ export default function PracticeMode() {
   if (drillPhase === 'completed') {
     let correctCount = 0;
     questions.forEach(q => {
-      if (answers[q.id] === q.correctOptionId) correctCount++;
+      const isFlashcardCorrect = (!q.options || q.options.length === 0) && answers[q.id] === 'correct';
+      if (answers[q.id] === q.correctOptionId || isFlashcardCorrect) correctCount++;
     });
     const percentage = Math.round((correctCount / questions.length) * 100);
 
@@ -478,7 +480,7 @@ export default function PracticeMode() {
           </p>
 
           <div className="space-y-3">
-            {currentQuestion?.options?.map((opt: any) => {
+            {currentQuestion?.options && currentQuestion.options.length > 0 ? currentQuestion.options.map((opt: any) => {
               const isSelected = selectedAnswerId === opt.id;
               const isActualCorrect = currentQuestion.correctOptionId === opt.id;
               
@@ -507,7 +509,28 @@ export default function PracticeMode() {
                   {showFeedback && isSelected && !isActualCorrect && <XCircle size={20} className="text-red-600 shrink-0" />}
                 </button>
               );
-            })}
+            }) : (
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
+                <button
+                  onClick={() => {
+                    handleSelectOption('correct');
+                  }}
+                  disabled={showFeedback}
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 hover:bg-emerald-500/20 disabled:opacity-50 transition-all text-center"
+                >
+                  I knew the answer
+                </button>
+                <button
+                  onClick={() => {
+                     handleSelectOption('wrong');
+                  }}
+                  disabled={showFeedback}
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold bg-red-500/10 text-red-600 border border-red-500/30 hover:bg-red-500/20 disabled:opacity-50 transition-all text-center"
+                >
+                  I missed it
+                </button>
+              </div>
+            )}
           </div>
           
           {showFeedback && (

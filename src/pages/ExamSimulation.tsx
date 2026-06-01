@@ -432,13 +432,14 @@ export default function ExamSimulation() {
     const answerRecords = finalQuestions.map((question, index) => {
       const selectedOptionId = finalAnswers[question.id] || '';
       const isUnanswered = !selectedOptionId;
-      const isCorrect = Boolean(selectedOptionId) && selectedOptionId === question.correctOptionId;
+      const isFlashcardCorrect = (!question.options || question.options.length === 0) && selectedOptionId === 'correct';
+      const isCorrect = Boolean(selectedOptionId) && (selectedOptionId === question.correctOptionId || isFlashcardCorrect);
       return {
         questionId: question.id,
         questionNumber: index + 1,
         selectedOptionId,
-        correctOptionId: question.correctOptionId || '',
-        originalCorrectOptionId: question.originalCorrectOptionId || question.correctOptionId || '',
+        correctOptionId: question.correctOptionId || 'correct',
+        originalCorrectOptionId: question.originalCorrectOptionId || question.correctOptionId || 'correct',
         isCorrect,
         isUnanswered,
         categoryId: question.categoryId || '',
@@ -1477,29 +1478,46 @@ export default function ExamSimulation() {
           </h1>
 
           <div className="space-y-4">
-            {currentQuestion?.options.map((option) => {
-              const isSelected = answers[currentQuestion.id] === option.id;
-              return (
+            {currentQuestion?.options && currentQuestion.options.length > 0 ? (
+              currentQuestion?.options.map((option) => {
+                const isSelected = answers[currentQuestion.id] === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => saveAnswer(currentQuestion.id, option.id)}
+                    className={`flex w-full items-start gap-4 rounded-2xl border-2 p-5 text-left transition-all ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 shadow-sm'
+                        : 'border-outline-variant/20 bg-surface-container/30 hover:border-primary/50'
+                    }`}
+                  >
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-colors ${
+                      isSelected ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant/50'
+                    }`}>
+                      {option.id}
+                    </div>
+                    <span className={`pt-1 text-[15px] font-bold leading-snug ${isSelected ? 'text-primary' : 'text-on-surface-variant'}`}>
+                      {option.text}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4 mt-8">
                 <button
-                  key={option.id}
-                  onClick={() => saveAnswer(currentQuestion.id, option.id)}
-                  className={`flex w-full items-start gap-4 rounded-2xl border-2 p-5 text-left transition-all ${
-                    isSelected
-                      ? 'border-primary bg-primary/10 shadow-sm'
-                      : 'border-outline-variant/20 bg-surface-container/30 hover:border-primary/50'
-                  }`}
+                  onClick={() => saveAnswer(currentQuestion.id, 'correct')}
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 hover:bg-emerald-500/20 transition-all text-center"
                 >
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-colors ${
-                    isSelected ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant/50'
-                  }`}>
-                    {option.id}
-                  </div>
-                  <span className={`pt-1 text-[15px] font-bold leading-snug ${isSelected ? 'text-primary' : 'text-on-surface-variant'}`}>
-                    {option.text}
-                  </span>
+                  I knew the answer
                 </button>
-              );
-            })}
+                <button
+                  onClick={() => saveAnswer(currentQuestion.id, 'wrong')}
+                  className="flex-1 py-4 px-6 rounded-2xl font-bold bg-error/10 text-error border border-error/30 hover:bg-error/20 transition-all text-center"
+                >
+                  I missed it
+                </button>
+              </div>
+            )}
           </div>
         </main>
 

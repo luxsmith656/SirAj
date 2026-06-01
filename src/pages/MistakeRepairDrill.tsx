@@ -117,10 +117,44 @@ export default function MistakeRepairDrill() {
     }
   };
 
+  const handleSelfAssess = async (isCorrect: boolean) => {
+    if (showFeedback) return;
+    setAnswers(prev => ({ ...prev, [currentQuestion.id]: isCorrect ? 'correct' : 'wrong' }));
+    setShowFeedback(true);
+    
+    // Update mastery
+    const mistakeDocId = mistakeDocIds[currentQuestion.id];
+    if (!mistakeDocId) return;
+    
+    let newMastery = masteryState[currentQuestion.id] || 0;
+    if (isCorrect) {
+        newMastery += 1;
+    } else {
+        newMastery = 0; // Reset on failure
+    }
+    
+    setMasteryState(prev => ({ ...prev, [currentQuestion.id]: newMastery }));
+    
+    // Save to firestore
+    if (newMastery >= 2) {
+        // Mastered! Remove from mistake bank
+        await deleteDoc(doc(db, 'mistakeBank', mistakeDocId)).catch(console.error);
+    } else {
+        // Update mastery count
+        await updateDoc(doc(db, 'mistakeBank', mistakeDocId), {
+            masteryCount: newMastery,
+            lastPracticedAt: serverTimestamp()
+        }).catch(console.error);
+    }
+  };
+
   const handleNext = () => {
     setShowFeedback(false);
     
-    const isCorrect = answers[currentQuestion.id] === currentQuestion.correctOptionId;
+    const isCorrect = currentQuestion.options && currentQuestion.options.length > 0 
+      ? answers[currentQuestion.id] === currentQuestion.correctOptionId
+      : answers[currentQuestion.id] === 'correct';
+      
     const currentMastery = masteryState[currentQuestion.id] || 0;
     
     let nextQueue = [...drillQueue];
@@ -195,7 +229,7 @@ export default function MistakeRepairDrill() {
   }
 
   const hasAnswered = showFeedback;
-  const isCorrect = hasAnswered && answers[currentQuestion.id] === currentQuestion.correctOptionId;
+  const isCorrect = hasAnswered && (currentOptions.length > 0 ? answers[currentQuestion.id] === currentQuestion.correctOptionId : answers[currentQuestion.id] === 'correct');
   const currentMastery = masteryState[currentQuestion.id] || 0;
 
   return (
@@ -216,13 +250,16 @@ export default function MistakeRepairDrill() {
         </div>
 
         <div className="bg-surface-container-lowest border border-outline-variant/40 rounded-3xl p-8 mb-6 shadow-sm">
-          <p className="text-lg text-on-surface font-medium leading-relaxed">
+          <p className="text-lg text-on-surface font-medium leading-relaxed pb-4">
             {currentQuestion.stem}
           </p>
+          {currentOptions.length === 0 && !showFeedback && (
+            <div className="text-sm text-on-surface-variant uppercase font-bold tracking-widest bg-surface-container inline-block px-3 py-1 rounded-lg">Flashcard Mode</div>
+          )}
         </div>
         
         <div className="space-y-3">
-          {currentOptions.map((opt: any) => {
+          {currentOptions.length > 0 ? currentOptions.map((opt: any) => {
             const isSelected = answers[currentQuestion.id] === opt.id;
             const isOptionCorrect = opt.id === currentQuestion.correctOptionId;
             let btnClass = "border-outline-variant/30 bg-surface-container hover:border-primary hover:bg-primary/5 text-on-surface";
@@ -245,7 +282,24 @@ export default function MistakeRepairDrill() {
                 {opt.text}
               </button>
             );
-          })}
+          }) : (
+            <div className="flex flex-col sm:flex-row gap-4 max-w-xl mx-auto mt-8">
+              <button
+                onClick={() => handleSelfAssess(true)}
+                disabled={showFeedback}
+                className="flex-1 py-4 px-6 rounded-2xl font-bold bg-emerald-500/10 text-emerald-600 border-2 border-emerald-500/30 hover:border-emerald-500 hover:bg-emerald-500/20 disabled:opacity-50 transition-all"
+              >
+                I knew the answer
+              </button>
+              <button
+                onClick={() => handleSelfAssess(false)}
+                disabled={showFeedback}
+                className="flex-1 py-4 px-6 rounded-2xl font-bold bg-error/10 text-error border-2 border-error/30 hover:border-error hover:bg-error/20 disabled:opacity-50 transition-all"
+              >
+                I missed it
+              </button>
+            </div>
+          )}
         </div>
 
         <AnimatePresence>

@@ -274,10 +274,10 @@ export default function ProfileSettings() {
         onClose={() => setIsApkModalOpen(false)}
         onConfirm={() => {
             setIsApkModalOpen(false);
-            window.location.href = "https://github.com/luxsmith656/SirAj/releases/latest/download/app-release.apk";
+            window.location.href = "https://github.com/luxsmith656/SirAj/raw/main/app-release.apk";
         }}
         title="Download App APK?"
-        message="This will download the latest Android Application Package (APK) directly from the repository's releases. Do you want to proceed?"
+        message="This will download the latest Android Application Package (APK) directly from the repository. Do you want to proceed?"
         confirmText="Download APK"
         confirmColor="bg-primary text-on-primary shadow-primary/20"
         icon="download"
