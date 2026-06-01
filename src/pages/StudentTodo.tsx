@@ -202,22 +202,22 @@ export default function StudentTodo() {
               <CalendarDays size={18} className="text-primary" />
               <h2 className="text-xl font-extrabold font-headline">Next 14 days</h2>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
               {calendarDays.map((day) => (
-                <article key={day.key} className="min-h-24 sm:min-h-32 rounded-2xl border border-outline-variant/40 bg-surface-container/20 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50">{day.date.toLocaleDateString(undefined, { weekday: 'short' })}</p>
-                  <p className="text-base sm:text-lg font-black text-on-surface">{day.date.getDate()}</p>
-                  <div className="mt-3 space-y-1">
-                    {day.markers.slice(0, 4).map((marker) => (
+                <article key={day.key} className="aspect-square rounded-2xl border border-outline-variant/40 bg-surface-container/20 p-2 flex flex-col">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50">{day.date.toLocaleDateString(undefined, { weekday: 'short' })}</p>
+                  <p className="text-sm font-black text-on-surface">{day.date.getDate()}</p>
+                  <div className="mt-2 flex-1 flex flex-col justify-start gap-1 w-full">
+                    {day.markers.slice(0, 3).map((marker) => (
                       <button
                         key={marker.id}
                         onClick={() => marker.targetLink && navigate(marker.targetLink)}
-                        className={`w-full rounded-lg px-2 py-1 text-left text-[11px] font-bold leading-tight ${markerTone(marker.type)}`}
+                        className={`w-full rounded-md px-1 py-0.5 text-left text-[10px] font-bold truncate ${markerTone(marker.type)}`}
                       >
                         {marker.label}
                       </button>
                     ))}
-                    {day.markers.length > 4 && <p className="text-[9px] font-bold text-on-surface-variant/50">+{day.markers.length - 4} more</p>}
+                    {day.markers.length > 3 && <p className="text-[9px] font-bold text-on-surface-variant/50 truncate">+{day.markers.length - 3} more</p>}
                   </div>
                 </article>
               ))}
