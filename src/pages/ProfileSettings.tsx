@@ -212,7 +212,7 @@ export default function ProfileSettings() {
           <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50">Email</span>
           <input value={user?.email || ''} disabled className="w-full bg-surface-container rounded-xl px-5 py-4 text-on-surface font-medium text-sm border border-transparent opacity-60 outline-none" />
         </label>
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
           <button onClick={saveProfile} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary text-on-primary px-5 py-3 text-sm font-bold">
             <Save size={16} />
             Save profile
