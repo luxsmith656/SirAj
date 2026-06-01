@@ -122,7 +122,7 @@ export default function QuizResults() {
              <button onClick={() => navigate('/student/dashboard')} className="flex-1 py-4 rounded-2xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors uppercase tracking-widest text-[11px]">
                 Home
              </button>
-             <button onClick={() => navigate('/focus')} className="flex-1 py-4 rounded-2xl font-bold bg-[#1b366a] text-white shadow-lg hover:bg-[#112349] transition-all uppercase tracking-widest text-[11px]">
+             <button onClick={() => navigate('/practice')} className="flex-1 py-4 rounded-2xl font-bold bg-[#1b366a] text-white shadow-lg hover:bg-[#112349] transition-all uppercase tracking-widest text-[11px]">
                 Another Set
              </button>
           </div>

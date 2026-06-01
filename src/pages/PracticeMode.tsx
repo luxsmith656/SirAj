@@ -267,7 +267,9 @@ export default function PracticeMode() {
                 { id: 'gened', title: 'General Education', body: 'English, Filipino, Math, Social Science, ICT, Rizal' },
                 { id: 'profed', title: 'Professional Education', body: 'Learning theories, development, teaching principles, ethics' },
                 { id: 'major', title: 'Specialist Major (BSEd)', body: 'Secondary Education major field drills' }
-              ].map((category) => (
+              ]
+              .filter(cat => user?.reviewTrack !== 'elementary' || cat.id !== 'major')
+              .map((category) => (
                 <button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}

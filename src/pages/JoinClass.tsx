@@ -118,8 +118,8 @@ export default function JoinClass() {
     <div className="bg-[#f0f2f5] min-h-screen text-slate-800 font-body py-12 px-6 flex flex-col items-center">
       <div className="max-w-md w-full">
         {!classCodeFromUrl && (
-          <button onClick={() => navigate('/choose-learning-mode')} className="mb-6 flex items-center gap-2 text-slate-400 hover:text-slate-800 font-bold text-sm tracking-widest uppercase transition-colors">
-            <ArrowLeft size={16} /> Back
+          <button onClick={() => navigate('/student/dashboard')} className="mb-6 flex items-center gap-2 text-slate-400 hover:text-slate-800 font-bold text-sm tracking-widest uppercase transition-colors">
+            <ArrowLeft size={16} /> Back to Dashboard
           </button>
         )}
         
