@@ -59,67 +59,6 @@ export default function QuestionBank() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
-  
-  const [isSeedingModalOpen, setIsSeedingModalOpen] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  const seedDatabase = async () => {
-      setIsSeeding(true);
-      setIsSeedingModalOpen(false);
-      try {
-          const batch = writeBatch(db);
-          const tracks = ['elementary', 'secondary', 'specialization', 'gened', 'profed'];
-          const difficulties = ['easy', 'medium', 'hard'];
-          const categoriesList = categories.length > 0 ? categories.map(c => c.id) : ['gened_english', 'gened_math', 'profed_assessment'];
-
-          for (let i = 1; i <= 120; i++) {
-              const docRef = doc(collection(db, 'questions'));
-              
-              const options = [
-                  { id: 'A', text: `Option A for seeded question ${i}` },
-                  { id: 'B', text: `Option B for seeded question ${i}` },
-                  { id: 'C', text: `Option C for seeded question ${i}` },
-                  { id: 'D', text: `Option D for seeded question ${i}` }
-              ];
-              
-              batch.set(docRef, {
-                  stem: `[SEEDED] This is question number ${i} generated automatically. Which of the following is correct?`,
-                  categoryId: categoriesList[i % categoriesList.length],
-                  correctOptionId: 'A',
-                  options: options,
-                  difficulty: difficulties[i % 3],
-                  topicId: `demo_topic_${i % 5}`,
-                  competencyId: `demo_comp_${i % 5}`,
-                  rationalization: 'This is a system generated rationalization for this seeded question covering exactly why it is correct.',
-                  wrongChoiceExplanations: {
-                      A: 'This is the correct answer.',
-                      B: 'Incorrect because it fails to consider the primary principle.',
-                      C: 'Incorrect due to logical reasoning error.',
-                      D: 'Out of scope distracter.'
-                  },
-                  reviewTrack: tracks[i % tracks.length],
-                  status: 'approved',
-                  approvalStatus: 'approved',
-                  approved: true,
-                  isPublished: true,
-                  approvedBy: user?.uid || 'system',
-                  approvedByName: user?.fullName || 'Auto Seed',
-                  createdAt: serverTimestamp(),
-                  updatedAt: serverTimestamp(),
-                  approvedAt: serverTimestamp()
-              });
-          }
-          await batch.commit();
-          setToastMsg('Successfully seeded 120 approved questions!');
-          setShowToast(true);
-      } catch (error) {
-          console.error(error);
-          setToastMsg('Failed to seed questions.');
-          setShowToast(true);
-      } finally {
-          setIsSeeding(false);
-      }
-  };
 
   useEffect(() => {
     // Categories for mapping names
@@ -332,14 +271,6 @@ export default function QuestionBank() {
             <p className="text-on-surface-variant/60 font-medium">Manage board exam multiple choice questions.</p>
           </div>
           <div className="flex gap-2">
-            <button
-               onClick={() => setIsSeedingModalOpen(true)}
-               disabled={isSeeding}
-               className="px-6 py-2.5 rounded-xl border border-outline-variant/40 hover:bg-surface-container text-on-surface font-bold text-sm flex items-center gap-2 transition-all disabled:opacity-50"
-            >
-                <span className="material-symbols-outlined text-[18px]">database</span> 
-                {isSeeding ? 'Seeding...' : 'Seed 120 Qs'}
-            </button>
             <button 
               onClick={() => navigate(getEditPath())}
               className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20"
@@ -454,18 +385,6 @@ export default function QuestionBank() {
         confirmText="Delete Now"
         confirmColor="bg-error text-on-error shadow-error/20"
         icon="delete_forever"
-      />
-      
-      <ConfirmModal
-        isOpen={isSeedingModalOpen}
-        onClose={() => setIsSeedingModalOpen(false)}
-        onConfirm={seedDatabase}
-        title="Seed Database?"
-        message="This will add 120 AI-generated multiple choice questions into the database and approve them automatically. Proceed?"
-        isProcessing={isSeeding}
-        confirmText="Seed Database"
-        confirmColor="bg-primary text-on-primary shadow-primary/20"
-        icon="database"
       />
       
       <Toast 
