@@ -202,11 +202,11 @@ export default function StudentTodo() {
               <CalendarDays size={18} className="text-primary" />
               <h2 className="text-xl font-extrabold font-headline">Next 14 days</h2>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
               {calendarDays.map((day) => (
-                <article key={day.key} className="min-h-32 rounded-2xl border border-outline-variant/40 bg-surface-container/20 p-3">
+                <article key={day.key} className="min-h-24 sm:min-h-32 rounded-2xl border border-outline-variant/40 bg-surface-container/20 p-3">
                   <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50">{day.date.toLocaleDateString(undefined, { weekday: 'short' })}</p>
-                  <p className="text-lg font-black text-on-surface">{day.date.getDate()}</p>
+                  <p className="text-base sm:text-lg font-black text-on-surface">{day.date.getDate()}</p>
                   <div className="mt-3 space-y-1">
                     {day.markers.slice(0, 4).map((marker) => (
                       <button
@@ -217,7 +217,7 @@ export default function StudentTodo() {
                         {marker.label}
                       </button>
                     ))}
-                    {day.markers.length > 4 && <p className="text-[10px] font-bold text-on-surface-variant/50">+{day.markers.length - 4} more</p>}
+                    {day.markers.length > 4 && <p className="text-[9px] font-bold text-on-surface-variant/50">+{day.markers.length - 4} more</p>}
                   </div>
                 </article>
               ))}
