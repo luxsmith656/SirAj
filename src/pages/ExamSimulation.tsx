@@ -1005,46 +1005,28 @@ export default function ExamSimulation() {
   const startAttempt = async () => {
     if (!user || questionPool.length === 0) return;
     setLoadError('');
-    let startPayload: any = null;
     const previousAttemptsSnap = await getDocs(query(collection(db, 'mockExamAttempts'), where('userId', '==', user.uid))).catch(() => null);
     const previousAttempts = previousAttemptsSnap ? previousAttemptsSnap.docs.map((attemptDoc) => ({ id: attemptDoc.id, ...attemptDoc.data() })) : [];
     const exposurePolicy = buildExposurePolicyFromAttempts(previousAttempts, mode, categoryId);
+    
+    let selectedQuestions: Question[] = [];
     try {
-      const response = await fetch('/api/exam/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          blueprint,
-          questionPool,
-          categoryId,
-          isFullMock,
-          assessmentMode: mode,
-          userTrack: user.specialization || user.reviewTrack || user.selectedFocus || '',
-          userReviewTrack: user.reviewTrack || (user.selectedFocus === 'major' ? 'secondary' : ''),
-          userSpecialization: user.specialization || '',
-          exposurePolicy,
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Unable to start this exam attempt.');
-      }
-      startPayload = data;
+      selectedQuestions = pickQuestionsFromBlueprint(questionPool, blueprint, isFullMock, categoryId);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to start this exam attempt.';
       setLoadError(message);
       return;
     }
 
-    const selectedQuestions = (startPayload.questions || []) as Question[];
     if (selectedQuestions.length === 0) {
-      setLoadError('The server did not return a valid fixed question set.');
+      setLoadError('The local selector did not return a valid question set.');
       return;
     }
 
-    const nextAttemptId = startPayload.attemptId || doc(collection(db, 'mockExamAttempts')).id;
-    const now = Number(startPayload.startedAtMillis || Date.now());
-    const expiresAt = Number(startPayload.expiresAtMillis || (now + (blueprint.timeLimitMinutes || (isFullMock ? DEFAULT_MOCK_MINUTES : DEFAULT_PRACTICE_MINUTES)) * 60 * 1000));
+    const nextAttemptId = doc(collection(db, 'mockExamAttempts')).id;
+    const now = Date.now();
+    const expiresAt = now + (blueprint.timeLimitMinutes || (isFullMock ? DEFAULT_MOCK_MINUTES : DEFAULT_PRACTICE_MINUTES)) * 60 * 1000;
+
     setQuestions(selectedQuestions);
     setAttemptId(nextAttemptId);
     setStartedAtMillis(now);
@@ -1072,8 +1054,8 @@ export default function ExamSimulation() {
       expiresAtMillis: expiresAt,
       blueprintId: blueprint.id || '',
       blueprintTitle: blueprint.title || '',
-      blueprintSnapshot: startPayload.blueprintSnapshot || null,
-      exposurePolicy: startPayload.exposurePolicy || exposurePolicy,
+      blueprintSnapshot: null,
+      exposurePolicy: exposurePolicy,
       totalQuestions: selectedQuestions.length,
       generatedQuestionIds: selectedQuestions.map((question) => question.id),
       generatedQuestions: selectedQuestions.map((question, index) => ({
