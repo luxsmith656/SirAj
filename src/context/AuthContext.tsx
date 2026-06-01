@@ -78,6 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           let role = (userData.role as Role) || 'student';
           if (firebaseUser.email === 'castanar656@gmail.com') {
             role = 'admin';
+          } else if (firebaseUser.email === 'instructor@letmastery.com') {
+            role = 'instructor';
+          } else if (firebaseUser.email === 'admin@letmastery.com') {
+            role = 'admin';
+          } else if (firebaseUser.email === 'student@letmastery.com') {
+            role = 'student';
           }
 
           setUser({ ...userData, uid: firebaseUser.uid, role });
@@ -115,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           const newUser: UserProfile = {
             email: firebaseUser.email || '',
-            role: (firebaseUser.email === 'castanar656@gmail.com' ? 'admin' : (existingData.role || 'student')),
+            role: (firebaseUser.email === 'castanar656@gmail.com' ? 'admin' : (firebaseUser.email === 'instructor@letmastery.com' ? 'instructor' : (firebaseUser.email === 'admin@letmastery.com' ? 'admin' : (existingData.role || 'student')))),
             uid: firebaseUser.uid,
             onboarded: existingData.onboarded ?? false, 
             fullName: pendingData.fullName || existingData.fullName || '',

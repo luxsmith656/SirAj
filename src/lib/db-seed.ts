@@ -147,7 +147,9 @@ export async function seedDatabase() {
         role: 'instructor',
         fullName: 'Dr. Jane Teacher',
         onboarded: true,
-        diagnosticCompleted: false
+        diagnosticCompleted: false,
+        teachingSubjects: ['profed', 'gened'],
+        classes: []
       },
       {
         uid: 'demo-admin',
@@ -158,6 +160,28 @@ export async function seedDatabase() {
         diagnosticCompleted: false
       }
     ];
+
+    // Added: Seed some starter classes for the instructor
+    const demoClasses = [
+      {
+        id: 'class_let_2024_A',
+        name: 'LET Review 2024 Section A',
+        instructorId: 'demo-instructor',
+        studentCount: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+    ];
+
+    for (const cls of demoClasses) {
+      await setDoc(doc(db, 'classes', cls.id), cls, { merge: true });
+    }
+
+    // Also update the instructor to include these classes
+    const instructorRef = doc(db, 'users', 'demo-instructor');
+    await setDoc(instructorRef, {
+      classes: ['class_let_2024_A']
+    }, { merge: true });
 
     for (const acct of demoAccounts) {
       try {
@@ -170,6 +194,26 @@ export async function seedDatabase() {
       } catch (err) {
          console.error(`Failed to seed demo account ${acct.email}`, err);
       }
+    }
+
+    // 7. Seed Initial Mock Exams
+    const mockExams = [
+      {
+        id: 'mock_let_full_001',
+        title: 'Full LET Mock Exam - Set A',
+        description: 'Comprehensive simulation of General and Professional Education.',
+        status: 'published',
+        durationMinutes: 150,
+        totalQuestions: 150,
+        passingScore: 75,
+        categoryId: 'mixed',
+        type: 'standard',
+        createdAt: serverTimestamp()
+      }
+    ];
+
+    for (const exam of mockExams) {
+      await setDoc(doc(db, 'exams', exam.id), exam, { merge: true });
     }
 
     console.log('Seeding completed. Total questions:', questionsAdded.size);

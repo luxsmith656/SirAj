@@ -24,14 +24,14 @@ export const SKILLS = [
 
 export const INITIAL_QUESTIONS = [
   // --- DIAGNOSTIC (General Education) ---
-  {
+    {
     stem: "Which philosophy of education strongly emphasizes the back-to-basics curriculum?",
     options: [{id: 'A', text: 'Essentialism'}, {id: 'B', text: 'Progressivism'}, {id: 'C', text: 'Existentialism'}, {id: 'D', text: 'Perennialism'}],
     correctOptionId: 'A',
     explanation: 'Essentialism focuses on core skills and academic knowledge that all students should possess.',
-    categoryId: 'gened',
-    categoryName: 'General Education',
-    topicId: 'gened_socsci',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_principles',
     skillIds: [],
     difficulty: 'easy',
     type: 'diagnostic',
@@ -77,6 +77,63 @@ export const INITIAL_QUESTIONS = [
     skillIds: ['gened_english_grammar'],
     difficulty: 'easy',
     type: 'diagnostic',
+    isPublished: true,
+    approved: true
+  },
+  // --- MOCK EXAM SET 1 ---
+  {
+    stem: "A teacher rewards students with stickers for good behavior. What learning theory is being applied?",
+    options: [{id: 'A', text: 'Constructivism'}, {id: 'B', text: 'Behaviorism'}, {id: 'C', text: 'Cognitivism'}, {id: 'D', text: 'Humanism'}],
+    correctOptionId: 'B',
+    explanation: 'Behaviorism uses reinforcement (rewards) to shape behavior.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_principles',
+    skillIds: [],
+    difficulty: 'easy',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "What is the maximum number of years a teacher can serve in the same station according to the Magna Carta for Public School Teachers?",
+    options: [{id: 'A', text: '3 years'}, {id: 'B', text: '5 years'}, {id: 'C', text: '10 years'}, {id: 'D', text: 'No limit'}],
+    correctOptionId: 'D',
+    explanation: 'While there are policies on rotation, the Magna Carta itself does not explicitly set a hard cap like 5 or 10 years as a constitutional limit, but transfers are regulated.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_principles',
+    skillIds: [],
+    difficulty: 'medium',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "Which of the following is NOT a 21st-century skill?",
+    options: [{id: 'A', text: 'Critical Thinking'}, {id: 'B', text: 'Collaboration'}, {id: 'C', text: 'Rote Memorization'}, {id: 'D', text: 'Creativity'}],
+    correctOptionId: 'C',
+    explanation: '21st-century skills prioritize high-level thinking over memorization.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_curriculum',
+    skillIds: [],
+    difficulty: 'easy',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "The tax paid by a person on his/her income is a/an ________.",
+    options: [{id: 'A', text: 'Indirect tax'}, {id: 'B', text: 'Direct tax'}, {id: 'C', text: 'Excise tax'}, {id: 'D', text: 'Regressive tax'}],
+    correctOptionId: 'B',
+    explanation: 'Income tax is a direct tax because the burden cannot be shifted.',
+    categoryId: 'gened',
+    categoryName: 'General Education',
+    topicId: 'gened_socsci',
+    skillIds: [],
+    difficulty: 'easy',
+    type: 'practice',
     isPublished: true,
     approved: true
   },
@@ -234,6 +291,61 @@ export const INITIAL_QUESTIONS = [
     skillIds: [],
     difficulty: 'easy',
     type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  // --- ADDITIONAL MOCK EXAM QUESTIONS ---
+  {
+    stem: "According to the Code of Ethics for Professional Teachers, which of the following is the highest obligation of a teacher?",
+    options: [
+      {id: 'A', text: 'To the state'},
+      {id: 'B', text: 'To the community'},
+      {id: 'C', text: 'To the learners'},
+      {id: 'D', text: 'To the profession'}
+    ],
+    correctOptionId: 'C',
+    explanation: 'A teacher\'s primary responsibility and highest obligation is to the learners.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_principles',
+    difficulty: 'medium',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "Which of the following describes a 'curriculum shift' from traditional to modern approach?",
+    options: [
+      {id: 'A', text: 'From learner-centered to teacher-centered'},
+      {id: 'B', text: 'From focus on content to focus on competence'},
+      {id: 'C', text: 'From global to local orientation'},
+      {id: 'D', text: 'From use of technology to use of chalk-and-board'}
+    ],
+    correctOptionId: 'B',
+    explanation: 'Modern curriculum shifts from purely content-driven to outcome-based and competency-based learning.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_curriculum',
+    difficulty: 'medium',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "What is the result of the expression (2^3 * 3^2) / 6?",
+    options: [
+      {id: 'A', text: '6'},
+      {id: 'B', text: '12'},
+      {id: 'C', text: '18'},
+      {id: 'D', text: '24'}
+    ],
+    correctOptionId: 'B',
+    explanation: '(8 * 9) / 6 = 72 / 6 = 12.',
+    categoryId: 'gened',
+    categoryName: 'General Education',
+    topicId: 'gened_math',
+    difficulty: 'medium',
+    type: 'practice',
     isPublished: true,
     approved: true
   }
