@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { collection, deleteDoc, doc, getDocs, query, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { Save, KeyRound, RotateCcw } from 'lucide-react';
+import { Save, KeyRound, RotateCcw, Download } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import StudentLayout from '../components/StudentLayout';
 import ConfirmModal from '../components/ConfirmModal';
@@ -242,6 +242,14 @@ export default function ProfileSettings() {
           }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container text-on-surface px-5 py-3 text-sm font-bold border border-outline-variant/40">
             <KeyRound size={16} />
             Enable Offline Reminders
+          </button>
+          <button onClick={() => {
+              if (window.confirm("Download the latest APK version from the repository?")) {
+                  window.location.href = "https://github.com/luxsmith656/SirAj/archive/refs/heads/main.zip";
+              }
+          }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container text-on-surface px-5 py-3 text-sm font-bold border border-outline-variant/40">
+            <Download size={16} />
+            Download Latest APK
           </button>
         </div>
       </section>

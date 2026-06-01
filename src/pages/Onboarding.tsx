@@ -74,13 +74,7 @@ export default function Onboarding() {
 
   const handleDownloadApk = () => {
     setDownloadStarted(true);
-    // Trigger simulated APK direct download
-    const link = document.createElement('a');
-    link.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent('LET Mastery Capacitor APK direct installer package placeholder.');
-    link.download = 'letmastery.apk';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    window.location.href = "https://github.com/luxsmith656/SirAj/archive/refs/heads/main.zip";
   };
 
   if (!user) return null;
