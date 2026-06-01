@@ -153,9 +153,11 @@ export default function StudentLayout({ children, title }: { children: ReactNode
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
         <header className="px-3 md:px-6 py-4 flex items-center justify-between bg-surface-container-lowest md:bg-surface/80 md:backdrop-blur-md border-b border-outline-variant sticky top-0 z-30">
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-2 min-w-0">
              {renderLogo()}
-             <h1 className="text-primary text-xl font-extrabold font-headline tracking-tighter truncate max-w-[112px] sm:max-w-[200px]">{settings.siteName || 'Let Mastery'}</h1>
+             <h1 className="text-primary font-extrabold font-headline tracking-tight leading-tight text-[clamp(14px,4vw,20px)] max-w-full whitespace-normal break-words">
+               {settings.siteName || 'Let Mastery'}
+             </h1>
           </div>
           <div className="hidden md:flex items-center flex-1 ml-4 justify-between">
             <div className="flex items-center gap-2">
@@ -300,13 +302,17 @@ export default function StudentLayout({ children, title }: { children: ReactNode
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant flex justify-around p-3 z-50 shadow-lg">
-        {navItems.slice(0, 4).map(item => {
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-lowest border-t border-outline-variant grid grid-cols-6 gap-1 px-2 py-2 z-50 shadow-lg">
+        {navItems.map(item => {
            const isActive = location.pathname.startsWith(item.path);
            return (
-              <button key={item.name} onClick={() => navigate(item.path)} className={`flex flex-col items-center gap-1 ${isActive ? 'text-primary' : 'text-on-surface-variant/40'}`}>
-                <item.icon size={20} />
-                <span className="text-[10px] font-bold tracking-tight">{item.name}</span>
+              <button
+                key={item.name}
+                onClick={() => navigate(item.path)}
+                className={`flex flex-col items-center gap-0.5 justify-center text-center min-h-[64px] p-1 rounded-2xl transition-all ${isActive ? 'text-primary' : 'text-on-surface-variant/40 hover:text-primary'}`}
+              >
+                <item.icon size={18} />
+                <span className="text-[9px] font-bold tracking-tight leading-tight">{item.name}</span>
               </button>
            )
         })}
