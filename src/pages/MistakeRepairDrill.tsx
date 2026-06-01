@@ -171,6 +171,9 @@ export default function MistakeRepairDrill() {
     
     if (nextQueue.length === 0) {
         setPhase('completed');
+        if (recordActivity) {
+          void recordActivity(true).catch(console.warn);
+        }
         return;
     }
     

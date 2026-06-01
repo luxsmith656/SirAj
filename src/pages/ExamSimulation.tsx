@@ -681,7 +681,7 @@ export default function ExamSimulation() {
       setPhase('submitted');
       submittingRef.current = false;
       if (recordActivity) {
-        void recordActivity().catch(console.warn);
+        void recordActivity(true).catch(console.warn);
       }
     }
   }, [blueprint.id, blueprint.title, compileResult, integrityPolicy.level, isFullMock, localAttemptKey, mode, refreshCount, user]);

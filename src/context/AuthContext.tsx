@@ -11,7 +11,7 @@ interface AuthContextType {
   signOut: () => void;
   isLoading: boolean;
   refreshUser: () => Promise<void>;
-  recordActivity: () => Promise<{ incremented: boolean; streak: number; reset: boolean } | null>;
+  recordActivity: (forceCelebration?: boolean) => Promise<{ incremented: boolean; streak: number; reset: boolean } | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -160,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   };
 
-  const recordActivity = async () => {
+  const recordActivity = async (forceCelebration = false) => {
     if (!auth.currentUser || !user) return null;
     
     const todayStr = getLocalDateStr();
@@ -170,18 +170,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const currentHistory = (user as any).streakHistory || [];
     let currentStreak = user.streak || 0;
     
+    // Ensure today's date is in history
+    const newHistory = [...currentHistory];
+    if (!newHistory.includes(todayStr)) {
+      newHistory.push(todayStr);
+    }
+    
     if (lastActive === todayStr) {
-      // Already active today! But make sure today is in history if somehow missing
-      if (!currentHistory.includes(todayStr)) {
-        const newHistory = [...currentHistory, todayStr];
-        await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-          streakHistory: newHistory
-        });
-        const updatedUser = { ...user, streakHistory: newHistory } as any;
-        const role = getEffectiveRole(auth.currentUser.email, updatedUser.role);
-        setUser({ ...updatedUser, role });
+      // Already active today! But make sure everything is in order
+      let newStreak = currentStreak;
+      if (newStreak === 0) {
+        newStreak = 1;
       }
-      return { incremented: false, streak: currentStreak, reset: false };
+      
+      const needsUpdate = (user as any).streak !== newStreak || !currentHistory.includes(todayStr);
+      if (needsUpdate) {
+        try {
+          await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+            streak: newStreak,
+            lastActiveDate: todayStr,
+            streakHistory: newHistory,
+            updatedAt: new Date().toISOString()
+          });
+        } catch (err) {
+          console.error('Failed to update already active streak:', err);
+        }
+        
+        const updatedUser = { ...user, streak: newStreak, lastActiveDate: todayStr, streakHistory: newHistory };
+        const role = getEffectiveRole(auth.currentUser.email, (updatedUser as any).role);
+        setUser({ ...updatedUser, role } as any);
+      }
+      
+      if (forceCelebration) {
+        setStreakCelebration({
+          show: true,
+          streak: newStreak,
+          incremented: needsUpdate,
+          isReset: false
+        });
+      }
+      return { incremented: needsUpdate, streak: newStreak, reset: false };
     }
     
     let newStreak = 1;
@@ -195,8 +223,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // If they missed a day, new streak is 1
       newStreak = 1;
     }
-    
-    const newHistory = [...currentHistory, todayStr];
     
     try {
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {

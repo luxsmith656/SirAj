@@ -288,7 +288,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
         </header>
 
         {/* Content Wrapper */}
-        <div className="p-4 md:p-8 w-full max-w-7xl mx-auto space-y-8 flex-1">
+        <div className="p-4 pb-28 md:p-8 w-full max-w-7xl mx-auto space-y-8 flex-1">
           {quotaExceeded && (
             <div className="bg-error/10 border border-error/20 rounded-2xl p-4 flex items-center gap-3">
               <AlertTriangle className="text-error shrink-0" size={20} />

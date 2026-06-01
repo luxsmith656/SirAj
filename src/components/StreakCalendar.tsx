@@ -5,9 +5,10 @@ import { Check, Flame } from 'lucide-react';
 interface StreakCalendarProps {
   streak: number;
   streakHistory?: string[]; // Array of YYYY-MM-DD
+  animateIncrement?: boolean;
 }
 
-export default function StreakCalendar({ streak, streakHistory = [] }: StreakCalendarProps) {
+export default function StreakCalendar({ streak, streakHistory = [], animateIncrement = false }: StreakCalendarProps) {
   const today = new Date();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
@@ -27,14 +28,46 @@ export default function StreakCalendar({ streak, streakHistory = [] }: StreakCal
   const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(today);
 
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant rounded-3xl p-6 shadow-sm">
+    <motion.div 
+      animate={animateIncrement ? {
+        scale: [1, 1.05, 0.98, 1.02, 1],
+        boxShadow: [
+          "0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06)",
+          "0 0 35px 12px rgba(249, 115, 22, 0.5)",
+          "0 0 50px 18px rgba(249, 115, 22, 0.15)",
+          "0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px 0 rgba(0,0,0,0.06)"
+        ]
+      } : {}}
+      transition={{ duration: 1.5, ease: "easeInOut" }}
+      className="bg-surface-container-lowest border border-outline-variant rounded-3xl p-6 shadow-sm overflow-hidden"
+    >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shadow-sm">
+          <motion.div 
+            key={`flame-${streak}`}
+            initial={{ scale: 1, rotate: 0 }}
+            animate={{ 
+              scale: [1, 1.4, 1.2, 1], 
+              rotate: [0, -15, 15, -10, 10, 0] 
+            }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-10 h-10 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center shadow-sm"
+          >
             <Flame size={20} fill="currentColor" />
-          </div>
+          </motion.div>
           <div>
-            <h3 className="font-extrabold text-on-surface leading-tight text-lg">{streak} Day Streak</h3>
+            <motion.h3 
+              key={`text-${streak}`}
+              initial={{ scale: 1 }}
+              animate={{
+                scale: [1, 1.25, 1.15, 1],
+                color: ["#ea580c", "#c2410c", "#9a3412", "inherit"]
+              }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="font-extrabold text-on-surface leading-tight text-lg"
+            >
+              {streak} Day Streak
+            </motion.h3>
             <p className="text-[10px] font-bold text-on-surface-variant/60 uppercase tracking-widest">Keep the fire burning!</p>
           </div>
         </div>
@@ -96,6 +129,6 @@ export default function StreakCalendar({ streak, streakHistory = [] }: StreakCal
            {7 - (streak % 7 || (streak > 0 ? 7 : 0))} days to next tier
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }

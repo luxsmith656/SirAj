@@ -152,7 +152,7 @@ export default function PracticeMode() {
     
     await OfflineData.saveQuizAttempt(attempt);
     if (recordActivity) {
-      await recordActivity();
+      await recordActivity(true);
     }
   };
 
@@ -258,66 +258,166 @@ export default function PracticeMode() {
           <div className="bg-surface-container-lowest border border-outline-variant/50 rounded-2xl p-6 shadow-sm space-y-6">
             <div>
               <p className="text-xs font-black uppercase text-primary tracking-widest">Step 1</p>
-              <h2 className="text-xl font-extrabold text-on-surface font-headline mt-1">Select Practice Track</h2>
-              <p className="text-xs text-on-surface-variant/80 mt-1">Focus your untimed practice sessions to specific core components.</p>
+              <h2 className="text-xl font-extrabold text-on-surface font-headline mt-1">Practice Track Configured</h2>
+              <p className="text-xs text-on-surface-variant/80 mt-1">Focusing your untimed practice sessions to your primary review track.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[
-                { id: 'gened', title: 'General Education', body: 'English, Filipino, Math, Social Science, ICT, Rizal' },
-                { id: 'profed', title: 'Professional Education', body: 'Learning theories, development, teaching principles, ethics' },
-                { id: 'major', title: 'Specialist Major (BSEd)', body: 'Secondary Education major field drills' }
-              ]
-              .filter(cat => user?.reviewTrack !== 'elementary' || cat.id !== 'major')
-              .map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => setSelectedCategory(category.id)}
-                  className={`p-4 rounded-xl text-left border flex flex-col justify-between transition-all ${
-                    selectedCategory === category.id
-                      ? 'border-primary bg-primary/5 text-primary'
-                      : 'border-outline-variant/40 bg-surface-container/30 hover:border-outline-variant/70'
-                  }`}
-                >
-                  <span className="font-bold text-sm block mb-1 text-on-surface">{category.title}</span>
-                  <span className="text-[11px] leading-snug line-clamp-3 text-on-surface-variant/70">{category.body}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Specializations list if BSEd (Secondary) major option is chosen */}
-            {selectedCategory === 'major' && (
-              <div className="bg-surface-container/35 rounded-2xl p-5 border border-outline-variant/20 space-y-4">
-                <div>
-                  <h4 className="text-sm font-bold text-on-surface">Select Specialization / Major Field:</h4>
-                  <p className="text-xs text-on-surface-variant/70">Under Secondary LET, choose your specific field or test across all majors simultaneously.</p>
+            {user?.reviewTrack ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 space-y-3 animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                    <Target size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-on-surface text-sm">Onboarding Track Preferences Active</h3>
+                    <p className="text-xs text-on-surface-variant/70">Your drills have been pre-set to maximize relevance.</p>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+
+                <div className="p-4 bg-surface-container-lowest border border-outline-variant/30 rounded-xl space-y-1">
+                  <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="text-on-surface-variant/60">Registered Domain:</span>
+                    <span className="text-primary uppercase tracking-wider">
+                      {user.reviewTrack === 'elementary' ? 'Elementary LET' : 
+                       user.reviewTrack === 'secondary' || user.reviewTrack === 'specialization' ? 'Secondary LET' :
+                       user.reviewTrack === 'gened' ? 'GenEd Only' :
+                       user.reviewTrack === 'profed' ? 'ProfEd Only' : user.reviewTrack}
+                    </span>
+                  </div>
+                  
+                  {selectedCategory === 'major' && (
+                    <div className="flex justify-between items-center text-xs font-bold pt-1 border-t border-outline-variant/10">
+                      <span className="text-on-surface-variant/60">Specialist Major:</span>
+                      <span className="text-primary font-bold">
+                        {[
+                          { id: 'english', title: 'BSEd English' },
+                          { id: 'math', title: 'BSEd Mathematics' },
+                          { id: 'science', title: 'BSEd General Science' },
+                          { id: 'socsci', title: 'BSEd Social Studies' },
+                          { id: 'filipino', title: 'BSEd Filipino' },
+                          { id: 'mapeh', title: 'BSEd MAPEH' },
+                          { id: 'tle', title: 'BSEd TLE' }
+                        ].find(m => m.id === String(user.specialization).toLowerCase())?.title || `BSEd ${user.specialization || 'Social Studies'}`}
+                      </span>
+                    </div>
+                  )}
+
+                  {user.reviewTrack === 'elementary' && (
+                    <div className="flex justify-between items-center text-xs font-bold pt-1 border-t border-outline-variant/10">
+                      <span className="text-on-surface-variant/60">Elementary Components:</span>
+                      <span className="text-[#1b366a]">General Education + Professional Education</span>
+                    </div>
+                  )}
+                </div>
+
+                {user.reviewTrack === 'elementary' && (
+                  <div className="pt-2 flex items-center justify-between">
+                    <span className="text-xs font-bold text-on-surface-variant/70">Practice target category:</span>
+                    <div className="flex gap-1.5">
+                      {['gened', 'profed'].map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border transition-all ${
+                            selectedCategory === cat
+                              ? 'bg-primary text-on-primary border-primary'
+                              : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant hover:bg-surface-container'
+                          }`}
+                        >
+                          {cat === 'gened' ? 'General Ed' : 'Prof Ed'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {[
-                    { id: 'all', title: 'ALL Specializations / Comprehensive Major Mix' },
-                    { id: 'english', title: 'BSEd English' },
-                    { id: 'math', title: 'BSEd Mathematics' },
-                    { id: 'science', title: 'BSEd General Science' },
-                    { id: 'socsci', title: 'BSEd Social Studies' },
-                    { id: 'filipino', title: 'BSEd Filipino' },
-                    { id: 'mapeh', title: 'BSEd MAPEH' },
-                    { id: 'tle', title: 'BSEd TLE' }
-                  ].map((major) => (
+                    { id: 'gened', title: 'General Education', body: 'English, Filipino, Math, Social Science, ICT, Rizal' },
+                    { id: 'profed', title: 'Professional Education', body: 'Learning theories, development, teaching principles, ethics' },
+                    { id: 'major', title: 'Specialist Major (BSEd)', body: 'Secondary Education major field drills' }
+                  ]
+                  .filter(cat => user?.reviewTrack !== 'elementary' || cat.id !== 'major')
+                  .map((category) => (
                     <button
-                      key={major.id}
-                      onClick={() => setSelectedMajor(major.id)}
-                      className={`px-4 py-3 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
-                        selectedMajor === major.id
-                          ? 'border-primary bg-primary text-on-primary'
-                          : 'border-outline-variant/30 bg-surface-container-lowest text-on-surface hover:bg-surface-container/60'
+                      key={category.id}
+                      onClick={() => setSelectedCategory(category.id)}
+                      className={`p-4 rounded-xl text-left border flex flex-col justify-between transition-all ${
+                        selectedCategory === category.id
+                          ? 'border-primary bg-primary/5 text-primary'
+                          : 'border-outline-variant/40 bg-surface-container/30 hover:border-outline-variant/70'
                       }`}
                     >
-                      <span>{major.title}</span>
-                      {selectedMajor === major.id && <CheckCircle size={14} />}
+                      <span className="font-bold text-sm block mb-1 text-on-surface">{category.title}</span>
+                      <span className="text-[11px] leading-snug line-clamp-3 text-on-surface-variant/70">{category.body}</span>
                     </button>
                   ))}
                 </div>
-              </div>
+
+                {/* Specializations list if BSEd (Secondary) major option is chosen */}
+                {selectedCategory === 'major' && (
+                  <div className="bg-surface-container/35 rounded-2xl p-5 border border-outline-variant/20 space-y-4 animate-fade-in">
+                    {user?.specialization ? (
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                          <Target size={20} />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-on-surface">Your Onboarding Specialization is Used</h4>
+                          <p className="text-xs text-on-surface-variant/70 mt-1">
+                            Consistent with your onboarding setup, your specialist major drills are pre-configured for: <strong className="text-primary font-bold">
+                              {[
+                                { id: 'english', title: 'BSEd English' },
+                                { id: 'math', title: 'BSEd Mathematics' },
+                                { id: 'science', title: 'BSEd General Science' },
+                                { id: 'socsci', title: 'BSEd Social Studies' },
+                                { id: 'filipino', title: 'BSEd Filipino' },
+                                { id: 'mapeh', title: 'BSEd MAPEH' },
+                                { id: 'tle', title: 'BSEd TLE' }
+                              ].find(m => m.id === String(user.specialization).toLowerCase())?.title || `BSEd ${user.specialization}`}
+                            </strong>.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div>
+                          <h4 className="text-sm font-bold text-on-surface">Select Specialization / Major Field:</h4>
+                          <p className="text-xs text-on-surface-variant/70">Under Secondary LET, choose your specific field or test across all majors simultaneously.</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {[
+                            { id: 'all', title: 'ALL Specializations / Comprehensive Major Mix' },
+                            { id: 'english', title: 'BSEd English' },
+                            { id: 'math', title: 'BSEd Mathematics' },
+                            { id: 'science', title: 'BSEd General Science' },
+                            { id: 'socsci', title: 'BSEd Social Studies' },
+                            { id: 'filipino', title: 'BSEd Filipino' },
+                            { id: 'mapeh', title: 'BSEd MAPEH' },
+                            { id: 'tle', title: 'BSEd TLE' }
+                          ].map((major) => (
+                            <button
+                              key={major.id}
+                              onClick={() => setSelectedMajor(major.id)}
+                              className={`px-4 py-3 rounded-xl border text-left text-xs font-bold transition-all flex items-center justify-between ${
+                                selectedMajor === major.id
+                                  ? 'border-primary bg-primary text-on-primary'
+                                  : 'border-outline-variant/30 bg-surface-container-lowest text-on-surface hover:bg-surface-container/60'
+                              }`}
+                            >
+                              <span>{major.title}</span>
+                              {selectedMajor === major.id && <CheckCircle size={14} />}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </>
             )}
 
             <div className="border-t border-outline-variant/30 pt-6">

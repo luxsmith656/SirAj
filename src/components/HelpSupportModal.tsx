@@ -7,6 +7,11 @@ interface Props {
 }
 
 export function HelpSupportModal({ onClose }: Props) {
+  const isMobile = window.innerWidth < 768;
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone);
+  const isAPK = /wv\b/i.test(navigator.userAgent) || !!(window as any).Android || !!(window as any).ReactNativeWebView;
+  const hideFAQ = isMobile || isPWA || isAPK;
+
   const [mode, setMode] = useState<'report' | 'faq'>('report');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -39,12 +44,14 @@ export function HelpSupportModal({ onClose }: Props) {
           <button onClick={onClose} className="text-on-surface-variant">Close</button>
         </div>
         
-        <div className="flex gap-4 mb-6">
-          <button onClick={() => setMode('report')} className={`font-bold ${mode === 'report' ? 'text-primary' : 'text-on-surface-variant'}`}>Report Problem</button>
-          <button onClick={() => setMode('faq')} className={`font-bold ${mode === 'faq' ? 'text-primary' : 'text-on-surface-variant'}`}>FAQ</button>
-        </div>
+        {!hideFAQ && (
+          <div className="flex gap-4 mb-6">
+            <button onClick={() => setMode('report')} className={`font-bold ${mode === 'report' ? 'text-primary' : 'text-on-surface-variant'}`}>Report Problem</button>
+            <button onClick={() => setMode('faq')} className={`font-bold ${mode === 'faq' ? 'text-primary' : 'text-on-surface-variant'}`}>FAQ</button>
+          </div>
+        )}
 
-        {mode === 'report' ? (
+        {(mode === 'report' || hideFAQ) ? (
           status === 'sent' ? (
             <p className="text-emerald-500">Report sent successfully!</p>
           ) : (

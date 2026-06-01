@@ -108,11 +108,21 @@ export default function StudentDashboard() {
   const [mockAttempts, setMockAttempts] = useState<any[]>([]);
   const [mistakeCount, setMistakeCount] = useState(0);
   const [quotaError, setQuotaError] = useState(false);
+  const [animateStreak, setAnimateStreak] = useState(false);
 
   // Auto-Sync Logic
   useEffect(() => {
-    // Record current activity for streak once per session
-    recordActivity();
+    // Record current activity for streak once per session and check for increment
+    if (recordActivity) {
+      recordActivity().then((res) => {
+        if (res && res.incremented) {
+          setAnimateStreak(true);
+          // Turn off the celebratory pulse highlight after 5 seconds
+          const timer = setTimeout(() => setAnimateStreak(false), 5000);
+          return () => clearTimeout(timer);
+        }
+      }).catch(console.warn);
+    }
 
     if (localStorage.getItem('did-initial-sync')) return;
     
@@ -493,8 +503,9 @@ export default function StudentDashboard() {
 
           <div className="space-y-6">
             <StreakCalendar 
-              streak={profile?.streak || 0} 
+              streak={user?.streak || profile?.streak || 0} 
               streakHistory={(user as any)?.streakHistory || []} 
+              animateIncrement={animateStreak}
             />
 
             {(classData?.showGradesToStudents || classData?.leaderboardEnabled) && (

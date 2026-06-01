@@ -140,7 +140,7 @@ export default function DiagnosticAssessment() {
         }, { merge: true });
 
         // Record activity for initial streak
-        await recordActivity();
+        await recordActivity(true);
 
         await refreshUser();
         navigate('/student/dashboard');
