@@ -223,15 +223,6 @@ export default function StudentLayout({ children, title }: { children: ReactNode
               </button>
 
               <button
-                onClick={() => navigate('/join-class')}
-                className="p-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"
-                title="Join class"
-                aria-label="Join class"
-              >
-                <UserPlus size={16} />
-              </button>
-
-              <button
                 onClick={() => setLowBandwidth((value) => !value)}
                 className={`p-1.5 rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0 ${lowBandwidth ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:bg-surface-container'}`}
                 title="Low-bandwidth mode"

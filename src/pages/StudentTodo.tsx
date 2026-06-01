@@ -29,6 +29,12 @@ export default function StudentTodo() {
   const [toastMsg, setToastMsg] = useState('');
   const [showToast, setShowToast] = useState(false);
 
+  // Tracks the currently selected calendar day (initialized to today's date key)
+  const [selectedDayKey, setSelectedDayKey] = useState<string>(() => {
+    const date = new Date();
+    return date.toISOString().slice(0, 10);
+  });
+
   useEffect(() => {
     const moduleQuery = query(collection(db, 'modules'), where('isPublished', '==', true));
     const unsubModules = onSnapshot(moduleQuery, (snapshot) => {
@@ -160,6 +166,10 @@ export default function StudentTodo() {
     });
   }, [todoItems, reminders, studyPlan, mockCooldown]);
 
+  const selectedDay = useMemo(() => {
+    return calendarDays.find(d => d.key === selectedDayKey) || null;
+  }, [calendarDays, selectedDayKey]);
+
   const addReminder = async () => {
     if (!user || !reminderDraft.title.trim()) {
       setToastMsg('Add a reminder title before saving.');
@@ -209,9 +219,21 @@ export default function StudentTodo() {
               {Array.from({ length: new Date().getDay() }).map((_, i) => <div key={`empty-${i}`} />)}
               {calendarDays.map((day) => {
                 const isToday = day.date.toDateString() === new Date().toDateString();
+                const isSelected = day.key === selectedDayKey;
                 return (
-                 <article key={day.key} className="flex gap-1 flex-col items-center justify-start py-1 relative">
-                    <div className={`w-8 h-8 flex flex-col items-center justify-center rounded-full text-xs font-bold ${isToday ? 'bg-primary text-on-primary ring-2 ring-primary/30' : 'bg-surface-container hover:bg-surface-container-high transition-colors text-on-surface'}`}>
+                 <button
+                    key={day.key}
+                    type="button"
+                    onClick={() => setSelectedDayKey(day.key)}
+                    className="flex gap-1 flex-col items-center justify-start py-1 relative hover:scale-105 transition-all outline-none"
+                 >
+                    <div className={`w-8 h-8 flex flex-col items-center justify-center rounded-full text-xs font-bold transition-all ${
+                      isToday 
+                        ? 'bg-primary text-on-primary ring-2 ring-primary/30 font-black' 
+                        : isSelected
+                          ? 'bg-primary/20 text-primary border-2 border-primary font-black scale-110'
+                          : 'bg-surface-container hover:bg-surface-container-high text-on-surface'
+                    }`}>
                        {day.date.getDate()}
                     </div>
                     {day.markers.length > 0 && (
@@ -221,29 +243,50 @@ export default function StudentTodo() {
                           ))}
                        </div>
                     )}
-                 </article>
+                 </button>
                 );
               })}
             </div>
 
-            <div className="mt-4 space-y-2 max-h-[300px] overflow-y-auto pr-1">
-               <p className="text-xs font-bold text-on-surface-variant mb-2">Upcoming Schedule</p>
-               {calendarDays.flatMap(d => d.markers.map(m => ({...m, dateObj: d.date}))).slice(0, 5).map((marker, i) => (
-                  <button
-                    key={`${marker.id}-${i}`}
-                    onClick={() => marker.targetLink && navigate(marker.targetLink)}
-                    className={`w-full rounded-xl p-3 text-left transition-colors flex items-center justify-between gap-3 ${markerTone(marker.type)} border border-transparent`}
-                  >
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{marker.dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })} • {marker.type}</p>
-                      <h4 className="font-extrabold text-sm mt-0.5">{marker.label}</h4>
-                    </div>
-                    <ChevronRight size={16} className="opacity-50" />
-                  </button>
-               ))}
-               {calendarDays.flatMap(d => d.markers).length === 0 && (
-                  <p className="text-xs text-center text-on-surface-variant/50 p-4 border border-dashed border-outline-variant/30 rounded-xl">No items scheduled for next 14 days.</p>
-               )}
+            <div className="mt-6 border-t border-outline-variant/20 pt-4 space-y-3">
+                <p className="text-xs font-black uppercase tracking-widest text-on-surface-variant flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-primary text-[16px]">event_note</span>
+                  Agenda for {selectedDay ? selectedDay.date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : 'Selected Day'}
+                  {selectedDay && selectedDay.date.toDateString() === new Date().toDateString() && ' (Today)'}
+                </p>
+                
+                {selectedDay && selectedDay.markers.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in text-on-surface">
+                    {selectedDay.markers.map((marker, idx) => (
+                      <div
+                        key={`${marker.id}-${idx}`}
+                        className={`rounded-xl p-3.5 border border-outline-variant/10 flex flex-col justify-between ${markerTone(marker.type)} shadow-sm transition-all`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-wider opacity-85 px-1.5 py-0.5 rounded bg-surface/30">{marker.type === 'todo' ? 'Deadline' : marker.type}</span>
+                            {marker.type === 'todo' && <span className="w-1.5 h-1.5 rounded-full bg-error" />}
+                          </div>
+                          <h4 className="font-extrabold text-sm">{marker.label}</h4>
+                        </div>
+                        {marker.targetLink && (
+                          <button
+                            onClick={() => navigate(marker.targetLink!)}
+                            className="mt-3 inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-wider text-primary hover:underline self-start"
+                          >
+                            Open Task <ChevronRight size={12} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center border border-dashed border-outline-variant/30 rounded-xl bg-surface-container/10">
+                    <span className="material-symbols-outlined text-on-surface-variant/20 text-3xl mb-1.5">calendar_today</span>
+                    <p className="text-xs text-on-surface-variant/50 font-bold">No tasks or reminders scheduled for this date.</p>
+                    <p className="text-[10px] text-on-surface-variant/30 mt-0.5">Click another calendar date above to view, or create a reminder.</p>
+                  </div>
+                )}
             </div>
             <div className="mt-4 rounded-2xl bg-surface-container/40 border border-outline-variant/30 p-3 text-xs text-on-surface-variant">
               <span className="font-black text-error">To dos</span> are module deadlines. <span className="font-black text-primary">Study</span> is generated from your pace and weak areas. <span className="font-black text-emerald-700">Reminders</span> are made by you.

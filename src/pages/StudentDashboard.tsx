@@ -351,14 +351,6 @@ export default function StudentDashboard() {
                 >
                   Explore public reviewers
                 </button>
-                {!isJoinedToClass && (
-                  <button
-                    onClick={() => navigate('/join-class')}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container text-on-surface px-5 py-3 text-sm font-bold border border-outline-variant"
-                  >
-                    Join professor class
-                  </button>
-                )}
               </div>
             </div>
 
@@ -560,8 +552,8 @@ export default function StudentDashboard() {
                 <ProgressSignal label="Mock exam average" value={mockAverage ?? 0} empty={!mockAttempts.length} />
                 <ProgressSignal label="Reviewer completion" value={moduleCompletionScore} empty={!activeModules.length} />
               </div>
-              <button onClick={() => navigate('/quiz-results')} className="w-full mt-6 text-center text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 py-2.5 rounded-xl transition-colors">
-                View analytics
+              <button onClick={() => navigate('/student/courses')} className="w-full mt-6 text-center text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 py-2.5 rounded-xl transition-colors">
+                Continue review
               </button>
             </div>
           </div>
