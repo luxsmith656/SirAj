@@ -201,16 +201,16 @@ export default function QuestionBank() {
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const q = filteredQuestions[index];
     return (
-      <div style={style} className="border-b border-outline-variant/10 hover:bg-surface-container/20 transition-colors group flex flex-col md:flex-row items-start md:items-center gap-3 px-0 py-4">
+      <div style={style} className="border-b border-outline-variant/10 hover:bg-surface-container/20 transition-colors group flex items-center">
         <div className="flex-1 px-4 min-w-0">
           <p className="text-sm font-bold text-on-surface truncate">{q.stem}</p>
         </div>
-        <div className="w-full md:w-[200px] px-4">
+        <div className="w-[200px] px-4 shrink-0">
           <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg truncate block whitespace-nowrap overflow-hidden text-ellipsis border border-primary/10">
             {getCategoryName(q.categoryId)}
           </span>
         </div>
-        <div className="w-full md:w-[120px] px-4">
+        <div className="w-[120px] px-4 shrink-0">
           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${
             String(q.difficulty).toLowerCase() === 'easy' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' :
             String(q.difficulty).toLowerCase() === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/10' :
@@ -219,7 +219,7 @@ export default function QuestionBank() {
             {q.difficulty}
           </span>
         </div>
-        <div className="w-full md:w-[150px] px-4">
+        <div className="w-[150px] px-4 shrink-0">
           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${statusTone(getQuestionStatus(q))}`}>
             {getQuestionStatus(q).replace(/_/g, ' ')}
           </span>
@@ -227,8 +227,8 @@ export default function QuestionBank() {
             {isBlueprintReady(q) ? 'Blueprint ready' : 'Needs tags'}
           </p>
         </div>
-        <div className="w-full md:w-[190px] px-4 text-right md:text-right">
-          <div className="flex flex-wrap justify-end gap-2">
+        <div className="w-[190px] px-4 text-right shrink-0">
+          <div className="flex justify-end gap-2">
             {getQuestionStatus(q) !== 'approved' && (
               <button
                 onClick={() => updateQuestionReview(q, 'approve')}
@@ -291,8 +291,8 @@ export default function QuestionBank() {
         </div>
 
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
-          <div className="p-4 border-b border-outline-variant bg-surface-container/30 grid grid-cols-1 lg:grid-cols-[1.6fr_repeat(3,1fr)] gap-3 shrink-0">
-             <div className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
+          <div className="p-4 border-b border-outline-variant bg-surface-container/30 flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
+             <div className="flex-1 flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
                 <span className="material-symbols-outlined text-on-surface-variant/40">search</span>
                 <input 
                    type="text" 
@@ -303,7 +303,7 @@ export default function QuestionBank() {
                 />
              </div>
              
-             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2">
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[170px]">
                 <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">map</span>
                 <select 
                    value={selectedTrack}
@@ -317,7 +317,7 @@ export default function QuestionBank() {
                 </select>
              </div>
 
-             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2">
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[180px]">
                 <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">filter_list</span>
                 <select 
                    value={selectedCategory}
@@ -330,7 +330,8 @@ export default function QuestionBank() {
                    ))}
                 </select>
              </div>
-             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2">
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[190px]">
+                <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">rule</span>
                 <select
                    value={selectedStatus}
                    onChange={(e) => setSelectedStatus(e.target.value)}
@@ -347,16 +348,16 @@ export default function QuestionBank() {
 
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-stretch bg-surface-container/20 border-b border-outline-variant shrink-0">
-              <div className="flex-1 min-w-0 p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Question Stem</div>
-              <div className="w-full md:w-[200px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Subject</div>
-              <div className="w-full md:w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Difficulty</div>
-              <div className="w-full md:w-[150px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Review</div>
-              <div className="w-full md:w-[190px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest text-right md:text-right">Actions</div>
+            <div className="flex items-center bg-surface-container/20 border-b border-outline-variant shrink-0">
+              <div className="flex-1 p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Question Stem</div>
+              <div className="w-[200px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Subject</div>
+              <div className="w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Difficulty</div>
+              <div className="w-[150px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Review</div>
+              <div className="w-[190px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest text-right shrink-0">Actions</div>
             </div>
 
             {/* List */}
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1">
               {filteredQuestions.length === 0 ? (
                 <div className="p-12 text-center text-on-surface-variant/40 italic">No questions found.</div>
               ) : (

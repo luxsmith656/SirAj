@@ -126,32 +126,41 @@ export default function Users() {
              />
           </div>
 
-          <div className="space-y-3 px-4 py-4 md:px-0">
-            {isLoading && (
-              <div className="rounded-[26px] border border-outline-variant/20 bg-surface-container p-6 text-center text-on-surface-variant/40 italic">
-                Syncing accounts...
-              </div>
-            )}
-            {!isLoading && filteredUsers.length === 0 && (
-              <div className="rounded-[26px] border border-outline-variant/20 bg-surface-container p-6 text-center text-on-surface-variant/40 italic">
-                No accounts found matching criteria.
-              </div>
-            )}
-            <div className="block md:hidden space-y-3">
-              {filteredUsers.map((u) => (
-                <div key={u.uid} className="rounded-[26px] border border-outline-variant/20 bg-surface-container p-4 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-surface-container text-primary flex items-center justify-center font-bold text-xs uppercase overflow-hidden shrink-0">
-                      {u.fullName?.charAt(0) || u.email.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-on-surface truncate">{u.fullName || 'Anonymous User'}</p>
-                      <p className="text-[10px] text-on-surface-variant/40 truncate">{u.email}</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-2 text-xs text-on-surface-variant">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold uppercase tracking-widest">Role</span>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="text-left border-b border-outline-variant bg-surface-container/10">
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Identity</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Role</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Class/Group</th>
+                  <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {isLoading && (
+                  <tr>
+                    <td colSpan={4} className="p-12 text-center text-on-surface-variant/40 italic">Syncing accounts...</td>
+                  </tr>
+                )}
+                {!isLoading && filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="p-12 text-center text-on-surface-variant/40 italic">No accounts found matching criteria.</td>
+                  </tr>
+                )}
+                {filteredUsers.map((u) => (
+                  <tr key={u.uid} className="hover:bg-surface-container/20 transition-colors border-b border-outline-variant/10">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-surface-container text-primary flex items-center justify-center font-bold text-xs uppercase overflow-hidden shrink-0">
+                          {u.fullName?.charAt(0) || u.email.charAt(0)}
+                        </div>
+                        <div className="truncate">
+                          <p className="text-sm font-bold text-on-surface truncate">{u.fullName || 'Anonymous User'}</p>
+                          <p className="text-[10px] text-on-surface-variant/40 font-bold truncate">{u.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
                       <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
                         u.role === 'admin' ? 'bg-error/10 text-error' : 
                         u.role === 'instructor' ? 'bg-primary/10 text-primary' : 
@@ -159,95 +168,36 @@ export default function Users() {
                       }`}>
                         {u.role || 'student'}
                       </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold uppercase tracking-widest">Class</span>
-                      <span className="text-right text-xs font-semibold text-primary">{u.className || 'None'}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2 justify-end">
-                    <button 
-                      onClick={() => setEditingUser(u)}
-                      className="flex-1 min-w-[120px] rounded-2xl bg-surface-container text-on-surface-variant font-bold py-2 text-sm transition hover:bg-surface-container/80"
-                    >
-                      Edit
-                    </button>
-                    {(currentUser?.role === 'admin' || currentUser?.role === 'instructor') && u.email !== 'castanar656@gmail.com' && (
-                      <button
-                        onClick={() => handleDeleteUser(u.uid, u.email)}
-                        className="flex-1 min-w-[120px] rounded-2xl bg-error/10 text-error font-bold py-2 text-sm transition hover:bg-error/20"
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left border-b border-outline-variant bg-surface-container/10">
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Identity</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Role</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60">Class/Group</th>
-                    <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((u) => (
-                    <tr key={u.uid} className="hover:bg-surface-container/20 transition-colors border-b border-outline-variant/10">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-surface-container text-primary flex items-center justify-center font-bold text-xs uppercase overflow-hidden shrink-0">
-                            {u.fullName?.charAt(0) || u.email.charAt(0)}
-                          </div>
-                          <div className="truncate">
-                            <p className="text-sm font-bold text-on-surface truncate">{u.fullName || 'Anonymous User'}</p>
-                            <p className="text-[10px] text-on-surface-variant/40 font-bold truncate">{u.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full ${
-                          u.role === 'admin' ? 'bg-error/10 text-error' : 
-                          u.role === 'instructor' ? 'bg-primary/10 text-primary' : 
-                          'bg-surface-container text-on-surface-variant/40'
-                        }`}>
-                          {u.role || 'student'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-xs font-bold text-primary">
-                          {u.className || 'None'}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex gap-1 justify-end">
-                          <button 
-                            onClick={() => setEditingUser(u)}
-                            className="p-2 text-on-surface-variant hover:text-primary transition-all hover:scale-110"
-                            title="Modify Access"
+                    </td>
+                    <td className="px-6 py-4">
+                       <p className="text-xs font-bold text-primary">
+                         {u.className || 'None'}
+                       </p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex gap-1 justify-end">
+                        <button 
+                          onClick={() => setEditingUser(u)}
+                          className="p-2 text-on-surface-variant hover:text-primary transition-all hover:scale-110"
+                          title="Modify Access"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
+                        {(currentUser?.role === 'admin' || currentUser?.role === 'instructor') && u.email !== 'castanar656@gmail.com' && (
+                          <button
+                             onClick={() => handleDeleteUser(u.uid, u.email)}
+                             className="p-2 text-error hover:text-error/80 transition-all hover:scale-110"
+                             title="Delete User"
                           >
-                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
                           </button>
-                          {(currentUser?.role === 'admin' || currentUser?.role === 'instructor') && u.email !== 'castanar656@gmail.com' && (
-                            <button
-                               onClick={() => handleDeleteUser(u.uid, u.email)}
-                               className="p-2 text-error hover:text-error/80 transition-all hover:scale-110"
-                               title="Delete User"
-                            >
-                              <span className="material-symbols-outlined text-[18px]">delete</span>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

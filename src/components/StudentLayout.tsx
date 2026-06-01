@@ -38,7 +38,20 @@ export default function StudentLayout({ children, title }: { children: ReactNode
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
   const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+  const prevSettingsRef = React.useRef(settings);
   
+  useEffect(() => {
+    if (prevSettingsRef.current.siteName !== settings.siteName || prevSettingsRef.current.logo !== settings.logo) {
+       const isApk = /wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView;
+       if (isApk) {
+         if (window.confirm("App customization was updated. Open the updater to pull latest assets?")) {
+           setIsUpdateOpen(true);
+         }
+       }
+       prevSettingsRef.current = settings;
+    }
+  }, [settings]);
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -225,13 +238,15 @@ export default function StudentLayout({ children, title }: { children: ReactNode
                 <WifiOff size={16} />
               </button>
 
-              <button
-                onClick={() => setIsUpdateOpen(true)}
-                className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"
-                title="Check for updates"
-              >
-                <span className="material-symbols-outlined text-[18px]">refresh</span>
-              </button>
+              {/wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView ? (
+                <button
+                  onClick={() => setIsUpdateOpen(true)}
+                  className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"
+                  title="Check for updates"
+                >
+                  <span className="material-symbols-outlined text-[18px]">system_update</span>
+                </button>
+              ) : null}
 
 
             </div>

@@ -8,7 +8,6 @@ export default function InstructorCustomize() {
   const { settings, updateSettings, resetSettings } = useBranding();
   const [siteName, setSiteName] = useState(settings.siteName);
   const [logo, setLogo] = useState(settings.logo);
-  const [logoScale, setLogoScale] = useState(settings.logoScale ?? 1);
   const [primaryColor, setPrimaryColor] = useState(settings.primaryColor);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -18,7 +17,7 @@ export default function InstructorCustomize() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await updateSettings({ siteName, logo, logoScale, primaryColor });
+      await updateSettings({ siteName, logo, primaryColor });
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
     } catch (err) {
@@ -132,32 +131,6 @@ export default function InstructorCustomize() {
                   </div>
                 </div>
 
-                {/* Logo Scale Section */}
-                <div className="space-y-4 pt-6 border-t border-outline-variant/30 text-left">
-                  <div className="flex items-center gap-2 text-on-surface">
-                     <ImageIcon size={18} className="text-primary" />
-                     <label className="text-[10px] font-black uppercase tracking-[0.2em]">Logo Zoom</label>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <span className="text-xs font-bold text-on-surface-variant/40">Icon scale</span>
-                      <span className="text-xs font-bold text-on-surface">{Math.round(logoScale * 100)}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.6"
-                      max="1.4"
-                      step="0.05"
-                      value={logoScale}
-                      onChange={(e) => setLogoScale(Number(e.target.value))}
-                      className="w-full accent-primary"
-                    />
-                    <p className="text-[10px] font-bold text-on-surface-variant/40 italic">
-                      Adjust how zoomed the logo image appears across the app. Higher values crop more tightly.
-                    </p>
-                  </div>
-                </div>
-
                 {/* Color Section */}
                 <div className="space-y-4 pt-6 border-t border-outline-variant/30 text-left">
                   <div className="flex items-center gap-2 text-on-surface">
@@ -223,11 +196,11 @@ export default function InstructorCustomize() {
                   <div className="absolute top-0 right-0 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent"></div>
                   
                   <div 
-                    className="w-20 h-20 rounded-full mb-6 flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-500"
+                    className="w-20 h-20 rounded-[2rem] mb-6 flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-500"
                     style={{ backgroundColor: primaryColor }}
                   >
                     {logo && (logo.startsWith('data:') || logo.startsWith('http')) ? (
-                      <img src={logo} alt="Preview" className="w-full h-full object-contain" style={{ transform: `scale(${logoScale})`, transformOrigin: 'center center' }} />
+                      <img src={logo} alt="Preview" className="w-full h-full object-cover" />
                     ) : (
                       <span className="material-symbols-outlined text-white text-4xl font-variation-settings-fill-1">{logo || 'school'}</span>
                     )}

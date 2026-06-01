@@ -14,9 +14,12 @@ import { useTheme } from '../context/ThemeContext';
 
 import { useBranding } from '../context/BrandingContext';
 
+import UpdateModal from './UpdateModal';
+
 export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [isUpdateOpen, setIsUpdateOpen] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [openReports, setOpenReports] = useState<any[]>([]);
   const { toggle } = useSidebar();
@@ -24,6 +27,19 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const { theme, toggleTheme } = useTheme();
   const { settings, quotaExceeded } = useBranding();
   const navigate = useNavigate();
+
+  const prevSettingsRef = React.useRef(settings);
+  useEffect(() => {
+    if (prevSettingsRef.current.siteName !== settings.siteName || prevSettingsRef.current.logo !== settings.logo) {
+       const isApk = /wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView;
+       if (isApk) {
+         if (window.confirm("App customization was updated. Open the updater to pull latest assets?")) {
+           setIsUpdateOpen(true);
+         }
+       }
+       prevSettingsRef.current = settings;
+    }
+  }, [settings]);
 
   useEffect(() => {
     // Generic notifications or other logic
@@ -101,6 +117,16 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
           <span className="material-symbols-outlined">notifications</span>
         </button>
 
+        {/wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView ? (
+          <button 
+            onClick={() => setIsUpdateOpen(true)}
+            className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors duration-200 w-10 h-10 flex items-center justify-center"
+            title="Check for updates"
+          >
+            <span className="material-symbols-outlined">system_update</span>
+          </button>
+        ) : null}
+
         <ExtractedProfileMenu 
           open={profileOpen} 
           setOpen={setProfileOpen} 
@@ -110,6 +136,7 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
         />
       </div>
     </header>
+    <UpdateModal isOpen={isUpdateOpen} onClose={() => setIsUpdateOpen(false)} />
     </>
   );
 }

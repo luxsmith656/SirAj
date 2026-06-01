@@ -4,56 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Let Mastery</title>
-    <link rel="manifest" href="/manifest.webmanifest" id="dynamic-manifest" />
-    <script>
-      (function() {
-        try {
-          var saved = window.localStorage.getItem('letmastery-branding');
-          if (!saved) return;
-          var data = JSON.parse(saved);
-          if (!data || !data.siteName) return;
-          var icon = (typeof data.logo === 'string' && (data.logo.startsWith('http') || data.logo.startsWith('data:')))
-            ? data.logo
-            : '/pwa-icon.svg';
-          var type = 'image/png';
-          if (typeof icon === 'string') {
-            if (icon.startsWith('data:')) {
-              var match = icon.match(/^data:(image\/[a-zA-Z0-9.+-]+);/);
-              type = match ? match[1] : 'image/png';
-            } else if (icon.endsWith('.svg')) {
-              type = 'image/svg+xml';
-            } else if (icon.endsWith('.png')) {
-              type = 'image/png';
-            } else if (icon.endsWith('.jpg') || icon.endsWith('.jpeg')) {
-              type = 'image/jpeg';
-            }
-          }
-          var manifest = {
-            name: data.siteName,
-            short_name: data.siteName.split(' ')[0] || data.siteName,
-            description: 'Offline-capable LET Review platform',
-            theme_color: data.primaryColor || '#00236f',
-            background_color: '#ffffff',
-            display: 'standalone',
-            icons: [
-              { src: icon, sizes: '192x192', type: type },
-              { src: icon, sizes: '512x512', type: type }
-            ]
-          };
-          var blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
-          var url = URL.createObjectURL(blob);
-          var link = document.querySelector('link[rel="manifest"]');
-          if (!link) {
-            link = document.createElement('link');
-            link.rel = 'manifest';
-            document.head.appendChild(link);
-          }
-          link.href = url;
-        } catch (err) {
-          console.warn('PWA manifest init error', err);
-        }
-      })();
-    </script>
     <!-- Google Fonts: Plus Jakarta Sans & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
