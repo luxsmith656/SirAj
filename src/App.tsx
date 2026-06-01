@@ -19,7 +19,6 @@ const BulkUpload = React.lazy(() => import('./pages/BulkUpload'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Onboarding = React.lazy(() => import('./pages/Onboarding'));
 const Focus = React.lazy(() => import('./pages/Focus'));
-const QuizResults = React.lazy(() => import('./pages/QuizResults'));
 const ExamSimulation = React.lazy(() => import('./pages/ExamSimulation'));
 const PracticeMode = React.lazy(() => import('./pages/PracticeMode'));
 const StudentDashboard = React.lazy(() => import('./pages/StudentDashboard'));
@@ -90,7 +89,6 @@ function DevIndex() {
           <Link to="/sign-in" className="text-teal-600 hover:underline">14. Sign In</Link>
           <Link to="/focus" className="text-teal-600 hover:underline">15. Choose Focus</Link>
           <Link to="/exam" className="text-teal-600 hover:underline">16. Exam Simulation</Link>
-          <Link to="/quiz-results" className="text-teal-600 hover:underline">17. Quiz Results</Link>
         </div>
       </div>
     </div>
@@ -148,7 +146,6 @@ function AppContent() {
             <Route path="/library" element={<ProtectedRoute role="student"><TextbookLibrary /></ProtectedRoute>} />
             <Route path="/diagnostic" element={<ProtectedRoute role="student"><DiagnosticAssessment /></ProtectedRoute>} />
             <Route path="/focus" element={<ProtectedRoute role="student"><Focus /></ProtectedRoute>} />
-            <Route path="/quiz-results" element={<ProtectedRoute role="student"><QuizResults /></ProtectedRoute>} />
             <Route path="/exam" element={<ProtectedRoute role="student"><ExamSimulation /></ProtectedRoute>} />
             <Route path="/practice" element={<ProtectedRoute role="student"><PracticeMode /></ProtectedRoute>} />
             <Route path="/mistakes/drill" element={<ProtectedRoute role="student"><MistakeRepairDrill /></ProtectedRoute>} />

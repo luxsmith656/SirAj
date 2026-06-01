@@ -124,7 +124,7 @@ export default function SignIn() {
           <div className="text-center mb-6">
              <div className="w-16 h-16 bg-primary/10 text-primary rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden transition-all duration-500">
                 {settings.logo && (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) ? (
-                  <img src={settings.logo} alt="Logo" className="w-10 h-10 object-contain rounded-full" />
+                  <img src={settings.logo} alt="Logo" className="w-10 h-10 object-contain rounded-full" style={{ transform: `scale(${settings.logoScale ?? 1})`, transformOrigin: 'center center' }} />
                 ) : (
                   <span className="material-symbols-outlined text-3xl font-variation-settings-fill-1">
                     {settings.logo || 'school'}

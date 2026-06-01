@@ -6,6 +6,7 @@ interface SiteSettings {
   siteName: string;
   logo: string;
   primaryColor: string;
+  logoScale: number;
 }
 
 interface BrandingContextType {
@@ -20,6 +21,7 @@ export const defaultSettings: SiteSettings = {
   siteName: 'Let Mastery',
   logo: 'school', // Material icon name or URL
   primaryColor: '#00236f',
+  logoScale: 1,
 };
 
 const BrandingContext = createContext<BrandingContextType | undefined>(undefined);
@@ -82,7 +84,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'branding'), (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data() as SiteSettings;
+        const data = { ...defaultSettings, ...(snapshot.data() as Partial<SiteSettings>) } as SiteSettings;
         setSettings(data);
         updateStyles(data);
         setQuotaExceeded(false);

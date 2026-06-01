@@ -560,8 +560,8 @@ export default function StudentDashboard() {
                 <ProgressSignal label="Mock exam average" value={mockAverage ?? 0} empty={!mockAttempts.length} />
                 <ProgressSignal label="Reviewer completion" value={moduleCompletionScore} empty={!activeModules.length} />
               </div>
-              <button onClick={() => navigate('/quiz-results')} className="w-full mt-6 text-center text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 py-2.5 rounded-xl transition-colors">
-                View analytics
+              <button onClick={() => navigate('/student/courses')} className="w-full mt-6 text-center text-xs font-bold text-primary bg-primary/5 hover:bg-primary/10 py-2.5 rounded-xl transition-colors">
+                Continue review
               </button>
             </div>
           </div>
