@@ -196,7 +196,7 @@ export default function InstructorCustomize() {
                   <div className="absolute top-0 right-0 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent"></div>
                   
                   <div 
-                    className="w-20 h-20 rounded-[2rem] mb-6 flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-500"
+                    className="w-20 h-20 rounded-full mb-6 flex items-center justify-center shadow-2xl overflow-hidden transition-all duration-500"
                     style={{ backgroundColor: primaryColor }}
                   >
                     {logo && (logo.startsWith('data:') || logo.startsWith('http')) ? (

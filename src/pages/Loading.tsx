@@ -37,7 +37,7 @@ export default function Loading() {
     // If logo is a URL (starts with http or data:), display as image
     if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
       return (
-        <img src={settings.logo} alt="Logo" className="w-full h-full object-contain" />
+        <img src={settings.logo} alt="Logo" className="w-full h-full object-cover" />
       );
     }
     // Otherwise, display the first letter of site name
@@ -55,7 +55,7 @@ export default function Loading() {
        <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-secondary-container/30 rounded-full blur-[100px] opacity-60"></div>
        
        <div className="z-10 flex flex-col items-center max-w-sm w-full px-8 text-center">
-          <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-3xl mb-8 flex items-center justify-center border border-white/20 shadow-2xl">
+          <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-full mb-8 flex items-center justify-center border border-white/20 shadow-2xl overflow-hidden">
              {getLogoDisplay()}
           </div>
           <h1 className="text-3xl font-extrabold font-headline mb-2 tracking-tight">{settings.siteName}</h1>
