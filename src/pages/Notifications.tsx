@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import AdminLayout from '../components/AdminLayout';
+import InstructorLayout from '../components/InstructorLayout';
+import StudentLayout from '../components/StudentLayout';
+import { useAuth } from '../context/AuthContext';
 
 export default function Notifications() {
   const [reports, setReports] = useState<any[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
@@ -32,9 +36,11 @@ export default function Notifications() {
     }
   };
 
+  const Layout = user?.role === 'student' ? StudentLayout : user?.role === 'instructor' ? InstructorLayout : AdminLayout;
+
   return (
-    <AdminLayout title="Notifications">
-      <div className="p-8">
+    <Layout title="Notifications">
+      <div className="p-8 pb-32">
         <div className="bg-surface-container rounded-3xl p-6 border border-outline-variant">
           <h2 className="text-xl font-bold mb-4 font-headline">All Notifications</h2>
           <div className="space-y-4">
@@ -47,10 +53,12 @@ export default function Notifications() {
                         <p className="text-xs text-on-surface-variant/50 mt-2">From: {report.userEmail} | Status: {report.status}</p>
                     </div>
                     <div className="flex gap-2">
-                        {report.status !== 'resolved' && (
+                        {report.status !== 'resolved' && user?.role === 'admin' && (
                             <button onClick={() => handleResolve(report.id)} className="text-xs bg-primary text-on-primary px-3 py-1 rounded-lg">Resolve</button>
                         )}
-                        <button onClick={() => handleDelete(report.id)} className="text-xs bg-error text-on-error px-3 py-1 rounded-lg">Delete</button>
+                        {user?.role === 'admin' && (
+                          <button onClick={() => handleDelete(report.id)} className="text-xs bg-error text-on-error px-3 py-1 rounded-lg">Delete</button>
+                        )}
                     </div>
                 </div>
               </div>
@@ -58,6 +66,6 @@ export default function Notifications() {
           </div>
         </div>
       </div>
-    </AdminLayout>
+    </Layout>
   );
 }

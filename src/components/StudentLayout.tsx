@@ -42,7 +42,8 @@ export default function StudentLayout({ children, title }: { children: ReactNode
   
   useEffect(() => {
     if (prevSettingsRef.current.siteName !== settings.siteName || prevSettingsRef.current.logo !== settings.logo) {
-       const isApk = /wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView;
+       const isPWA = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone);
+       const isApk = (/wv\b/i.test(navigator.userAgent) || !!(window as any).Android || !!(window as any).ReactNativeWebView) && !isPWA;
        if (isApk) {
          if (window.confirm("App customization was updated. Open the updater to pull latest assets?")) {
            setIsUpdateOpen(true);
@@ -238,7 +239,7 @@ export default function StudentLayout({ children, title }: { children: ReactNode
                 <WifiOff size={16} />
               </button>
 
-              {/wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView ? (
+              {((/wv\b/i.test(navigator.userAgent) || !!(window as any).Android || !!(window as any).ReactNativeWebView) && !(window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone))) ? (
                 <button
                   onClick={() => setIsUpdateOpen(true)}
                   className="p-1.5 text-on-surface-variant hover:bg-surface-container rounded-full transition-colors w-8 h-8 md:w-9 md:h-9 flex items-center justify-center shrink-0"

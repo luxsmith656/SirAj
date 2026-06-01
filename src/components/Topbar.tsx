@@ -31,7 +31,8 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
   const prevSettingsRef = React.useRef(settings);
   useEffect(() => {
     if (prevSettingsRef.current.siteName !== settings.siteName || prevSettingsRef.current.logo !== settings.logo) {
-       const isApk = /wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView;
+       const isPWA = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone);
+       const isApk = (/wv\b/i.test(navigator.userAgent) || !!(window as any).Android || !!(window as any).ReactNativeWebView) && !isPWA;
        if (isApk) {
          if (window.confirm("App customization was updated. Open the updater to pull latest assets?")) {
            setIsUpdateOpen(true);
@@ -117,7 +118,7 @@ export default function Topbar({ title = 'LET Mastery' }: TopbarProps) {
           <span className="material-symbols-outlined">notifications</span>
         </button>
 
-        {/wv|Android.*Version\/[0-9]\.[0-9]/i.test(navigator.userAgent) || (window as any).Android || (window as any).ReactNativeWebView ? (
+        {((/wv\b/i.test(navigator.userAgent) || !!(window as any).Android || !!(window as any).ReactNativeWebView) && !(window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone))) ? (
           <button 
             onClick={() => setIsUpdateOpen(true)}
             className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors duration-200 w-10 h-10 flex items-center justify-center"

@@ -22,6 +22,10 @@ export default function SignIn() {
     }
   }, [user, authLoading, navigate]);
 
+  if (isLoading || authLoading) {
+    return <LoadingGate />;
+  }
+
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
@@ -180,7 +184,7 @@ export default function SignIn() {
                   <label className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest ml-1">Email Address</label>
                   <input 
                     type="email" 
-                    placeholder={isSignUp ? "your@email.com" : "admin@example.com"}
+                    placeholder={isSignUp ? "your@email.com" : "student@example.com"}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full bg-surface-container border border-transparent rounded-2xl px-5 py-3.5 text-sm font-medium text-on-surface focus:bg-surface-container-lowest focus:border-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
@@ -260,6 +264,15 @@ export default function SignIn() {
              Authorized for <span className="text-on-surface">Teacher Professionalism</span>
           </p>
        </div>
+    </div>
+  );
+}
+
+function LoadingGate() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-primary text-on-primary">
+      <span className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+      <p className="text-xs font-black uppercase tracking-[0.2em] text-on-primary/70">Opening loader...</p>
     </div>
   );
 }
