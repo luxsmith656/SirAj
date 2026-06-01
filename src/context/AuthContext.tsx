@@ -41,12 +41,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return localDate.toISOString().split('T')[0];
   };
 
+  const getEffectiveRole = (email: string | null, storedRole: Role | undefined): Role => {
+    if (!email) return storedRole || 'student';
+    if (email === 'castanar656@gmail.com') return 'admin';
+    if (email === 'admin@letmastery.com') return 'admin';
+    if (email === 'instructor@letmastery.com') return 'instructor';
+    if (email === 'student@letmastery.com') return 'student';
+    return storedRole || 'student';
+  };
+
   const refreshUser = async () => {
     if (auth.currentUser) {
       const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data() as UserProfile;
-        setUser({ ...userData, uid: auth.currentUser.uid, role: userData.role || 'student' });
+        const role = getEffectiveRole(auth.currentUser.email, userData.role);
+        setUser({ ...userData, uid: auth.currentUser.uid, role });
       }
     }
   };
@@ -75,17 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
              userData.streak = 0;
           }
           
-          let role = (userData.role as Role) || 'student';
-          if (firebaseUser.email === 'castanar656@gmail.com') {
-            role = 'admin';
-          } else if (firebaseUser.email === 'instructor@letmastery.com') {
-            role = 'instructor';
-          } else if (firebaseUser.email === 'admin@letmastery.com') {
-            role = 'admin';
-          } else if (firebaseUser.email === 'student@letmastery.com') {
-            role = 'student';
-          }
-
+          const role = getEffectiveRole(firebaseUser.email, userData.role);
           setUser({ ...userData, uid: firebaseUser.uid, role });
         } else {
           // Check if a profile with this email already exists (from seeding)
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           const newUser: UserProfile = {
             email: firebaseUser.email || '',
-            role: (firebaseUser.email === 'castanar656@gmail.com' ? 'admin' : (firebaseUser.email === 'instructor@letmastery.com' ? 'instructor' : (firebaseUser.email === 'admin@letmastery.com' ? 'admin' : (existingData.role || 'student')))),
+            role: getEffectiveRole(firebaseUser.email, existingData.role),
             uid: firebaseUser.uid,
             onboarded: existingData.onboarded ?? false, 
             fullName: pendingData.fullName || existingData.fullName || '',
@@ -178,7 +178,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           streakHistory: newHistory
         });
         const updatedUser = { ...user, streakHistory: newHistory } as any;
-        setUser(updatedUser);
+        const role = getEffectiveRole(auth.currentUser.email, updatedUser.role);
+        setUser({ ...updatedUser, role });
       }
       return { incremented: false, streak: currentStreak, reset: false };
     }
@@ -209,7 +210,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     
     const updatedUser = { ...user, streak: newStreak, lastActiveDate: todayStr, streakHistory: newHistory };
-    setUser(updatedUser as any);
+    const role = getEffectiveRole(auth.currentUser.email, (updatedUser as any).role);
+    setUser({ ...updatedUser, role } as any);
     
     // Trigger celebration dialog
     setStreakCelebration({

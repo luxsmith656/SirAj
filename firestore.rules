@@ -26,14 +26,15 @@ service cloud.firestore {
     
     function isAdmin() { 
       // Hardcoded admin email for boot safety + role check
-      return (isSignedIn() && request.auth.token.email == 'castanar656@gmail.com') || hasRole('admin');
+      return (isSignedIn() && (request.auth.token.email == 'castanar656@gmail.com' || request.auth.token.email == 'admin@letmastery.com')) || hasRole('admin');
     }
     
     function isInstructor() { 
-       return (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-         getUserData().get('role', 'student') == 'instructor' || 
-         getUserData().get('role', 'student') == 'admin'
-       )) || (isSignedIn() && request.auth.token.email == 'castanar656@gmail.com');
+       return (isSignedIn() && request.auth.token.email == 'instructor@letmastery.com') ||
+              (isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+                getUserData().get('role', 'student') == 'instructor' || 
+                getUserData().get('role', 'student') == 'admin'
+              )) || isAdmin();
     }
 
     function isDemoAccount() {

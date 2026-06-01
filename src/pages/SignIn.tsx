@@ -242,15 +242,16 @@ export default function SignIn() {
 
             <div className="mt-8 pt-8 border-t border-outline-variant/10">
                <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] text-center mb-4">Quick Demo Access</p>
-               <div className="grid grid-cols-2 gap-3">
+               <div className="grid grid-cols-3 gap-2">
                   {[
                     { label: 'Student', email: 'student@letmastery.com', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-                    { label: 'Instructor', email: 'instructor@letmastery.com', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' }
+                    { label: 'Instructor', email: 'instructor@letmastery.com', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
+                    { label: 'Admin', email: 'admin@letmastery.com', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' }
                   ].map((role) => (
                     <button
                       key={role.label}
                       onClick={() => handleDemoLogin(role.email)}
-                      className={`py-3 px-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${role.color}`}
+                      className={`py-3 px-1 rounded-xl border text-[9px] font-bold uppercase tracking-wider transition-all hover:scale-105 active:scale-95 ${role.color}`}
                     >
                       {role.label}
                     </button>

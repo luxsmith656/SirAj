@@ -348,5 +348,95 @@ export const INITIAL_QUESTIONS = [
     type: 'practice',
     isPublished: true,
     approved: true
+  },
+  {
+    stem: "Which among the following is the most important part of a lesson plan?",
+    options: [
+      {id: 'A', text: 'Evaluation'},
+      {id: 'B', text: 'Objectives'},
+      {id: 'C', text: 'Learning Activities'},
+      {id: 'D', text: 'Materials'}
+    ],
+    correctOptionId: 'B',
+    explanation: 'Objectives guide the entire lesson plan; without them, the other parts have no direction.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_curriculum',
+    difficulty: 'easy',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "A teacher is a facilitator of learning. This means the teacher should:",
+    options: [
+      {id: 'A', text: 'Deliver long lectures'},
+      {id: 'B', text: 'Make learning easy for students by providing all answers'},
+      {id: 'C', text: 'Guide students to discover and construct their own knowledge'},
+      {id: 'D', text: 'Strictly follow the textbook'}
+    ],
+    correctOptionId: 'C',
+    explanation: 'Facilitation involves guiding learners toward self-discovery and construction of meaning.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_principles',
+    difficulty: 'medium',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "Who is the father of Modern Psychology?",
+    options: [
+      {id: 'A', text: 'Sigmund Freud'},
+      {id: 'B', text: 'Wilhelm Wundt'},
+      {id: 'C', text: 'William James'},
+      {id: 'D', text: 'B.F. Skinner'}
+    ],
+    correctOptionId: 'B',
+    explanation: 'Wilhelm Wundt established the first psychology laboratory and is often called the father of modern/experimental psychology.',
+    categoryId: 'profed',
+    categoryName: 'Professional Education',
+    topicId: 'profed_childdev',
+    difficulty: 'medium',
+    type: 'practice',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "The smallest unit of sound in a language is called a ________.",
+    options: [
+      {id: 'A', text: 'Morpheme'},
+      {id: 'B', text: 'Phoneme'},
+      {id: 'C', text: 'Syntax'},
+      {id: 'D', text: 'Semantics'}
+    ],
+    correctOptionId: 'B',
+    explanation: 'Phonemes are basic units of sound; morphemes are basic units of meaning.',
+    categoryId: 'gened',
+    categoryName: 'General Education',
+    topicId: 'gened_english',
+    difficulty: 'easy',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "Which of the following is an example of an irrational number?",
+    options: [
+      {id: 'A', text: '0.5'},
+      {id: 'B', text: '2/3'},
+      {id: 'C', text: 'Square root of 2'},
+      {id: 'D', text: 'Square root of 4'}
+    ],
+    correctOptionId: 'C',
+    explanation: 'The square root of 2 cannot be expressed as a simple fraction and has a non-repeating, non-terminating decimal.',
+    categoryId: 'gened',
+    categoryName: 'General Education',
+    topicId: 'gened_math',
+    difficulty: 'easy',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
   }
 ];
