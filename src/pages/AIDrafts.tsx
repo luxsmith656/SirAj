@@ -1,11 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { BrainCircuit, Loader2, Save, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { collection, addDoc, onSnapshot, doc, deleteDoc, query, orderBy, where } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, doc, query, orderBy, serverTimestamp, updateDoc, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import Toast from '../components/Toast';
+
+function trackLabel(track: string) {
+  if (track === 'elementary') return 'Elementary LET';
+  if (track === 'secondary') return 'Secondary LET';
+  if (track === 'specialization') return 'Field of Specialization';
+  return 'LET Review';
+}
+
+function normalizeDifficulty(value: string) {
+  const raw = String(value || '').toLowerCase();
+  if (raw.includes('easy')) return 'Easy';
+  if (raw.includes('difficult') || raw.includes('hard') || raw.includes('analysis') || raw.includes('evaluation')) return 'Difficult';
+  return 'Average';
+}
+
+function slugify(value: string) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
+function normalizeWrongChoiceExplanations(question: any) {
+  const existing = question?.wrongChoiceExplanations || {};
+  return ['A', 'B', 'C', 'D'].reduce<Record<string, string>>((acc, optionId) => {
+    if (existing[optionId]) {
+      acc[optionId] = existing[optionId];
+    } else if (optionId === question?.correctOptionId) {
+      acc[optionId] = 'This is the keyed answer because it matches the tested competency.';
+    } else {
+      acc[optionId] = 'This option is a distractor; review the related concept before using this item in an exam.';
+    }
+    return acc;
+  }, {});
+}
 
 export default function AIDrafts() {
   const { user } = useAuth();
@@ -20,6 +56,7 @@ export default function AIDrafts() {
   const [topics, setTopics] = useState<any[]>([]);
 
   // Pre-generation selections
+  const [selectedTrack, setSelectedTrack] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedTopicId, setSelectedTopicId] = useState('');
 
@@ -45,15 +82,28 @@ export default function AIDrafts() {
     return () => { unsubCat(); unsubTop(); };
   }, []);
 
+  const visibleCategories = useMemo(() => {
+    return categories.filter((category) => {
+      if (!selectedTrack) return true;
+      const tracks = category.reviewTracks || category.trackIds || (
+        category.id === 'major' ? ['secondary', 'specialization'] : ['elementary', 'secondary']
+      );
+      return tracks.includes(selectedTrack) || tracks.includes('all');
+    });
+  }, [categories, selectedTrack]);
+
+  const selectedCategory = categories.find(c => c.id === selectedCategoryId);
+  const selectedTopic = topics.find(t => t.id === selectedTopicId);
+
   const handleGenerate = async () => {
-    if (!topicPrompt || !selectedCategoryId || !selectedTopicId) {
-       setToastMsg('Please select a curriculum, topic, and enter a subtopic prompt.');
+    if (!selectedTrack || !topicPrompt || !selectedCategoryId || !selectedTopicId) {
+       setToastMsg('Please select a LET track, subject, topic, and subtopic prompt before generating.');
        setShowToast(true);
        return;
     }
 
-    const catName = categories.find(c => c.id === selectedCategoryId)?.title || categories.find(c => c.id === selectedCategoryId)?.name || '';
-    const topName = topics.find(t => t.id === selectedTopicId)?.title || '';
+    const catName = selectedCategory?.title || selectedCategory?.name || '';
+    const topName = selectedTopic?.title || selectedTopic?.name || '';
 
     setIsGenerating(true);
     try {
@@ -61,27 +111,69 @@ export default function AIDrafts() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-           topic: `${catName} - ${topName}: ${topicPrompt}`, 
+           topic: `${trackLabel(selectedTrack)} / ${catName} / ${topName}: ${topicPrompt}`,
+           reviewTrack: selectedTrack,
+           categoryId: selectedCategoryId,
+           categoryName: catName,
+           topicId: selectedTopicId,
+           topicName: topName,
            difficulty, 
            count: 5 
         })
       });
       const data = await res.json();
       if (data.success) {
-        const { serverTimestamp } = await import('firebase/firestore');
         for (const q of data.questions) {
+          const normalizedDifficulty = normalizeDifficulty(q.difficulty || difficulty);
+          const wrongChoiceExplanations = normalizeWrongChoiceExplanations(q);
+          const questionPayload = {
+            stem: q.stem,
+            options: q.options || [],
+            correctOptionId: q.correctOptionId,
+            explanation: q.explanation || q.rationalization || 'Review the related topic before using this item in an exam.',
+            rationalization: q.rationalization || q.explanation || '',
+            wrongChoiceExplanations,
+            categoryId: selectedCategoryId,
+            categoryName: catName,
+            topicId: selectedTopicId,
+            topicName: topName,
+            reviewTrack: selectedTrack,
+            reviewTracks: [selectedTrack],
+            competencyId: q.competencyId || `${selectedTopicId}-ai-generated`,
+            difficulty: normalizedDifficulty,
+            misconceptionTags: q.misconceptionTags || [],
+            familyId: q.familyId || `${selectedTopicId}-${slugify(topicPrompt) || 'ai-family'}`,
+            questionFamilyId: q.familyId || `${selectedTopicId}-${slugify(topicPrompt) || 'ai-family'}`,
+            sourceNote: `AI generated from ${trackLabel(selectedTrack)} / ${catName} / ${topName}`,
+            status: 'approved',
+            approvalStatus: 'approved',
+            approved: true,
+            isPublished: true,
+            aiGenerated: true,
+            autoApproved: true,
+            createdBy: user?.uid || '',
+            approvedBy: user?.uid || '',
+            approvedByName: user?.fullName || user?.email || 'AI Drafter',
+            version: 1,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            approvedAt: serverTimestamp(),
+          };
+          await addDoc(collection(db, 'questions'), questionPayload);
           await addDoc(collection(db, 'aiDrafts'), {
-            ...q,
+            ...questionPayload,
             draftTopic: topicPrompt,
-            difficulty,
-            status: 'pending',
+            status: 'approved',
+            reviewedAt: serverTimestamp(),
+            reviewedBy: user?.uid || '',
             instructorId: user?.uid,
             preAssignedCategoryId: selectedCategoryId,
             preAssignedTopicId: selectedTopicId,
+            preAssignedTrack: selectedTrack,
             createdAt: serverTimestamp()
           });
         }
-        setToastMsg('Generated and saved to drafts!');
+        setToastMsg('Generated and auto-approved into Question Bank.');
         setShowToast(true);
       } else {
         throw new Error(data.error);
@@ -109,22 +201,35 @@ export default function AIDrafts() {
     }
 
     try {
-       const { updateDoc, serverTimestamp } = await import('firebase/firestore');
        await addDoc(collection(db, 'questions'), {
           stem: draft.stem,
           options: draft.options,
           correctOptionId: draft.correctOptionId,
           explanation: draft.explanation,
+          rationalization: draft.rationalization || draft.explanation || '',
+          wrongChoiceExplanations: draft.wrongChoiceExplanations || normalizeWrongChoiceExplanations(draft),
           categoryId: catId,
           topicId: topId,
-          difficulty: draft.difficulty,
+          reviewTrack: draft.preAssignedTrack || draft.reviewTrack || selectedTrack || '',
+          reviewTracks: [draft.preAssignedTrack || draft.reviewTrack || selectedTrack || ''].filter(Boolean),
+          competencyId: draft.competencyId || `${topId}-ai-generated`,
+          familyId: draft.familyId || `${topId}-ai-family`,
+          questionFamilyId: draft.questionFamilyId || draft.familyId || `${topId}-ai-family`,
+          misconceptionTags: draft.misconceptionTags || [],
+          difficulty: normalizeDifficulty(draft.difficulty),
           approved: true,
           isPublished: true,
+          status: 'approved',
+          approvalStatus: 'approved',
           aiGenerated: true,
+          autoApproved: true,
           createdBy: user?.uid,
+          approvedBy: user?.uid,
+          approvedByName: user?.fullName || user?.email || 'AI Drafter',
           version: 1,
           createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
+          approvedAt: serverTimestamp()
        });
 
        await updateDoc(doc(db, 'aiDrafts', draftId), {
@@ -145,7 +250,6 @@ export default function AIDrafts() {
 
   const rejectDraft = async (id: string) => {
     try {
-      const { updateDoc, serverTimestamp } = await import('firebase/firestore');
       await updateDoc(doc(db, 'aiDrafts', id), {
         status: 'rejected',
         reviewedAt: serverTimestamp(),
@@ -165,24 +269,42 @@ export default function AIDrafts() {
            <h2 className="text-3xl font-extrabold font-headline text-primary flex items-center gap-3">
              <BrainCircuit /> AI Question Drafter
            </h2>
-           <p className="text-on-surface-variant/60 mt-2">Generate high-quality board exam questions instantly using AI, referenced against your exact curriculum.</p>
+             <p className="text-on-surface-variant/60 mt-2">Choose track, subject, and topic first. Generated questions are auto-approved into the live Question Bank.</p>
         </div>
 
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm border border-outline-variant p-8 mb-8">
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 pb-6 border-b border-outline-variant/20">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 pb-6 border-b border-outline-variant/20">
               <div>
-                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">1. Select Curriculum Subject</label>
+                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">1. Select LET Track</label>
+                 <select
+                   value={selectedTrack}
+                   onChange={e => {
+                     setSelectedTrack(e.target.value);
+                     setSelectedCategoryId('');
+                     setSelectedTopicId('');
+                   }}
+                   className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 transition-all font-medium"
+                 >
+                   <option value="">-- Choose Track --</option>
+                   <option value="elementary">Elementary LET</option>
+                   <option value="secondary">Secondary LET</option>
+                   <option value="specialization">Field of Specialization</option>
+                 </select>
+              </div>
+              <div>
+                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">2. Select Subject</label>
                  <select 
                    value={selectedCategoryId}
                    onChange={e => { setSelectedCategoryId(e.target.value); setSelectedTopicId(''); }}
+                   disabled={!selectedTrack}
                    className="w-full bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-on-surface focus:outline-none focus:border-primary/50 transition-all font-medium"
                  >
                    <option value="">-- Choose Subject --</option>
-                   {categories.map(c => <option key={c.id} value={c.id}>{c.title || c.name}</option>)}
+                   {visibleCategories.map(c => <option key={c.id} value={c.id}>{c.title || c.name}</option>)}
                  </select>
               </div>
               <div className={`${!selectedCategoryId ? 'opacity-50 pointer-events-none' : ''}`}>
-                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">2. Select Topic Area</label>
+                 <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">3. Select Topic Area</label>
                  <select 
                    value={selectedTopicId}
                    onChange={e => setSelectedTopicId(e.target.value)}
@@ -190,7 +312,7 @@ export default function AIDrafts() {
                  >
                    <option value="">-- Choose Topic --</option>
                    {topics.filter(t => t.categoryId === selectedCategoryId).map(t => (
-                     <option key={t.id} value={t.id}>{t.title}</option>
+                     <option key={t.id} value={t.id}>{t.title || t.name}</option>
                    ))}
                  </select>
               </div>
@@ -199,7 +321,7 @@ export default function AIDrafts() {
            <div className={`transition-opacity duration-300 ${!selectedTopicId ? 'opacity-50 pointer-events-none' : ''}`}>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">3. Subtopic or Specific Standard</label>
+                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">4. Subtopic or Specific Standard</label>
                    <input 
                      type="text" 
                      value={topicPrompt}
@@ -209,7 +331,7 @@ export default function AIDrafts() {
                    />
                 </div>
                 <div>
-                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">4. Difficulty Level</label>
+                   <label className="block text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">5. Difficulty Level</label>
                    <select 
                      value={difficulty}
                      onChange={e => setDifficulty(e.target.value)}
@@ -225,10 +347,10 @@ export default function AIDrafts() {
              <div className="mt-6 flex justify-end">
                 <button 
                   onClick={handleGenerate} 
-                  disabled={isGenerating || !topicPrompt || !selectedTopicId}
+                  disabled={isGenerating || !selectedTrack || !topicPrompt || !selectedTopicId}
                   className="bg-primary text-on-primary px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center gap-2 transition-all hover:opacity-90 active:scale-95"
                 >
-                   {isGenerating ? <><Loader2 className="animate-spin" /> Gathering Intel...</> : 'Generate 5 Questions'}
+                   {isGenerating ? <><Loader2 className="animate-spin" /> Gathering Intel...</> : 'Generate and Auto-Approve'}
                 </button>
              </div>
            </div>
@@ -236,7 +358,7 @@ export default function AIDrafts() {
 
         {drafts.length > 0 && (
           <div className="space-y-6">
-             <h3 className="text-xl font-bold text-on-surface">Pending Review ({drafts.length})</h3>
+             <h3 className="text-xl font-bold text-on-surface">Pending Review From Older Drafts ({drafts.length})</h3>
              {drafts.map((draft, i) => {
                 const currentCat = selectedMapping[draft.id]?.categoryId || draft.preAssignedCategoryId;
                 const currentTop = selectedMapping[draft.id]?.topicId || draft.preAssignedTopicId;

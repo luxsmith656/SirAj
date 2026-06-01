@@ -5,16 +5,23 @@ import { useAuth } from '../context/AuthContext';
 export default function Loading() {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
+    if (isLoading) return;
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           setTimeout(() => {
-            if (user?.role === 'admin') navigate('/admin/dashboard');
-            else navigate('/focus'); // Goes to focus choice first after login
+            if (!user) {
+              navigate('/sign-in', { replace: true });
+              return;
+            }
+            if (user.role === 'admin') navigate('/admin/dashboard', { replace: true });
+            else if (user.role === 'instructor') navigate('/instructor/dashboard', { replace: true });
+            else if (!user.onboarded) navigate('/onboarding', { replace: true });
+            else navigate('/student/dashboard', { replace: true });
           }, 500);
           return 100;
         }
@@ -22,7 +29,7 @@ export default function Loading() {
       });
     }, 200);
     return () => clearInterval(interval);
-  }, [navigate, user]);
+  }, [isLoading, navigate, user]);
 
   return (
     <div className="bg-primary text-on-primary font-body min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden antialiased">

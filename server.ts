@@ -15,10 +15,21 @@ async function startServer() {
   // API route for AI question drafting
   app.post('/api/draft-questions', async (req, res) => {
     try {
-      const { topic, difficulty, count = 3 } = req.body;
+      const {
+        topic,
+        difficulty,
+        count = 3,
+        reviewTrack = '',
+        categoryName = '',
+        topicName = '',
+      } = req.body;
       
       const prompt = `You are an expert exam setter for the board exam (LET). 
 Create ${count} multiple choice questions about "${topic}" at a ${difficulty} difficulty level.
+LET review track: ${reviewTrack || 'not specified'}.
+Subject/category: ${categoryName || 'not specified'}.
+Topic area: ${topicName || 'not specified'}.
+Each question must teach, not only test. Include a concise rationalization, why each wrong option is wrong, a competency tag, misconception tags, and a question family id for variant grouping.
 Return JSON ONLY, matching exactly this format:
 [
   {
@@ -30,7 +41,17 @@ Return JSON ONLY, matching exactly this format:
       { "id": "D", "text": "Option D" }
     ],
     "correctOptionId": "A",
-    "explanation": "Why this is correct."
+    "explanation": "Why this is correct.",
+    "rationalization": "Full teaching explanation.",
+    "wrongChoiceExplanations": {
+      "A": "Why option A is correct or incorrect.",
+      "B": "Why option B is correct or incorrect.",
+      "C": "Why option C is correct or incorrect.",
+      "D": "Why option D is correct or incorrect."
+    },
+    "competencyId": "short-competency-tag",
+    "familyId": "short-question-family-id",
+    "misconceptionTags": ["common misconception"]
   }
 ]`;
 

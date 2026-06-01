@@ -18,27 +18,19 @@ export default function SignIn() {
 
   useEffect(() => {
     if (!authLoading && user) {
-      if (user.role === 'admin') navigate('/admin/dashboard');
-      else if (user.role === 'instructor') navigate('/instructor/dashboard');
-      else {
-        if (!user.onboarded) navigate('/onboarding');
-        else navigate('/student/dashboard');
-      }
+      navigate('/loading', { replace: true });
     }
   }, [user, authLoading, navigate]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <span className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingGate />;
   }
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
       await signInWithGoogle();
+      navigate('/loading', { replace: true });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -68,6 +60,7 @@ export default function SignIn() {
           throw loginErr;
         }
       }
+      navigate('/loading', { replace: true });
     } catch (err: any) {
       console.error('Demo Auth error:', err.code, err.message);
       setError(`Demo login failed: ${err.message}`);
@@ -97,7 +90,7 @@ export default function SignIn() {
             await loginWithEmail(email, password);
           } catch (loginErr: any) {
             // Auto-fallback for demo accounts even if not clicking the demo button
-            const demoEmails = ['student@letmastery.com', 'instructor@letmastery.com', 'admin@letmastery.com'];
+            const demoEmails = ['student@letmastery.com', 'instructor@letmastery.com'];
             if ((loginErr.code === 'auth/user-not-found' || loginErr.code === 'auth/invalid-credential') && demoEmails.includes(email.toLowerCase())) {
               const role = email.split('@')[0];
               const display = role.charAt(0).toUpperCase() + role.slice(1);
@@ -108,6 +101,7 @@ export default function SignIn() {
             }
           }
         }
+        navigate('/loading', { replace: true });
       } catch (err: any) {
       console.error('Auth error:', err.code, err.message);
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
@@ -242,11 +236,10 @@ export default function SignIn() {
 
             <div className="mt-8 pt-8 border-t border-outline-variant/10">
                <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] text-center mb-4">Quick Demo Access</p>
-               <div className="grid grid-cols-3 gap-2">
+               <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: 'Student', email: 'student@letmastery.com', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' },
-                    { label: 'Instructor', email: 'instructor@letmastery.com', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' },
-                    { label: 'Admin', email: 'admin@letmastery.com', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' }
+                    { label: 'Instructor', email: 'instructor@letmastery.com', color: 'bg-amber-500/10 text-amber-600 border-amber-500/20' }
                   ].map((role) => (
                     <button
                       key={role.label}
@@ -271,6 +264,15 @@ export default function SignIn() {
              Authorized for <span className="text-on-surface">Teacher Professionalism</span>
           </p>
        </div>
+    </div>
+  );
+}
+
+function LoadingGate() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-primary text-on-primary">
+      <span className="w-10 h-10 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+      <p className="text-xs font-black uppercase tracking-[0.2em] text-on-primary/70">Opening loader...</p>
     </div>
   );
 }
