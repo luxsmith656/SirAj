@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
-import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -62,6 +62,64 @@ export default function QuestionBank() {
   
   const [isSeedingModalOpen, setIsSeedingModalOpen] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
+
+  const seedDatabase = async () => {
+      setIsSeeding(true);
+      setIsSeedingModalOpen(false);
+      try {
+          const batch = writeBatch(db);
+          const tracks = ['elementary', 'secondary', 'specialization', 'gened', 'profed'];
+          const difficulties = ['easy', 'medium', 'hard'];
+          const categoriesList = categories.length > 0 ? categories.map(c => c.id) : ['gened_english', 'gened_math', 'profed_assessment'];
+
+          for (let i = 1; i <= 120; i++) {
+              const docRef = doc(collection(db, 'questions'));
+              
+              const options = [
+                  { id: 'A', text: `Option A for seeded question ${i}` },
+                  { id: 'B', text: `Option B for seeded question ${i}` },
+                  { id: 'C', text: `Option C for seeded question ${i}` },
+                  { id: 'D', text: `Option D for seeded question ${i}` }
+              ];
+              
+              batch.set(docRef, {
+                  stem: `[SEEDED] This is question number ${i} generated automatically. Which of the following is correct?`,
+                  categoryId: categoriesList[i % categoriesList.length],
+                  correctOptionId: 'A',
+                  options: options,
+                  difficulty: difficulties[i % 3],
+                  topicId: `demo_topic_${i % 5}`,
+                  competencyId: `demo_comp_${i % 5}`,
+                  rationalization: 'This is a system generated rationalization for this seeded question covering exactly why it is correct.',
+                  wrongChoiceExplanations: {
+                      A: 'This is the correct answer.',
+                      B: 'Incorrect because it fails to consider the primary principle.',
+                      C: 'Incorrect due to logical reasoning error.',
+                      D: 'Out of scope distracter.'
+                  },
+                  reviewTrack: tracks[i % tracks.length],
+                  status: 'approved',
+                  approvalStatus: 'approved',
+                  approved: true,
+                  isPublished: true,
+                  approvedBy: user?.uid || 'system',
+                  approvedByName: user?.fullName || 'Auto Seed',
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                  approvedAt: serverTimestamp()
+              });
+          }
+          await batch.commit();
+          setToastMsg('Successfully seeded 120 approved questions!');
+          setShowToast(true);
+      } catch (error) {
+          console.error(error);
+          setToastMsg('Failed to seed questions.');
+          setShowToast(true);
+      } finally {
+          setIsSeeding(false);
+      }
+  };
 
   useEffect(() => {
     // Categories for mapping names
@@ -201,16 +259,16 @@ export default function QuestionBank() {
   const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
     const q = filteredQuestions[index];
     return (
-      <div style={style} className="border-b border-outline-variant/10 hover:bg-surface-container/20 transition-colors group flex items-center">
+      <div style={style} className="border-b border-outline-variant/10 hover:bg-surface-container/20 transition-colors group flex flex-col md:flex-row items-start md:items-center gap-3 px-0 py-4">
         <div className="flex-1 px-4 min-w-0">
           <p className="text-sm font-bold text-on-surface truncate">{q.stem}</p>
         </div>
-        <div className="w-[200px] px-4 shrink-0">
+        <div className="w-full md:w-[200px] px-4">
           <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg truncate block whitespace-nowrap overflow-hidden text-ellipsis border border-primary/10">
             {getCategoryName(q.categoryId)}
           </span>
         </div>
-        <div className="w-[120px] px-4 shrink-0">
+        <div className="w-full md:w-[120px] px-4">
           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-lg border ${
             String(q.difficulty).toLowerCase() === 'easy' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/10' :
             String(q.difficulty).toLowerCase() === 'medium' ? 'bg-amber-500/10 text-amber-500 border-amber-500/10' :
@@ -219,7 +277,7 @@ export default function QuestionBank() {
             {q.difficulty}
           </span>
         </div>
-        <div className="w-[150px] px-4 shrink-0">
+        <div className="w-full md:w-[150px] px-4">
           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border ${statusTone(getQuestionStatus(q))}`}>
             {getQuestionStatus(q).replace(/_/g, ' ')}
           </span>
@@ -227,8 +285,8 @@ export default function QuestionBank() {
             {isBlueprintReady(q) ? 'Blueprint ready' : 'Needs tags'}
           </p>
         </div>
-        <div className="w-[190px] px-4 text-right shrink-0">
-          <div className="flex justify-end gap-2">
+        <div className="w-full md:w-[190px] px-4 text-right md:text-right">
+          <div className="flex flex-wrap justify-end gap-2">
             {getQuestionStatus(q) !== 'approved' && (
               <button
                 onClick={() => updateQuestionReview(q, 'approve')}
@@ -274,6 +332,14 @@ export default function QuestionBank() {
             <p className="text-on-surface-variant/60 font-medium">Manage board exam multiple choice questions.</p>
           </div>
           <div className="flex gap-2">
+            <button
+               onClick={() => setIsSeedingModalOpen(true)}
+               disabled={isSeeding}
+               className="px-6 py-2.5 rounded-xl border border-outline-variant/40 hover:bg-surface-container text-on-surface font-bold text-sm flex items-center gap-2 transition-all disabled:opacity-50"
+            >
+                <span className="material-symbols-outlined text-[18px]">database</span> 
+                {isSeeding ? 'Seeding...' : 'Seed 120 Qs'}
+            </button>
             <button 
               onClick={() => navigate(getEditPath())}
               className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm flex items-center gap-2 shadow-lg shadow-primary/20"
@@ -291,8 +357,8 @@ export default function QuestionBank() {
         </div>
 
         <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
-          <div className="p-4 border-b border-outline-variant bg-surface-container/30 flex flex-col md:flex-row items-stretch md:items-center gap-3 shrink-0">
-             <div className="flex-1 flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
+          <div className="p-4 border-b border-outline-variant bg-surface-container/30 grid grid-cols-1 lg:grid-cols-[1.6fr_repeat(3,1fr)] gap-3 shrink-0">
+             <div className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 focus-within:border-primary/20 transition-all">
                 <span className="material-symbols-outlined text-on-surface-variant/40">search</span>
                 <input 
                    type="text" 
@@ -303,7 +369,7 @@ export default function QuestionBank() {
                 />
              </div>
              
-             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[170px]">
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2">
                 <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">map</span>
                 <select 
                    value={selectedTrack}
@@ -317,7 +383,7 @@ export default function QuestionBank() {
                 </select>
              </div>
 
-             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[180px]">
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2">
                 <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">filter_list</span>
                 <select 
                    value={selectedCategory}
@@ -330,8 +396,7 @@ export default function QuestionBank() {
                    ))}
                 </select>
              </div>
-             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 min-w-[190px]">
-                <span className="material-symbols-outlined text-on-surface-variant/40 text-[20px]">rule</span>
+             <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2">
                 <select
                    value={selectedStatus}
                    onChange={(e) => setSelectedStatus(e.target.value)}
@@ -348,16 +413,16 @@ export default function QuestionBank() {
 
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center bg-surface-container/20 border-b border-outline-variant shrink-0">
-              <div className="flex-1 p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Question Stem</div>
-              <div className="w-[200px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Subject</div>
-              <div className="w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Difficulty</div>
-              <div className="w-[150px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest shrink-0">Review</div>
-              <div className="w-[190px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest text-right shrink-0">Actions</div>
+            <div className="flex flex-col md:flex-row items-stretch bg-surface-container/20 border-b border-outline-variant shrink-0">
+              <div className="flex-1 min-w-0 p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Question Stem</div>
+              <div className="w-full md:w-[200px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Subject</div>
+              <div className="w-full md:w-[120px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Difficulty</div>
+              <div className="w-full md:w-[150px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest">Review</div>
+              <div className="w-full md:w-[190px] p-4 text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest text-right md:text-right">Actions</div>
             </div>
 
             {/* List */}
-            <div className="flex-1">
+            <div className="flex-1 min-h-0 overflow-hidden">
               {filteredQuestions.length === 0 ? (
                 <div className="p-12 text-center text-on-surface-variant/40 italic">No questions found.</div>
               ) : (
@@ -389,6 +454,18 @@ export default function QuestionBank() {
         confirmText="Delete Now"
         confirmColor="bg-error text-on-error shadow-error/20"
         icon="delete_forever"
+      />
+      
+      <ConfirmModal
+        isOpen={isSeedingModalOpen}
+        onClose={() => setIsSeedingModalOpen(false)}
+        onConfirm={seedDatabase}
+        title="Seed Database?"
+        message="This will add 120 AI-generated multiple choice questions into the database and approve them automatically. Proceed?"
+        isProcessing={isSeeding}
+        confirmText="Seed Database"
+        confirmColor="bg-primary text-on-primary shadow-primary/20"
+        icon="database"
       />
       
       <Toast 

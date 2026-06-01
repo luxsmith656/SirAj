@@ -81,7 +81,7 @@ export default function Onboarding() {
 
   if (!user) return null;
 
-  const canContinueStep1 = fullName.trim().length > 1 && age.trim().length > 0 && gender !== '';
+  const canContinueStep1 = fullName.trim().length > 1 && String(age).trim().length > 0 && gender !== '';
   const canContinueStep2 = reviewTrack !== 'secondary' && reviewTrack !== 'specialization'
     ? true
     : specialization.trim().length > 1;
@@ -167,22 +167,28 @@ export default function Onboarding() {
 
               <div className="space-y-6">
                 <div className="group">
-                  <label className="block mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400 group-focus-within:text-blue-600 transition-colors">Full name</label>
+                  <label className="block mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                    Full name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-5 text-sm font-bold outline-none focus:border-blue-400 focus:bg-white transition-all"
                     placeholder="e.g. Maria Clara"
+                    required
                   />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="group">
-                    <label className="block mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400 group-focus-within:text-blue-600 transition-colors">Gender</label>
+                    <label className="block mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                      Gender <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={gender}
                       onChange={(e) => setGender(e.target.value as any)}
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-5 text-sm font-bold outline-none focus:border-blue-400 focus:bg-white appearance-none transition-all cursor-pointer"
+                      required
                     >
                       <option value="">Select gender</option>
                       <option value="male">Male</option>
@@ -192,13 +198,16 @@ export default function Onboarding() {
                     </select>
                   </div>
                   <div className="group">
-                    <label className="block mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400 group-focus-within:text-blue-600 transition-colors">Age</label>
+                    <label className="block mb-2 text-[10px] font-black uppercase tracking-widest text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                      Age <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="number"
                       value={age}
                       onChange={(event) => setAge(event.target.value)}
                       className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-6 py-5 text-sm font-bold outline-none focus:border-blue-400 focus:bg-white transition-all"
                       placeholder="e.g. 21"
+                      required
                     />
                   </div>
                 </div>
