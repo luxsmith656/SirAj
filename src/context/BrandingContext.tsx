@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -28,6 +28,55 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [isLoading, setIsLoading] = useState(true);
   const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const manifestUrlRef = useRef<string | null>(null);
+
+  const normalizeIconType = (src: string) => {
+    if (src.startsWith('data:')) {
+      const match = src.match(/^data:(image\/[a-zA-Z0-9.+-]+);/);
+      return match?.[1] ?? 'image/png';
+    }
+    if (src.endsWith('.svg')) return 'image/svg+xml';
+    if (src.endsWith('.png')) return 'image/png';
+    if (src.endsWith('.jpg') || src.endsWith('.jpeg')) return 'image/jpeg';
+    return 'image/png';
+  };
+
+  const getManifestIconSrc = (logo: string) => {
+    if (logo.startsWith('http') || logo.startsWith('data:')) return logo;
+    return '/pwa-icon.svg';
+  };
+
+  const updateManifest = (data: SiteSettings) => {
+    const iconSrc = getManifestIconSrc(data.logo);
+    const manifest = {
+      name: data.siteName,
+      short_name: data.siteName.split(' ')[0] || data.siteName,
+      description: 'Offline-capable LET Review platform',
+      theme_color: data.primaryColor,
+      background_color: '#ffffff',
+      display: 'standalone',
+      icons: [
+        { src: iconSrc, sizes: '192x192', type: normalizeIconType(iconSrc) },
+        { src: iconSrc, sizes: '512x512', type: normalizeIconType(iconSrc) }
+      ]
+    };
+
+    const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+    const manifestUrl = URL.createObjectURL(manifestBlob);
+    if (manifestUrlRef.current) {
+      URL.revokeObjectURL(manifestUrlRef.current);
+    }
+    manifestUrlRef.current = manifestUrl;
+
+    let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      manifestLink.id = 'dynamic-manifest';
+      document.head.appendChild(manifestLink);
+    }
+    manifestLink.href = manifestUrl;
+  };
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'settings', 'branding'), (snapshot) => {
@@ -56,7 +105,7 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
     document.title = data.siteName;
     const root = document.documentElement;
     root.style.setProperty('--dynamic-primary', data.primaryColor);
-    
+
     // Also update favicon if logo is a URL or base64
     if (data.logo.startsWith('http') || data.logo.startsWith('data:')) {
       let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
@@ -66,6 +115,13 @@ export function BrandingProvider({ children }: { children: React.ReactNode }) {
         document.getElementsByTagName('head')[0].appendChild(link);
       }
       link.href = data.logo;
+    }
+
+    updateManifest(data);
+    try {
+      window.localStorage.setItem('letmastery-branding', JSON.stringify(data));
+    } catch (error) {
+      console.warn('Unable to save branding to localStorage', error);
     }
   };
 
