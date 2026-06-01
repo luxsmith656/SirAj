@@ -5,6 +5,7 @@ import { db } from '../lib/firebase';
 interface SiteSettings {
   siteName: string;
   logo: string;
+  logoScale?: number;
   primaryColor: string;
 }
 
@@ -19,6 +20,7 @@ interface BrandingContextType {
 export const defaultSettings: SiteSettings = {
   siteName: 'Let Mastery',
   logo: 'school', // Material icon name or URL
+  logoScale: 1,
   primaryColor: '#00236f',
 };
 
