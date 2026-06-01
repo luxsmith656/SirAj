@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useBranding } from '../context/BrandingContext';
 
 export default function Loading() {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const { settings } = useBranding();
 
   useEffect(() => {
     if (isLoading) return;
@@ -31,6 +33,21 @@ export default function Loading() {
     return () => clearInterval(interval);
   }, [isLoading, navigate, user]);
 
+  const getLogoDisplay = () => {
+    // If logo is a URL (starts with http or data:), display as image
+    if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
+      return (
+        <img src={settings.logo} alt="Logo" className="w-full h-full object-contain" />
+      );
+    }
+    // Otherwise, display the first letter of site name
+    return (
+      <span className="text-4xl font-black font-headline tracking-tighter">
+        {settings.siteName.charAt(0).toUpperCase()}
+      </span>
+    );
+  };
+
   return (
     <div className="bg-primary text-on-primary font-body min-h-[100dvh] flex flex-col items-center justify-center relative overflow-hidden antialiased">
        {/* Background decorative elements */}
@@ -39,9 +56,9 @@ export default function Loading() {
        
        <div className="z-10 flex flex-col items-center max-w-sm w-full px-8 text-center">
           <div className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-3xl mb-8 flex items-center justify-center border border-white/20 shadow-2xl">
-             <span className="text-4xl font-black font-headline tracking-tighter">L</span>
+             {getLogoDisplay()}
           </div>
-          <h1 className="text-3xl font-extrabold font-headline mb-2 tracking-tight">LET Mastery</h1>
+          <h1 className="text-3xl font-extrabold font-headline mb-2 tracking-tight">{settings.siteName}</h1>
           <p className="text-primary-fixed-dim text-sm font-medium mb-12">Preparing your study environment...</p>
           
           <div className="w-full max-w-[200px] space-y-3">
