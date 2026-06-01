@@ -1,18 +1,18 @@
 export const CATEGORIES = [
-  { id: 'gened', name: 'General Education', description: 'Core subjects including English, Math, Science, and Social Sciences.' },
-  { id: 'profed', name: 'Professional Education', description: 'Teaching profession, child development, and pedagogy.' },
-  { id: 'major', name: 'Major / Specialization', description: 'Specialized content.' }
+  { id: 'gened', name: 'General Education', description: 'Core subjects including English, Math, Science, and Social Sciences.', isPublished: true, reviewTracks: ['all'] },
+  { id: 'profed', name: 'Professional Education', description: 'Teaching profession, child development, and pedagogy.', isPublished: true, reviewTracks: ['all'] },
+  { id: 'major', name: 'Major / Specialization', description: 'Specialized content for your major FIELD.', isPublished: true, reviewTracks: ['secondary', 'specialization'] }
 ];
 
 export const TOPICS = [
-  { id: 'gened_english', categoryId: 'gened', name: 'English Communication', isPublished: true },
-  { id: 'gened_math', categoryId: 'gened', name: 'Mathematics', isPublished: true },
-  { id: 'gened_science', categoryId: 'gened', name: 'Science', isPublished: true },
-  { id: 'gened_socsci', categoryId: 'gened', name: 'Social Science', isPublished: true },
-  { id: 'profed_assessment', categoryId: 'profed', name: 'Assessment of Learning', isPublished: true },
-  { id: 'profed_principles', categoryId: 'profed', name: 'Principles of Teaching', isPublished: true },
-  { id: 'profed_childdev', categoryId: 'profed', name: 'Child and Adolescent Development', isPublished: true },
-  { id: 'profed_curriculum', categoryId: 'profed', name: 'Curriculum Development', isPublished: true }
+  { id: 'gened_english', categoryId: 'gened', name: 'English Communication', isPublished: true, reviewTracks: ['all'], description: 'Grammar, vocabulary, and reading comprehension.' },
+  { id: 'gened_math', categoryId: 'gened', name: 'Mathematics', isPublished: true, reviewTracks: ['all'], description: 'Basic arithmetic, algebra, and geometry.' },
+  { id: 'gened_science', categoryId: 'gened', name: 'Science', isPublished: true, reviewTracks: ['all'], description: 'Biology, Physics, and Earth Science.' },
+  { id: 'gened_socsci', categoryId: 'gened', name: 'Social Science', isPublished: true, reviewTracks: ['all'], description: 'Philippine history and culture.' },
+  { id: 'profed_assessment', categoryId: 'profed', name: 'Assessment of Learning', isPublished: true, reviewTracks: ['all'], description: 'Measurement, evaluation, and grading.' },
+  { id: 'profed_principles', categoryId: 'profed', name: 'Principles of Teaching', isPublished: true, reviewTracks: ['all'], description: 'Pedagogy and classroom strategies.' },
+  { id: 'profed_childdev', categoryId: 'profed', name: 'Child and Adolescent Development', isPublished: true, reviewTracks: ['all'], description: 'Growth, learning theories, and behavior.' },
+  { id: 'profed_curriculum', categoryId: 'profed', name: 'Curriculum Development', isPublished: true, reviewTracks: ['all'], description: 'K-12 design and alignment.' }
 ];
 
 export const SKILLS = [
@@ -434,6 +434,42 @@ export const INITIAL_QUESTIONS = [
     categoryId: 'gened',
     categoryName: 'General Education',
     topicId: 'gened_math',
+    difficulty: 'easy',
+    type: 'mock_exam',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "Which of the following is the 'brain' of the computer?",
+    options: [
+      {id: 'A', text: 'Hard Drive'},
+      {id: 'B', text: 'RAM'},
+      {id: 'C', text: 'CPU'},
+      {id: 'D', text: 'GPU'}
+    ],
+    correctOptionId: 'C',
+    explanation: 'The CPU (Central Processing Unit) performs most of the processing inside a computer.',
+    categoryId: 'gened',
+    categoryName: 'General Education',
+    topicId: 'gened_science',
+    difficulty: 'easy',
+    type: 'practice',
+    isPublished: true,
+    approved: true
+  },
+  {
+    stem: "Who wrote the novel 'Noli Me Tangere'?",
+    options: [
+      {id: 'A', text: 'Andres Bonifacio'},
+      {id: 'B', text: 'Marcelo H. del Pilar'},
+      {id: 'C', text: 'Jose Rizal'},
+      {id: 'D', text: 'Apolinario Mabini'}
+    ],
+    correctOptionId: 'C',
+    explanation: 'Jose Rizal wrote Noli Me Tangere to expose the social cancer of his time.',
+    categoryId: 'gened',
+    categoryName: 'General Education',
+    topicId: 'gened_english',
     difficulty: 'easy',
     type: 'mock_exam',
     isPublished: true,

@@ -108,17 +108,24 @@ export default function Dashboard() {
             <div className="flex gap-3">
                 <button 
                   onClick={async () => {
-                    const confirmed = window.confirm('Are you sure you want to seed the database? This might take a while.');
+                    const confirmed = window.confirm('RE-INITIALIZE CONTENT: This will seed topics, categories, modules, and questions. Are you sure?');
                     if (confirmed) {
                        try {
+                         const btn = document.activeElement as HTMLButtonElement;
+                         if (btn) {
+                           btn.disabled = true;
+                           btn.textContent = 'Seeding...';
+                         }
                          await seedDatabase();
-                         alert('Seeding successful!');
+                         alert('Success: Initial LET Review content has been seeded. Refreshing data...');
+                         window.location.reload();
                        } catch (e: any) {
                          alert('Seeding failed: ' + e.message);
+                         window.location.reload();
                        }
                     }
                   }}
-                  className="bg-primary/5 px-6 py-2.5 rounded-2xl text-xs font-bold text-primary shadow-sm hover:bg-primary/10 transition-all"
+                  className="bg-primary/5 px-6 py-2.5 rounded-2xl text-xs font-bold text-primary shadow-sm hover:bg-primary/10 transition-all disabled:opacity-50"
                 >
                   Seed Initial Content
                 </button>

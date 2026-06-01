@@ -102,29 +102,43 @@ function normalizeTopic(id: string, data: any): ReviewTopic {
 
 function categoryAllowedForStudent(category: ReviewSubject & { raw: any }, user: any) {
   const track = user?.reviewTrack || '';
-  if (!track) return true;
+  const focus = user?.selectedFocus || '';
   
-  // If student has an active class, they can see multiple tracks assigned by the class.
-  // For now, if activeClassId exists, they bypass strict personal track limits.
+  if (!track && !focus) return true;
   if (user?.activeClassId) return true;
 
   const raw = category.raw || {};
+  
+  // If track is missing but focus was set, try to derive track
+  let effectiveTrack = track;
+  if (!effectiveTrack && focus) {
+    if (focus === 'gened') effectiveTrack = 'gened';
+    if (focus === 'profed') effectiveTrack = 'profed';
+    if (focus === 'major') effectiveTrack = 'secondary';
+    if (focus === 'full_let_review') effectiveTrack = ''; // show all
+  }
+
   const allowedTracks = raw.reviewTracks || raw.trackIds || raw.tracks;
   if (Array.isArray(allowedTracks) && allowedTracks.length > 0) {
     if (allowedTracks.includes('all')) return true;
-    return allowedTracks.includes(track);
+    if (effectiveTrack && allowedTracks.includes(effectiveTrack)) return true;
   }
-  if (raw.reviewTrack) return raw.reviewTrack === track || raw.reviewTrack === 'all';
-
-  // Strict enforcement: if track matches category id exactly (e.g., student track 'gened' only sees category 'gened')
-  if (track === 'gened' || track === 'profed' || track === 'major') {
-     return category.id === track;
+  
+  if (raw.reviewTrack) {
+    if (raw.reviewTrack === 'all') return true;
+    if (effectiveTrack && raw.reviewTrack === effectiveTrack) return true;
   }
 
-  if (track === 'elementary') {
+  // Fallback strict enforcement
+  if (effectiveTrack === 'gened' || effectiveTrack === 'profed' || effectiveTrack === 'major') {
+     return category.id === effectiveTrack;
+  }
+
+  if (effectiveTrack === 'elementary') {
     const haystack = `${category.id} ${category.title} ${category.levelLabel}`.toLowerCase();
     return !haystack.includes('major') && !haystack.includes('specialization') && !haystack.includes('secondary');
   }
+
   return true;
 }
 

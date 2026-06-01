@@ -12,9 +12,16 @@ export default function ChooseFocus() {
   const handleSelectFocus = async (focus: string) => {
     if (!user) return;
     try {
+      // Map focus IDs to reviewTrack values
+      let reviewTrack = 'full_let_review';
+      if (focus === 'gened') reviewTrack = 'gened';
+      if (focus === 'profed') reviewTrack = 'profed';
+      if (focus === 'major') reviewTrack = 'secondary'; // secondary handles major in StudentCourses
+
       await updateDoc(doc(db, 'users', user.uid), {
         learningMode: 'self_review',
         selectedFocus: focus,
+        reviewTrack: reviewTrack,
         onboardingStep: 2
       });
       await refreshUser();
@@ -26,9 +33,9 @@ export default function ChooseFocus() {
   };
 
   const focusOptions = [
-    { id: 'general_education', title: 'General Education', desc: 'Focus on Gen Ed foundations' },
-    { id: 'professional_education', title: 'Professional Education', desc: 'Core teaching principles' },
-    { id: 'major_specialization', title: 'Major / Specialization', desc: 'Your specific field of expertise' },
+    { id: 'gened', title: 'General Education', desc: 'Focus on Gen Ed foundations' },
+    { id: 'profed', title: 'Professional Education', desc: 'Core teaching principles' },
+    { id: 'major', title: 'Major / Specialization', desc: 'Your specific field of expertise' },
     { id: 'full_let_review', title: 'Full LET Review', desc: 'Comprehensive coverage' }
   ];
 
