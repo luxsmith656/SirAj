@@ -29,10 +29,10 @@ export default function Sidebar() {
   const navItems = user?.role === 'instructor' ? instructorNavItems : studentNavItems;
 
   const renderLogo = () => {
-    if (settings.logo.startsWith('http') || settings.logo.startsWith('data:')) {
-      return <img src={settings.logo} alt="Logo" className="w-full h-full object-cover" />;
+    if (settings?.logo && typeof settings.logo === 'string' && (settings.logo.startsWith('http') || settings.logo.startsWith('data:'))) {
+      return <img src={settings.logo} alt="Logo" className="w-full h-full object-contain rounded-full" style={{ transform: `scale(${settings.logoScale ?? 1})`, transformOrigin: 'center center' }} />;
     }
-    return <span className="material-symbols-outlined text-[24px]">{settings.logo || 'school'}</span>;
+    return <span className="material-symbols-outlined text-[24px]">{settings?.logo || 'school'}</span>;
   };
 
   return (
