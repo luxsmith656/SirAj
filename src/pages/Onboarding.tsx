@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight, BookOpenCheck, GraduationCap, School, ShieldChec
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 
+import ConfirmModal from '../components/ConfirmModal';
+
 type ReviewMode = 'class_based' | 'self_review';
 type ReviewTrack = 'elementary' | 'secondary' | 'specialization' | 'gened' | 'profed';
 
@@ -50,6 +52,7 @@ export default function Onboarding() {
   // For PWA and APK installation step
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [downloadStarted, setDownloadStarted] = useState(false);
+  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
 
   useEffect(() => {
     const handlePrompt = (e: Event) => {
@@ -73,8 +76,7 @@ export default function Onboarding() {
   };
 
   const handleDownloadApk = () => {
-    setDownloadStarted(true);
-    window.location.href = "https://github.com/luxsmith656/SirAj/archive/refs/heads/main.zip";
+    setIsApkModalOpen(true);
   };
 
   if (!user) return null;
@@ -409,6 +411,22 @@ export default function Onboarding() {
             )}
           </div>
         </section>
+
+        <ConfirmModal
+          isOpen={isApkModalOpen}
+          onClose={() => setIsApkModalOpen(false)}
+          onConfirm={() => {
+              setIsApkModalOpen(false);
+              setDownloadStarted(true);
+              window.location.href = "https://github.com/luxsmith656/SirAj/releases/latest/download/app-release.apk";
+              setTimeout(() => setDownloadStarted(false), 3000);
+          }}
+          title="Download App APK?"
+          message="This will download the Android Application Package (APK) directly to your device. Do you want to proceed?"
+          confirmText="Yes, download APK"
+          confirmColor="bg-blue-600 text-white shadow-blue-600/20"
+          icon="download"
+        />
       </main>
     </div>
   );

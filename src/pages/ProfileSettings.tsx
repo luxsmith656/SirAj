@@ -18,6 +18,7 @@ export default function ProfileSettings() {
   const [trackChangeOption, setTrackChangeOption] = useState<'keep' | 'reset'>('keep');
   const [isResettingDemo, setIsResettingDemo] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const isDemoAccount = (user?.email || '').toLowerCase() === 'student@letmastery.com' || (user as any)?.isDemo;
 
   const saveProfile = async () => {
@@ -244,9 +245,7 @@ export default function ProfileSettings() {
             Enable Offline Reminders
           </button>
           <button onClick={() => {
-              if (window.confirm("Download the latest APK version from the repository?")) {
-                  window.location.href = "https://github.com/luxsmith656/SirAj/archive/refs/heads/main.zip";
-              }
+              setIsApkModalOpen(true);
           }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-surface-container text-on-surface px-5 py-3 text-sm font-bold border border-outline-variant/40">
             <Download size={16} />
             Download Latest APK
@@ -270,6 +269,20 @@ export default function ProfileSettings() {
         </section>
       )}
       
+      <ConfirmModal
+        isOpen={isApkModalOpen}
+        onClose={() => setIsApkModalOpen(false)}
+        onConfirm={() => {
+            setIsApkModalOpen(false);
+            window.location.href = "https://github.com/luxsmith656/SirAj/releases/latest/download/app-release.apk";
+        }}
+        title="Download App APK?"
+        message="This will download the latest Android Application Package (APK) directly from the repository's releases. Do you want to proceed?"
+        confirmText="Download APK"
+        confirmColor="bg-primary text-on-primary shadow-primary/20"
+        icon="download"
+      />
+
       <ConfirmModal
         isOpen={isResetModalOpen}
         onClose={() => setIsResetModalOpen(false)}
